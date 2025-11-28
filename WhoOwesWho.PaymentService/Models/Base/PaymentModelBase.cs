@@ -1,0 +1,29 @@
+﻿using Newtonsoft.Json;
+using WhoOwesWho.Models.Models.Extensions;
+
+namespace WhoOwesWho.PaymentService.Models.Base
+{
+    public class PaymentModelBase 
+    {
+        [JsonProperty("amount")]
+        public decimal Amount { get; set; }
+
+        [JsonProperty("formattedAmount")]
+        public string FormattedAmount => Amount.FormatAmount();
+
+        [JsonProperty("currency")]
+        public string? Currency { get; set; }
+
+        [JsonProperty("originalAmount")]
+        public decimal OriginalAmount { get; set; }
+
+        [JsonProperty("formattedOriginalAmount")]
+        public string? FormattedOriginalAmount => OriginalAmount.FormatAmount();
+
+        [JsonProperty("originalCurrency")]
+        public string? OriginalCurrency { get; set; }
+
+        [JsonProperty("description")]
+        public string? Description { get; set; }
+    }
+}

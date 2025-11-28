@@ -1,0 +1,6 @@
+@WoW.PaymentService_HostAddress = http://localhost:5289
+
+GET {{WoW.PaymentService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

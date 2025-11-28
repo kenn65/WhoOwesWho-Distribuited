@@ -1,0 +1,19 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "whooweswho.encryptionservice": "StartDebugging",
+        "whooweswho.currencyservice": "StartDebugging",
+        "whooweswho.authorizationservice": "StartDebugging",
+        "whooweswho.userservice": "StartDebugging",
+        "whooweswho.messagingservice": "StartDebugging",
+        "whooweswho.eventservice": "StartDebugging",
+        "whooweswho.paymentservice": "StartDebugging"
+      },
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }

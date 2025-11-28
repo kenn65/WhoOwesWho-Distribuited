@@ -1,0 +1,6 @@
+@WhoOwesWho.DatabaseMigrationService_HostAddress = http://localhost:5013
+
+GET {{WhoOwesWho.DatabaseMigrationService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

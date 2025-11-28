@@ -1,0 +1,6 @@
+@Wow.AuthorizationService_HostAddress = http://localhost:5270
+
+GET {{Wow.AuthorizationService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

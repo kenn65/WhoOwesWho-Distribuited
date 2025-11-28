@@ -1,0 +1,6 @@
+@WoW.EncryptionService_HostAddress = http://localhost:5039
+
+GET {{WoW.EncryptionService_HostAddress}}/encryption/
+Accept: application/json
+
+###

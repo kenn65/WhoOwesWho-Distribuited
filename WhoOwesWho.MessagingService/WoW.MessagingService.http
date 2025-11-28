@@ -1,0 +1,6 @@
+@WoW.MessagingService_HostAddress = http://localhost:5193
+
+GET {{WoW.MessagingService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
