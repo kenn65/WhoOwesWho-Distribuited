@@ -29,7 +29,11 @@ namespace WhoOwesWho.UserService.Services
             try
             {
 
-                entity.Password = await protectValueEventService.SendAsync(entity.Password!);
+                entity.Password = await protectValueEventService.SendAsync(new ProtectValueRequestModel
+                {
+                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                    Text = entity.Password!
+                });
 
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {

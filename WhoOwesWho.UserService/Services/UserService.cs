@@ -6,7 +6,7 @@ namespace WhoOwesWho.UserService.Services
 {
     public interface IUserService
     {
-        Task<UserModel?> UpdateUserAsync(UserModel request, string token);
+        Task<UserModel?> UpdateUserAsync(UserModel request);
     }
     public class UserService(
         IConfiguration configuration, 
@@ -16,9 +16,9 @@ namespace WhoOwesWho.UserService.Services
         IUnprotectValueMessageSender unprotectValueEventService) 
         : ServiceBase(configuration), IUserService
     {
-        public async Task<UserModel?> UpdateUserAsync(UserModel request, string token)
+        public async Task<UserModel?> UpdateUserAsync(UserModel request)
         {
-            var validationResult = await validationService.VerifyUpdate(request, token);
+            var validationResult = await validationService.VerifyUpdate(request);
             if (validationResult is { Success: false, NoAdmin: false })
             {
                 return await Task.FromResult(new UserModel()
@@ -28,7 +28,10 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
 
-            request.Id = Guid.Parse(await unprotectValueEventService.SendAsync(request.ProtectedId!));
+            request.Id = Guid.Parse(await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
+            { ApiKey = AppSettings.EncryptionMicroServiceApiKey, 
+                Text = request.ProtectedId! 
+            }));
                         
             var userEntity = await dataSelectionService.GetSingleUserByIdAsync(request.Id, true);
             userEntity!.FullName = request.FullName;

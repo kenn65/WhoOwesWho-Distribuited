@@ -15,7 +15,7 @@ namespace WhoOwesWho.UserService.Services
         Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password);
         Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = false);
         Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
-        Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token);
+        Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request);
     }
     public class ValidationService(
         IConfiguration configuration,
@@ -105,31 +105,30 @@ namespace WhoOwesWho.UserService.Services
             return await userModificationService.UpdateUserAsync(user);
         }
 
-        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token)
+        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request)
         {
             try
             {
                 var thisEvent = await userEventMessageSender.SendAsync(new SbEventRequestModel
                 {
+                    ApiKey = AppSettings.EventMicroServiceApiKey!,
                     UserOrEventId = request.ProtectedId!,
                     Active = true
                 });
-
-                //var thisEvent = await eventGatewayService.GetUserEventAsync(request.ProtectedId!, token, true, true);
-
+                
                 var eventUsers = await UserEventUsersMessageSender.SendAsync(new SbEventRequestModel
-                { 
+                {
+                    ApiKey = AppSettings.EventMicroServiceApiKey!,
                     UserOrEventId = thisEvent.Id.ToString(),
                     Active = true 
                 });
-
-                //var eventUsers =
-                //    (await eventGatewayService.GetEventUsersAsync(thisEvent.Id.ToString(), token, true, true))
-                //    .ToList();
-
-                var id = await unprotectValueMessageSender.SendAsync(request.ProtectedId!);
+                                
+                var id = await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel 
+                { 
+                    ApiKey = AppSettings.EncryptionMicroServiceApiKey, 
+                    Text = request.ProtectedId! 
+                });
                 
-                //var id = await encryptionGatewayService.UnprotectAsync(request.ProtectedId!, true);
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
                 if (existingAdmin == null)
                 {

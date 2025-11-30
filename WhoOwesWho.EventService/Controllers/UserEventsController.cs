@@ -15,8 +15,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await dataQueryService.GetEventByUserAsync(userId, token, active));
+                return Ok(await dataQueryService.GetEventByUserAsync(userId, active));
             }
             catch (Exception e)
             {

@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
+﻿using WhoOwesWho.Models.Models;
+using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
 
@@ -12,7 +13,7 @@ namespace WhoOwesWho.UserService.Services
         IConfiguration configuration,
         IDataMutationService dataModificationService,
         IDataQueryService dataSelectionService,
-        IProtectValueMessageSender protectValueEventService,
+        IProtectValueMessageSender protectValueMessageSender,
         IUnprotectValueMessageSender unprotectValueEventService)
         : ServiceBase(configuration), IChangePasswordService
     {
@@ -29,7 +30,11 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
 
-            var unprotectedExistingPassword = await unprotectValueEventService.SendAsync(user.Password!);
+            var unprotectedExistingPassword = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
+            {
+                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                Text = user.Password!
+            });
                         
             if (unprotectedExistingPassword != request.Password)
             {
@@ -50,7 +55,11 @@ namespace WhoOwesWho.UserService.Services
             }
 
 
-            user.Password = await protectValueEventService.SendAsync(request.NewPassword1!);
+            user.Password = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
+            {
+                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                Text = request.NewPassword1!
+            });
             
             var entity = await dataModificationService.UpdateUserAsync(user);
             if (entity != null)

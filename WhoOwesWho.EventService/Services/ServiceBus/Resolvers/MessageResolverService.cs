@@ -19,7 +19,7 @@ namespace WhoOwesWho.EventService.Services.ServiceBus.Handling
             {
                 throw new UnauthorizedAccessException("Invalid API Key");
             }
-            var result = await dataSelectionService.GetEventAsync(Guid.Parse(eventId), string.Empty, active);
+            var result = await dataSelectionService.GetEventAsync(Guid.Parse(eventId), active);
             return await Task.FromResult(result!);
             
         }
@@ -30,7 +30,7 @@ namespace WhoOwesWho.EventService.Services.ServiceBus.Handling
             {
                 throw new UnauthorizedAccessException("Invalid API Key");
             }
-            var result = await dataSelectionService.GetEventByUserAsync(userId, string.Empty, active);
+            var result = await dataSelectionService.GetEventByUserAsync(userId, active);
             return await Task.FromResult(result!);
         }
 
@@ -40,7 +40,7 @@ namespace WhoOwesWho.EventService.Services.ServiceBus.Handling
             {
                 throw new UnauthorizedAccessException("Invalid API Key");
             }
-            return await dataSelectionService.GetEventUsersAsync(eventId, string.Empty, active);
+            return await dataSelectionService.GetEventUsersAsync(eventId, active);
         }
     }
 }

@@ -30,7 +30,11 @@ namespace WhoOwesWho.UserService.Services
                 };
             }
 
-            var protectedPassword = await protectValueEventService.SendAsync(request.NewPassword!);
+            var protectedPassword = await protectValueEventService.SendAsync(new ProtectValueRequestModel
+            {
+                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                Text = request.NewPassword!
+            });
                         
             user.Password = protectedPassword;
 
@@ -50,7 +54,12 @@ namespace WhoOwesWho.UserService.Services
         {
             try
             {
-                emailAddress = await protectValueEventService.SendAsync(emailAddress);
+                emailAddress = await protectValueEventService.SendAsync(new ProtectValueRequestModel
+                {
+                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                    Text = emailAddress
+                });
+
                 var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(emailAddress, true);
                 var response = await dataSelectionService.GetForgotPasswordTokenAsync(user!.Id);
 

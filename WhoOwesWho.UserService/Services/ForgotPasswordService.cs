@@ -28,7 +28,9 @@ namespace WhoOwesWho.UserService.Services
                     return false; // User not found
                 }
 
-                var forgotPasswordToken = await protectValueEventService.SendAsync(AppSettings.ForgotPasswordTokenSecret);
+                var forgotPasswordToken = await protectValueEventService.SendAsync(new ProtectValueRequestModel{
+                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                    Text = AppSettings.ForgotPasswordTokenSecret });
                                 
                 await SendForgotPasswordMessage(user!, request.Host!, forgotPasswordToken);
                 return true;

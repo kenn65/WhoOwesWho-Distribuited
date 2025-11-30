@@ -1,7 +1,7 @@
 ﻿using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Settings;
 
-namespace WhoOwesWho.UserService.Services.ServiceBus.Senders
+namespace WhoOwesWho.UserService.Services
 {
     public interface ISecurityService
     {

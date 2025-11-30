@@ -10,16 +10,16 @@ namespace WhoOwesWho.EventService.Services
 {
     public interface IDataQueryService
     {
-        Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true);
+        Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true);
 
-        Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true);
+        Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
 
-        Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true);
 
-        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token,
+        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, 
             bool active = true);
 
-        Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active = true);
+        Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, bool active = true);
     }
 
     public class DataQueryService(
@@ -28,7 +28,7 @@ namespace WhoOwesWho.EventService.Services
         IUnprotectValueMessageSender unprotectValueMessageSender, 
         IEventUserMessageSender eventUserEventService) : ServiceBase(configuration), IDataQueryService
     {
-        public async Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true)
+        public async Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true)
         {
 
             EventResponseModel? response = null;
@@ -98,7 +98,7 @@ namespace WhoOwesWho.EventService.Services
             return await Task.FromResult(response);
         }
 
-        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true)
+        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true)
         {
             var unprotectedUserId = Guid.Parse(await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel
             {
@@ -154,7 +154,7 @@ namespace WhoOwesWho.EventService.Services
             return await Task.FromResult(eventResponseModel);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true)
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true)
         {
             var response = new List<EventResponseModel>();
 
@@ -226,7 +226,7 @@ namespace WhoOwesWho.EventService.Services
             }
         }
 
-        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true)
+        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true)
         {
             EventAssignmentModel? response = null;
             try
@@ -259,8 +259,6 @@ namespace WhoOwesWho.EventService.Services
                     {
                         EventId = reader.GetGuid(0),
                         User = user
-                        //User = await userGatewayService.GetAuthorizedUserAsync(
-                        //    await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString()), token, false)
                     };
                 }
 
@@ -274,7 +272,7 @@ namespace WhoOwesWho.EventService.Services
             }
         }
 
-        public async Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active = true)
+        public async Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, bool active = true)
         {
             try
             {

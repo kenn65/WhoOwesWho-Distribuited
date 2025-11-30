@@ -1,4 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
+using WhoOwesWho.Models.Models;
 using WhoOwesWho.Models.Models.Base.ServiceBus;
 using static WhoOwesWho.Models.Models.Base.Queues;
 
@@ -6,7 +7,7 @@ namespace WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption
 {
     public interface IUnprotectValueMessageSender
     {
-        Task<string> SendAsync(string text);
+        Task<string> SendAsync(UnprotectValueRequestModel request);
     }
 
     public class UnprotectValueMessageSender : EventServiceSenderBase, IUnprotectValueMessageSender
@@ -25,10 +26,10 @@ namespace WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption
             _processor.StartProcessingAsync();
         }
 
-        public async Task<string> SendAsync(string text)
+        public async Task<string> SendAsync(UnprotectValueRequestModel request)
         {
-            var task = await SendRequestAsync<string, string>(
-                text,
+            var task = await SendRequestAsync<UnprotectValueRequestModel, string>(
+                request,
                 EncryptionQueues.UserUnprotectRequest,
                 EncryptionQueues.UserUnprotectResponse);
 

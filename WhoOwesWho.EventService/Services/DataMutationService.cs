@@ -79,7 +79,7 @@ namespace WhoOwesWho.EventService.Services
                     });
                 }
 
-                var response = await dataSelectionService.GetEventAsync(request.Id, request.Token!);
+                var response = await dataSelectionService.GetEventAsync(request.Id);
 
                 response!.Success = true;
                 response.Message = "The event was successfully created.";

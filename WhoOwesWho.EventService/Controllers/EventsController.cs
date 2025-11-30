@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.Encryption;
 
 namespace WhoOwesWho.EventService.Controllers
 {
@@ -11,8 +10,8 @@ namespace WhoOwesWho.EventService.Controllers
     [ApiController]
     public class EventsController(
         IDataMutationService dataModificationService, 
-        IDataQueryService dataSelectionService, 
-        IUnprotectValueMessageSender unprotectValueMessageSender, IConfiguration configuration) : ControllerBase
+        IDataQueryService dataSelectionService)
+        : ControllerBase
     {
         [HttpPost]
         [Authorize]
@@ -35,8 +34,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await dataSelectionService.GetEventsAsync(token, active));
+                return Ok(await dataSelectionService.GetEventsAsync(active));
             }
             catch (Exception e)
             {
@@ -51,8 +49,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await dataSelectionService.GetEventAsync(Guid.Parse(eventId), token, active));
+                return Ok(await dataSelectionService.GetEventAsync(Guid.Parse(eventId), active));
             }
             catch (Exception e)
             {

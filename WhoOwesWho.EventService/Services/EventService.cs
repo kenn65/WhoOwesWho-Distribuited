@@ -25,7 +25,7 @@ namespace WhoOwesWho.EventService.Services
                 IncludePassword = false
             });
                      
-            var users = (await dataSelectionService.GetEventUsersAsync(request.EventId!, request.Token!)).ToList();
+            var users = (await dataSelectionService.GetEventUsersAsync(request.EventId!)).ToList();
             if (users.Any(u => u.Admin) && you.Admin)
             {
                 return await Task.FromResult(new AssignmentResponseModel
