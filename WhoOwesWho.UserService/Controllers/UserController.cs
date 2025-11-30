@@ -22,8 +22,7 @@ namespace WhoOwesWho.UserService.Controllers
         IUnprotectValueMessageSender unprotectValueEventService) : ControllerBase
     {
         [HttpPost]
-        [Route("signup")]
-        public async Task<IActionResult?> Create([FromBody][Required] SignUpRequestModel request)
+        public async Task<IActionResult?> CreateUserAsync([FromBody][Required] SignUpRequestModel request)
         {
             var actionResult = new SignUpResponseModel();
             try
@@ -64,72 +63,20 @@ namespace WhoOwesWho.UserService.Controllers
                 return BadRequest(e.Message);
             }
         }
-
-        [HttpGet]
-        [Route("{emailAddress}")]
-        public async Task<IActionResult> GetByEmailAddress(string emailAddress)
-        {
-            try
-            {
-                var unprotectedValue = await unprotectValueEventService.SendAsync(emailAddress);
-                return Ok(await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, false));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet]
-        [Route("single/email")]
-        public async Task<IActionResult> GetUserByEmailAddress([Required] string emailAddress, [Required] bool complete)
-        {
-            try
-            {
-                var unprotectedValue = await unprotectValueEventService.SendAsync(emailAddress);
-                return Ok(await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-
-
+                
         [HttpGet]
         [Authorize]
-        [Route("{idOrEmailAddress}/{complete}")]
-        public async Task<IActionResult> Obsolete([Required] string idOrEmailAddress, [Required] bool complete)
+        [Route("{idOrEmailAddress}")]
+        public async Task<IActionResult> GetByIdOrEmailAddressAsync([Required] string idOrEmailAddress, [FromQuery] bool complete)
         {
             try
             {
                 var unprotectedValue = await unprotectValueEventService.SendAsync(idOrEmailAddress);
                 var checkEmail = await validationService.ValidateEmailAsync(unprotectedValue);
 
-                return checkEmail.isValid
+                var user = checkEmail.isValid
                     ? Ok(await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete))
                     : Ok(await dataSelectionService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet]
-        [Authorize]
-        [Route("single")]
-        public async Task<IActionResult> GetByIdOrEmailAddress([Required] string idOrEmailAddress, [Required] bool complete)
-        {
-            try
-            {
-                var unprotectedValue = await unprotectValueEventService.SendAsync(idOrEmailAddress);
-                var checkEmail = (await validationService.ValidateEmailAsync(unprotectedValue, true));
-
-                var user = checkEmail.isValid
-                        ? await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete)
-                        : await dataSelectionService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete);
 
                 if (user == null)
                 {
@@ -145,11 +92,10 @@ namespace WhoOwesWho.UserService.Controllers
                 return BadRequest(e.Message);
             }
         }
-
-
+        
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetUsersAsync()
         {
             try
             {
@@ -161,13 +107,13 @@ namespace WhoOwesWho.UserService.Controllers
             }
         }
 
-        [HttpPatch]
+        [HttpPatch("{userId}")]
         [Authorize]
-        [Route("update")]
-        public async Task<IActionResult> Update([FromBody] UserModel? entity)
+        public async Task<IActionResult> Update(string userId, [FromBody] UserModel? entity)
         {
             try
             {
+                entity!.Id = Guid.Parse(userId);
                 var token = HttpContext.ToTokenValue();
                 return Ok(await userService.UpdateUserAsync(entity!, token));
             }
@@ -179,7 +125,7 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpPost]
         [Route("emailaddress/verify")]
-        public async Task<IActionResult> VerifyEmailAddress([Required][FromBody] VerificationRequestModel request)
+        public async Task<IActionResult> VerifyEmailAddress([FromBody] VerificationRequestModel request)
         {
             try
             {
@@ -311,7 +257,7 @@ namespace WhoOwesWho.UserService.Controllers
         
         [HttpPatch]
         [Authorize]
-        [Route("password/change")]
+        [Route("me/password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestModel request)
         {
             var actionResult = new ResetPasswordResponseModel();
