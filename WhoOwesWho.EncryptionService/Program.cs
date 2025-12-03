@@ -52,6 +52,7 @@ builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistr
 builder.Services.AddHostedService<EncryptionReceiver>();
 
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

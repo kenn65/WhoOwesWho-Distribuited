@@ -33,6 +33,7 @@ builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistr
 builder.Services.AddHostedService<CurrencyReceiver>();
 
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

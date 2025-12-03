@@ -23,6 +23,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoOwesWho.AppHost", "WhoOw
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoOwesWho.ServiceDefaults", "WhoOwesWho.ServiceDefaults\WhoOwesWho.ServiceDefaults.csproj", "{1612FBA6-6FB6-8F98-D29E-B0572829A295}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "setup", "setup", "{F30EC5E5-EDCA-4C6B-9502-4E147F79CCF1}"
+	ProjectSection(SolutionItems) = preProject
+		down.ps1 = down.ps1
+		seed-wsl-backups.ps1 = seed-wsl-backups.ps1
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

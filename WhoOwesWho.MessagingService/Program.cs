@@ -35,6 +35,7 @@ builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistr
 builder.Services.AddHostedService<MessagingReceiver>();
 
 builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

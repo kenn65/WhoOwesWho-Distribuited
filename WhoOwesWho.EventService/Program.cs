@@ -51,6 +51,7 @@ builder.Services.AddHostedService<EventReceiver>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IDataMutationService, DataMutationService>();
 builder.Services.AddScoped<IDataQueryService, DataQueryService>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
 
 
 builder.Services.AddControllers();
