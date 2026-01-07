@@ -21,9 +21,9 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 throw new ArgumentException("Email or password argument was not provided");
             }
-
             var user = await userMessageSender.SendAsync(new UserRequestModel
             {
+                ApiKey = AppSettings.UserMicroServiceApiKey,
                 IdOrEmailAddress = emailAddress!,
                 IncludePassword = true
             });

@@ -1,7 +1,12 @@
+using Aspire.Hosting;
+using k8s.KubeConfigModels;
+using Microsoft.Extensions.Logging;
+
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
 // --- DATABASE BACKUP FILES SEEDING CONTAINER ----------------------------------------------------
 IResourceBuilder<ContainerResource> seedContainer = builder.AddContainer("sql-bak-seeder", "alpine")
+    .WithContainerName("wow-sql-bak-seeder")
     .WithBindMount(@"\\wsl.localhost\Ubuntu\home\kenn\who-owes-who-backups", "/seed")
     .WithVolume("sqlserver-backup-data", "/backup")
     .WithEntrypoint("sh")
@@ -18,6 +23,7 @@ IResourceBuilder<ContainerResource> seedContainer = builder.AddContainer("sql-ba
 // --- SQL SERVER ------------------------------------------------------------------------
 IResourceBuilder<ParameterResource>? dbPassword = builder.AddParameter("dbPassword", true);
 var sql = builder.AddSqlServer("sql", dbPassword, 1455)
+    .WithContainerName("wow-sql-server")
     .WithDataVolume("sqlserver-data")
     .WithVolume("sqlserver-backup-data", "/backup")    // ? sql container MUST mount the volume
     .WithEnvironment("ACCEPT_EULA", "Y")
@@ -28,6 +34,7 @@ var sql = builder.AddSqlServer("sql", dbPassword, 1455)
 // --- DATABASES RESTORE CONTAINER ----------------------------------------------------
 var restoreContainer = builder
     .AddContainer("sql-restore", "mcr.microsoft.com/mssql-tools")
+    .WithContainerName("wow-sql-restore")
     .WithReference(sql)
     .WithVolume("sqlserver-backup-data", "/backup")
     .WithEnvironment("MSSQL_SA_PASSWORD", builder.Configuration["Parameters:dbPassword"])
@@ -55,6 +62,7 @@ var restoreContainer = builder
 // --- DATABASES BACKUP CONTAINER ----------------------------------------------------
 var backupContainer = builder
     .AddContainer("sql-backup", "mcr.microsoft.com/mssql-tools")
+    .WithContainerName("wow-sql-bak-bakup")
     .WithReference(sql)
     .WithVolume("sqlserver-backup-data", "/backup")
     .WithEnvironment("MSSQL_SA_PASSWORD", builder.Configuration["Parameters:dbPassword"])
@@ -64,17 +72,18 @@ var backupContainer = builder
     echo 'Waiting for SQL Server...';
         until /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -Q 'SELECT 1' > /dev/null 2>&1
         do
-            echo 'SQL not ready yet...'
-            sleep 2
+           sleep 10
         done
     while true
     do
+        echo 'SQL Server ready...'
+        sleep 300
         echo 'Running SQL BACKUP...';
         /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Users]   TO DISK='/backup/WoW.Users.bak'   WITH INIT"";
         /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Events]  TO DISK='/backup/WoW.Events.bak'  WITH INIT"";
         /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Payments] TO DISK='/backup/WoW.Payments.bak' WITH INIT"";
         echo 'SQL BACKUP DONE. Sleeping 120 seconds...';
-        sleep 120
+        sleep 300
     done
     ".Replace("\r\n", "\n"))
         .WithLifetime(ContainerLifetime.Persistent);
@@ -85,6 +94,7 @@ var backupContainer = builder
 var serviceBus = builder
     .AddAzureServiceBus("sbemulatorns")
     .RunAsEmulator(c => c
+        .WithContainerName("wow-service-bus-emulator")
         .WithLifetime(ContainerLifetime.Persistent));
 
 
@@ -186,6 +196,22 @@ var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservi
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
+var frontend = builder.AddExecutable(
+    "frontend",
+    "npm",
+    @"D:\WhoOwesWhoAspire\WhoOwesWho.Next\whooweswho-app",
+    "run",
+    "dev"
+)
+.WithHttpEndpoint(targetPort: 3000).WaitFor(authorizationService)
+        .WaitFor(userService)
+        .WaitFor(currencyService)
+        .WaitFor(eventService)
+        .WaitFor(paymentService);
+
+
+var gateway = builder.AddProject<Projects.WhoOwesWho_Gateway>("gateway")
+        .WaitFor(frontend);
 
 authorizationService.WithReference(serviceBus).WithReference(sql);
 currencyService.WithReference(serviceBus).WithReference(sql);
@@ -194,8 +220,6 @@ eventService.WithReference(serviceBus).WithReference(sql);
 messagingService.WithReference(serviceBus).WithReference(sql);
 paymentService.WithReference(serviceBus).WithReference(sql);
 userService.WithReference(serviceBus).WithReference(sql);
-
-    
-
+gateway.WithReference(serviceBus).WithReference(sql);
 
 builder.Build().Run();

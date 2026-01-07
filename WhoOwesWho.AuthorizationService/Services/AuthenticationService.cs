@@ -23,8 +23,7 @@ namespace WhoOwesWho.AuthorizationService.Services
                 IdOrEmailAddress = request.EmailAddress!,
                 IncludePassword = false
             });
-
-            //var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
+                       
             if (user == null)
             {
                 throw new ArgumentException($"User with e-mail address: {request.EmailAddress} was not found");
@@ -34,7 +33,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 var messagingRequest = new MessagingRequestModel
                 {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
+                    ApiKey = AppSettings.MessagingMicroServiceApiKey,
                     Host = request.Host,
                     Type = "Authentication",
                     User = user,

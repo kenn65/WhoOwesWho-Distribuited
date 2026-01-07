@@ -45,7 +45,7 @@ namespace WhoOwesWho.EventService.Controllers
 
         [HttpGet("{eventId}")]
         [Authorize]
-        public async Task<IActionResult> GetEventAsync( string eventId, [FromQuery] bool active)
+        public async Task<IActionResult> GetEventAsync(string eventId, [FromQuery] bool active)
         {
             try
             {
@@ -58,7 +58,7 @@ namespace WhoOwesWho.EventService.Controllers
         }
              
 
-        [HttpPut("{eventId}")]
+        [HttpPatch("{eventId}")]
         [Authorize]
         public async Task<IActionResult> UpdateEventAsync(string eventId, [FromBody] EventRequestModel request)
         {

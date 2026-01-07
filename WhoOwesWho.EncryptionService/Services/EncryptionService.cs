@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using Microsoft.AspNetCore.WebUtilities;
+using System.Security.Cryptography;
 using System.Text;
 using WhoOwesWho.EncryptionService.Models;
 using WhoOwesWho.EncryptionService.Services.Base;
@@ -44,14 +45,15 @@ namespace WhoOwesWho.EncryptionService.Services
 
             return await Task.FromResult(new ProtectionResponseModel
             {
-                ProtectedValue = Convert.ToBase64String(array)
+                ProtectedValue = WebEncoders.Base64UrlEncode(array)
             });
         }
 
         public async Task<ProtectionResponseModel> Decrypt(string cipherText)
         {
             var iv = new byte[16];
-            var buffer = Convert.FromBase64String(cipherText);
+            var buffer = WebEncoders.Base64UrlDecode(cipherText);
+            //var buffer = Convert.FromBase64String(cipherText);
 
             using var aes = Aes.Create();
             aes.Key = Encoding.UTF8.GetBytes(AppSettings.EncryptionKey);
@@ -70,12 +72,16 @@ namespace WhoOwesWho.EncryptionService.Services
 
         public async Task<EncryptedCookiesResponseModel> EncryptCookies(CookiesRequestModel request)
         {
-            return await Task.FromResult(new EncryptedCookiesResponseModel
+            var idResponse = await Encrypt(request.User?.Id.ToString()!);
+            var emailResponse =  await Encrypt(request.User?.EmailAddress!);
+            var adminResponse = await Encrypt(request.User?.Admin.ToString()!);
+            
+            return new EncryptedCookiesResponseModel
             {
-                UserIdValue = (await Encrypt(request.User?.Id.ToString()!)).ProtectedValue,
-                UserEmailAddressValue = (await Encrypt(request.User?.EmailAddress!)).ProtectedValue,
-                AdminValue = (await Encrypt(request.User?.Admin.ToString()!)).ProtectedValue
-            });
+                UserIdValue = idResponse.ProtectedValue,
+                UserEmailAddressValue = emailResponse.ProtectedValue,
+                AdminValue = adminResponse.ProtectedValue
+            };
         }
 
         public async Task<DecryptedCookiesModel> DecryptCookies(string userId, string userEmailAddress, string admin)

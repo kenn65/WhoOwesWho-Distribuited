@@ -16,7 +16,7 @@ namespace WhoOwesWho.EncryptionService.Services.ServiceBus.Resolvers
         {
             if (!await securityService.ValidateApiKey(apiKey))
             {
-                
+                throw new UnauthorizedAccessException("Invalid API Key");
             }
             return await encryptionService.Encrypt(text);
         }

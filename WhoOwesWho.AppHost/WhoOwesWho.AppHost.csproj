@@ -11,6 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="nginx\**" />
+    <EmbeddedResource Remove="nginx\**" />
+    <None Remove="nginx\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.0.0" />
     <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" Version="13.0.0" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.0.1" />
@@ -21,6 +27,7 @@
     <ProjectReference Include="..\WhoOwesWho.CurrencyService\WhoOwesWho.CurrencyService.csproj" />
     <ProjectReference Include="..\WhoOwesWho.EncryptionService\WhoOwesWho.EncryptionService.csproj" />
     <ProjectReference Include="..\WhoOwesWho.EventService\WhoOwesWho.EventService.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.Gateway\WhoOwesWho.Gateway.csproj" />
     <ProjectReference Include="..\WhoOwesWho.MessagingService\WhoOwesWho.MessagingService.csproj" />
     <ProjectReference Include="..\WhoOwesWho.PaymentService\WhoOwesWho.PaymentService.csproj" />
     <ProjectReference Include="..\WhoOwesWho.UserService\WhoOwesWho.UserService.csproj" />

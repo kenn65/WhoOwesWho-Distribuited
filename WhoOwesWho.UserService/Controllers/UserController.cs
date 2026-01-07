@@ -77,7 +77,7 @@ namespace WhoOwesWho.UserService.Controllers
         [HttpGet]
         [Authorize]
         [Route("{idOrEmailAddress}")]
-        public async Task<IActionResult> GetByIdOrEmailAddressAsync([Required] string idOrEmailAddress, [FromQuery] bool complete)
+        public async Task<IActionResult> GetByIdOrEmailAddressAsync(string idOrEmailAddress, [FromQuery] bool complete)
         {
             try
             {
@@ -86,8 +86,8 @@ namespace WhoOwesWho.UserService.Controllers
                     ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!,
                     Text = idOrEmailAddress
                 });
-
-                var checkEmail = await validationService.ValidateEmailAsync(unprotectedValue);
+ 
+                var checkEmail = await validationService.ValidateEmailAsync(unprotectedValue, true);
 
                 var user = checkEmail.isValid
                     ? Ok(await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete))

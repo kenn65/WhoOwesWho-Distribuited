@@ -29,6 +29,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "setup", "setup", "{F30EC5E5
 		seed-wsl-backups.ps1 = seed-wsl-backups.ps1
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoOwesWho.Gateway", "WhoOwesWho.Gateway\WhoOwesWho.Gateway.csproj", "{6EBCD6E1-085B-BF69-4E4D-F04AE13DBB7B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{1612FBA6-6FB6-8F98-D29E-B0572829A295}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1612FBA6-6FB6-8F98-D29E-B0572829A295}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1612FBA6-6FB6-8F98-D29E-B0572829A295}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EBCD6E1-085B-BF69-4E4D-F04AE13DBB7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EBCD6E1-085B-BF69-4E4D-F04AE13DBB7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EBCD6E1-085B-BF69-4E4D-F04AE13DBB7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EBCD6E1-085B-BF69-4E4D-F04AE13DBB7B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

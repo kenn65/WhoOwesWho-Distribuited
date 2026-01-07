@@ -27,7 +27,6 @@ namespace WhoOwesWho.AuthorizationService.Services
                 Text = request.EmailAddress! 
             });
             
-            //var unprotectedEmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, unprotectedEmailAddress!)
@@ -54,6 +53,7 @@ namespace WhoOwesWho.AuthorizationService.Services
                       
             var userResponse = await protectCookiesMessageSender.SendAsync(new CookiesRequestModel
             {
+                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
                 User = user
             });
                         
