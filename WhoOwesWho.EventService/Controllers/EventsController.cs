@@ -34,7 +34,8 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await dataSelectionService.GetEventsAsync(active));
+                var token = HttpContext.ToTokenValue();
+                return Ok(await dataSelectionService.GetEventsAsync(token, active));
             }
             catch (Exception e)
             {
@@ -49,7 +50,8 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await dataSelectionService.GetEventAsync(Guid.Parse(eventId), active));
+                var token = HttpContext.ToTokenValue();
+                return Ok(await dataSelectionService.GetEventAsync(Guid.Parse(eventId), token, active));
             }
             catch (Exception e)
             {

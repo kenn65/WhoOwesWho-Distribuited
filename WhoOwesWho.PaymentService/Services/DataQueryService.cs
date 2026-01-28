@@ -1,10 +1,10 @@
 ﻿using Microsoft.Data.SqlClient;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.User;
+using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.Models.Models;
 using WhoOwesWho.Models.Models.Extensions;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services.Base;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Services
 {
@@ -17,8 +17,9 @@ namespace WhoOwesWho.PaymentService.Services
 
     public class DataQueryService(
         IConfiguration configuration,
-        IProtectValueMessageSender protectValueMessageSender,
-        IPaymentUserMessageSender paymentUserMessageSender) : ServiceBase(configuration), IDataQueryService
+        IEncryptionGatewayService encryptionGatewayService,
+        IUserGatewayService userGatewayService
+        ) : ServiceBase(configuration), IDataQueryService
     {
         public async Task<IEnumerable<UserPaymentModel>> GetUserPaymentsAsync(UserBalanceRequestModel request,
             bool isCreditor)
@@ -84,11 +85,8 @@ namespace WhoOwesWho.PaymentService.Services
                 {
                     if (reader.GetBoolean(9))
                     {
-                        var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                        {
-                            ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                            Text = reader.GetGuid(0).ToString()
-                        });
+                        var protectedUserId =
+                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(9).ToString());
 
                         userPaymentModels.Add(new UserPaymentModel
                         {
@@ -100,33 +98,25 @@ namespace WhoOwesWho.PaymentService.Services
                             OriginalCurrency = reader.GetString(5),
                             Description = reader.GetString(6),
                             Created = new DateTime(reader.GetInt64(7)).ToDisplayDateTimeFormat(),
-                            CreditEventUser = await paymentUserMessageSender.SendAsync(new UserRequestModel
-                                {
-                                    ApiKey = AppSettings.UserMicroServiceApiKey!,
-                                    IdOrEmailAddress = protectedUserId,
-                                    IncludePassword = false
-                                })
-                          
+                            CreditEventUser =
+                                await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!,
+                                    true, false)
+
                         });
                     }
                     else
                     {
-                        var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                        {
-                            ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                            Text = reader.GetGuid(0).ToString()
-                        });
+                        var protectedUserId =
+                           await encryptionGatewayService.ProtectAsync(reader.GetGuid(8).ToString());
 
                         var paymentId = reader.GetGuid(0);
                         var userPaymentModel = userPaymentModels.LastOrDefault(i => i.Id == paymentId);
                         if (userPaymentModel != null)
                         {
-                            userPaymentModel.DebitEventUser = await paymentUserMessageSender.SendAsync(new UserRequestModel
-                            {
-                                ApiKey = AppSettings.UserMicroServiceApiKey!,
-                                IdOrEmailAddress = protectedUserId,
-                                IncludePassword = false
-                            });
+                            userPaymentModel.DebitEventUser =
+                                await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!,
+                                    true,
+                                    false);
                         }
                     }
                 }
@@ -161,12 +151,9 @@ namespace WhoOwesWho.PaymentService.Services
                 {
                     if (reader.GetBoolean(10))
                     {
-                        var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                        {
-                            ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                            Text = reader.GetGuid(0).ToString()
-                        });
-                        
+                        var protectedUserId = 
+                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(9).ToString());
+
                         response.PaymentId = reader.GetGuid(0).ToString();
                         response.EventId = reader.GetGuid(1).ToString();
                         response.Amount = reader.GetDecimal(2);
@@ -176,28 +163,19 @@ namespace WhoOwesWho.PaymentService.Services
                         response.Description = reader.GetString(6);
                         response.Created = new DateTime(reader.GetInt64(7)).ToDisplayDateTimeFormat();
                         response.CreditorIncluded = reader.GetBoolean(8);
-                        response.CreditEventUser = await paymentUserMessageSender.SendAsync(new UserRequestModel
-                        {
-                            ApiKey = AppSettings.UserMicroServiceApiKey!,
-                            IdOrEmailAddress = protectedUserId,
-                            IncludePassword = false
-                        });
+                        response.CreditEventUser =
+                            await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!, true,
+                                false);
                     }
                     else
                     {
-                        var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                        {
-                            ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                            Text = reader.GetGuid(0).ToString()
-                        });
+                        var protectedUserId =
+                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(9).ToString());
 
-                        var debitEventUser = await paymentUserMessageSender.SendAsync(new UserRequestModel 
-                        { 
-                            ApiKey = AppSettings.UserMicroServiceApiKey!,
-                            IdOrEmailAddress = protectedUserId, 
-                            IncludePassword = false 
-                        });
-                        
+                        var debitEventUser = await userGatewayService.GetAuthorizedUserAsync(protectedUserId,
+                            request.Token!, true,
+                            false);
+
                         debitorEventUsers.Add(debitEventUser);
                     }
                 }

@@ -1,24 +1,24 @@
 ﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
 using WhoOwesWho.UserService.Services.Base;
+using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
     public interface IUserService
     {
-        Task<UserModel?> UpdateUserAsync(UserModel request);
+        Task<UserModel?> UpdateUserAsync(UserModel request, string token);
     }
     public class UserService(
         IConfiguration configuration, 
         IValidationService validationService, 
         IDataMutationService dataModificationService, 
-        IDataQueryService dataSelectionService, 
-        IUnprotectValueMessageSender unprotectValueEventService) 
-        : ServiceBase(configuration), IUserService
+        IDataQueryService dataSelectionService,
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ServiceBase(configuration), IUserService
     {
-        public async Task<UserModel?> UpdateUserAsync(UserModel request)
+        public async Task<UserModel?> UpdateUserAsync(UserModel request, string token)
         {
-            var validationResult = await validationService.VerifyUpdate(request);
+            var validationResult = await validationService.VerifyUpdate(request, token);
             if (validationResult is { Success: false, NoAdmin: false })
             {
                 return await Task.FromResult(new UserModel()
@@ -28,10 +28,8 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
 
-            request.Id = Guid.Parse(await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-            { ApiKey = AppSettings.EncryptionMicroServiceApiKey, 
-                Text = request.ProtectedId! 
-            }));
+            request.Id = Guid.Parse(await encryptionGatewayService.UnprotectAsync(request.ProtectedId!, true));
+            
                         
             var userEntity = await dataSelectionService.GetSingleUserByIdAsync(request.Id, true);
             userEntity!.FullName = request.FullName;

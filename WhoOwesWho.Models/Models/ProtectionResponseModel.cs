@@ -5,10 +5,5 @@ namespace WhoOwesWho.Models.Models
     {
         public string? ProtectedValue { get; set; }
         public string? UnprotectedValue { get; set; }
-
-        public static implicit operator string(ProtectionResponseModel v)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

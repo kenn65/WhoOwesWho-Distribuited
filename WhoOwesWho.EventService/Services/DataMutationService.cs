@@ -1,9 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services.Base;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.Currency;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.Encryption;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.User;
+using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.EventService.Services
@@ -23,9 +21,10 @@ namespace WhoOwesWho.EventService.Services
     public class DataMutationService(
         IConfiguration configuration,
         IDataQueryService dataSelectionService,
-        IEventUserMessageSender eventUserMessageSender, 
-        IUnprotectValueMessageSender unprotectValueMessageSender, 
-        IEventCurrencyMessageSender eventCurrencyMessageSender) : ServiceBase(configuration), IDataMutationService
+        IEncryptionGatewayService encryptionGatewayService,
+        IUserGatewayService userGatewayService,
+        ICurrencyGatewayService currencyGatewayService
+        ) : ServiceBase(configuration), IDataMutationService
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
@@ -33,13 +32,8 @@ namespace WhoOwesWho.EventService.Services
             {
                 request.Id = Guid.NewGuid();
 
-                var creationUser = await eventUserMessageSender.SendAsync(new UserRequestModel
-                {
-                    ApiKey = AppSettings.UserMicroServiceApiKey!,
-                    IdOrEmailAddress = request.UserId!,
-                    IncludePassword = true,
-                });
-                                
+                var creationUser = await userGatewayService.GetAuthorizedUserAsync(request.UserId!, request.Token!, true);
+
                 if (string.IsNullOrWhiteSpace(creationUser!.FullName))
                 {
                     return new EventResponseModel
@@ -48,8 +42,9 @@ namespace WhoOwesWho.EventService.Services
                     };
                 }
 
-                request.CurrencySymbol = (await eventCurrencyMessageSender.SendAsync(AppSettings.CurrencyMicroServiceApiKey!, request.Currency!)).Symbol;
-                
+                request.CurrencySymbol =
+                   await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
+
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
                     connection.Open();
@@ -79,7 +74,7 @@ namespace WhoOwesWho.EventService.Services
                     });
                 }
 
-                var response = await dataSelectionService.GetEventAsync(request.Id);
+                var response = await dataSelectionService.GetEventAsync(request.Id, request.Token!, true);
 
                 response!.Success = true;
                 response.Message = "The event was successfully created.";
@@ -100,8 +95,8 @@ namespace WhoOwesWho.EventService.Services
             var response = new UpdateResponseModel();
             try
             {
-                request.CurrencySymbol = (await eventCurrencyMessageSender.SendAsync(AppSettings.CurrencyMicroServiceApiKey!, request.Currency!)).Symbol;
-                                
+                await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
+
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
                     connection.Open();
@@ -173,13 +168,8 @@ namespace WhoOwesWho.EventService.Services
             var response = new AssignmentResponseModel();
             try
             {
-                request.User = await eventUserMessageSender.SendAsync(new UserRequestModel
-                {
-                    ApiKey = AppSettings.UserMicroServiceApiKey!,
-                    IdOrEmailAddress = request.UserId!,
-                    IncludePassword = true
-                }); 
-                
+                request.User ??= await userGatewayService.GetAuthorizedUserAsync(request.UserId!, request.Token!, false, true);
+
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
                     connection.Open();
@@ -210,12 +200,8 @@ namespace WhoOwesWho.EventService.Services
             var response = new UnassignmentResponseModel();
             try
             {
-                var userId = await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                    Text = request.UserId!
-                }); 
-                                
+                var userId = await encryptionGatewayService.UnprotectAsync(request.UserId!);
+
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
                     connection.Open();

@@ -2,17 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
 using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services;
+using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UserController(
-        IConfiguration configuration,
         IDataMutationService dataModificationService,
         IDataQueryService dataSelectionService,
         IValidationService validationService,
@@ -20,7 +19,8 @@ namespace WhoOwesWho.UserService.Controllers
         IResetPasswordService resetPasswordService,
         IChangePasswordService changePasswordService,
         IUserService userService,
-        IUnprotectValueMessageSender unprotectValueEventService) : ControllerBase
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ControllerBase
     {
         [HttpPost]
         public async Task<IActionResult?> CreateUserAsync([FromBody][Required] SignUpRequestModel request)
@@ -28,19 +28,9 @@ namespace WhoOwesWho.UserService.Controllers
             var actionResult = new SignUpResponseModel();
             try
             {
-
-                request.Entity!.EmailAddress = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!,
-                    Text = request.Entity!.EmailAddress!
-                });
-
-                request.Entity!.Password = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!,
-                    Text = request.Entity!.Password!
-                });
-              
+                request.Entity!.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.Entity.EmailAddress!, true);
+                request.Entity!.Password = await encryptionGatewayService.UnprotectAsync(request.Entity.Password!, true);
+                              
                 if (string.IsNullOrWhiteSpace(request.Entity?.FullName))
                 {
                     actionResult.Message = "Full name is required.";
@@ -73,20 +63,30 @@ namespace WhoOwesWho.UserService.Controllers
                 return BadRequest(e.Message);
             }
         }
-                
+
         [HttpGet]
-        [Authorize]
         [Route("{idOrEmailAddress}")]
-        public async Task<IActionResult> GetByIdOrEmailAddressAsync(string idOrEmailAddress, [FromQuery] bool complete)
+        public async Task<IActionResult> GetUnautorizedUserByEmailAddressAsync(string emailAddress, [FromQuery] bool complete)
         {
             try
             {
-                var unprotectedValue = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!,
-                    Text = idOrEmailAddress
-                });
- 
+                var unprotectedValue = await encryptionGatewayService.UnprotectAsync(emailAddress, true);
+                return Ok(await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet]
+        [Authorize]
+        [Route("{idOrEmailAddress}/{complete}")]
+        public async Task<IActionResult> GetAuthorizedUserByIdOrEmailAddressAsync(string idOrEmailAddress, bool complete)
+        {
+            try
+            {
+                var unprotectedValue = await encryptionGatewayService.UnprotectAsync(idOrEmailAddress, true);
                 var checkEmail = await validationService.ValidateEmailAsync(unprotectedValue, true);
 
                 var user = checkEmail.isValid
@@ -122,14 +122,16 @@ namespace WhoOwesWho.UserService.Controllers
             }
         }
 
-        [HttpPatch("{userId}")]
+        [HttpPatch]
+        [Route("{userId}")]
         [Authorize]
         public async Task<IActionResult> Update(string userId, [FromBody] UserModel? entity)
         {
             try
             {
+                var token = HttpContext.ToTokenValue();
                 entity!.Id = Guid.Parse(userId);
-                return Ok(await userService.UpdateUserAsync(entity!));
+                return Ok(await userService.UpdateUserAsync(entity!, token));
             }
             catch (Exception e)
             {
@@ -143,11 +145,8 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                request.EmailAddress = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.EmailAddress! 
-                });
-                
+                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);    
+
                 return Ok(await validationService.VerifyUserEmailAddress(request.EmailAddress!));
             }
             catch (Exception e)
@@ -164,12 +163,8 @@ namespace WhoOwesWho.UserService.Controllers
 
             try
             {
-                request.EmailAddress = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.EmailAddress! 
-                });
-                
+                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true); 
+                                
                 if (string.IsNullOrWhiteSpace(request.Host))
                 {
                     actionResult.Message = "Host is not provided.";
@@ -227,24 +222,12 @@ namespace WhoOwesWho.UserService.Controllers
             var actionResult = new ResetPasswordResponseModel();
             try
             {
-                request.EmailAddress = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.EmailAddress! 
-                });
+                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
 
-                request.NewPassword = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!,
-                    Text = request.NewPassword!
-                });
+                request.NewPassword = await encryptionGatewayService.UnprotectAsync(request.NewPassword!, true);
 
-                request.NewPasswordRepeat = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.NewPasswordRepeat! 
-                });
-                
+                request.NewPasswordRepeat = await encryptionGatewayService.UnprotectAsync(request.NewPasswordRepeat!, true);
+
                 if (request.NewPassword != request.NewPasswordRepeat)
                 {
                     actionResult.Message = "The passwords does not match!";
@@ -258,12 +241,8 @@ namespace WhoOwesWho.UserService.Controllers
                     return Ok(actionResult);
                 }
 
-                var unprotectedUserPassword = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = user.Password! 
-                });
-                                
+                var unprotectedUserPassword = await encryptionGatewayService.UnprotectAsync(user.Password!, true);
+
                 if (unprotectedUserPassword == request.NewPassword)
                 {
                     actionResult.Message = "The new password cannot be the same as the existing password.";
@@ -303,27 +282,11 @@ namespace WhoOwesWho.UserService.Controllers
             var actionResult = new ResetPasswordResponseModel();
             try
             {
-                request.EmailAddress = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.EmailAddress! 
-                });
-                request.Password = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.Password! 
-                });
-                request.NewPassword1 = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.NewPassword1! 
-                });
-                request.NewPassword2 = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!, 
-                    Text = request.NewPassword2! 
-                });
-                
+                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+                request.Password = await encryptionGatewayService.UnprotectAsync(request.Password!, true);
+                request.NewPassword1 = await encryptionGatewayService.UnprotectAsync(request.NewPassword1!, true);
+                request.NewPassword2 = await encryptionGatewayService.UnprotectAsync(request.NewPassword2!, true);
+
                 var emailCheck = await validationService.ValidateEmailAsync(request.EmailAddress!, true);
                 if (!emailCheck.isValid)
                 {

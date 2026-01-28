@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.Models.Models.Extensions;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Controllers
 {
@@ -13,7 +13,8 @@ namespace WhoOwesWho.PaymentService.Controllers
     public class PaymentsController(
         IPaymentService paymentService, 
         IPaymentDetailsService paymentDetailsService,
-        IUnprotectValueMessageSender unprotectValueMessageSender) : ControllerBase
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ControllerBase
     {
         [HttpPost]
         [Authorize]
@@ -21,13 +22,13 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                request.CreditorId = await unprotectValueMessageSender.SendAsync(request.CreditorId!);
-                
+                request.CreditorId = await encryptionGatewayService.UnprotectAsync(request.CreditorId!);
+                                
                 var userIdList = request.UserIds!.ToList();
                 var unprotectedUserIds = new List<string>();
                 for (var i = userIdList.Count - 1; i > -1; i--)
                 {
-                    var userId = await unprotectValueMessageSender.SendAsync(userIdList[i]);
+                    var userId = await encryptionGatewayService.UnprotectAsync(userIdList[i]);
                     unprotectedUserIds.Add(userId);
                 }
                 request.UserIds = unprotectedUserIds;
@@ -90,13 +91,13 @@ namespace WhoOwesWho.PaymentService.Controllers
             try
             {
                 request.PaymentId = Guid.Parse(paymentId);
-                request.CreditorId = await unprotectValueMessageSender.SendAsync(request.CreditorId!);
+                request.CreditorId = await encryptionGatewayService.UnprotectAsync(request.CreditorId!);
                 
                 var userIdList = request.UserIds!.ToList();
                 var unprotectedUserIds = new List<string>();
                 for (var i = userIdList.Count - 1; i > -1; i--)
                 {
-                    var userId = await unprotectValueMessageSender.SendAsync(userIdList[i]);
+                    var userId = await encryptionGatewayService.UnprotectAsync(userIdList[i]);
                     unprotectedUserIds.Add(userId);
                 }
                 request.UserIds = unprotectedUserIds;

@@ -1,18 +1,9 @@
-using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using WhoOwesWho.EventService.Middleware;
 using WhoOwesWho.EventService.Services;
-using WhoOwesWho.EventService.Services.ServiceBus.Handlers;
-using WhoOwesWho.EventService.Services.ServiceBus.Handling;
-using WhoOwesWho.EventService.Services.ServiceBus.Receivers;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.Currency;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.Encryption;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.User;
-using WhoOwesWho.Models.Models.Base.ServiceBus;
-using static WhoOwesWho.Models.Models.Base.Queues;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,38 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // Add services to the container.
-
-builder.Services.AddSingleton(provider =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("sbemulatorns");
-    return new ServiceBusClient(connectionString);
-});
-
-builder.Services.AddSingleton<IEventCurrencyMessageSender, EventCurrencyMessageSender>();
-builder.Services.AddSingleton<IProtectValueMessageSender, ProtectValueMessageSender>();
-builder.Services.AddSingleton<IUnprotectValueMessageSender, UnprotectValueMessageSender>();
-builder.Services.AddSingleton<IEventUserMessageSender, EventUserMessageSender>();
-
-builder.Services.AddScoped<IMessageResolverService, MessageResolverService>();
-
-builder.Services.AddScoped<PaymentEventHandler>();
-builder.Services.AddScoped<PaymentEventUsersHandler>();
-builder.Services.AddScoped<PaymentUserEventHandler>();
-builder.Services.AddScoped<UserEventHandler>();
-builder.Services.AddScoped<UserEventUsersHandler>();
-
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<PaymentEventHandler>(EventQueues.PaymentEventRequest));
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<PaymentEventUsersHandler>(EventQueues.PaymentEventUsersRequest));
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<PaymentUserEventHandler>(EventQueues.PaymentUserEventRequest));
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<UserEventHandler>(EventQueues.UserEventRequest));
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<UserEventUsersHandler>(EventQueues.UserEventUsersRequest));
-
-builder.Services.AddHostedService<EventReceiver>();
-
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IDataMutationService, DataMutationService>();
 builder.Services.AddScoped<IDataQueryService, DataQueryService>();
-builder.Services.AddScoped<ISecurityService, SecurityService>();
+
 
 
 builder.Services.AddControllers();

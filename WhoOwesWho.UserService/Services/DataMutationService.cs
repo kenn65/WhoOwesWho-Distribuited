@@ -1,9 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Messaging;
+using WhoOwesWho.UserService.Services.Gateways;
+using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
 
 namespace WhoOwesWho.UserService.Services
 {
@@ -17,9 +17,9 @@ namespace WhoOwesWho.UserService.Services
 
     public class DataMutationService(
         IConfiguration configuration,
-        IProtectValueMessageSender protectValueEventService,
-        ISignUpMessageSender signUpMessageSender)
-        : ServiceBase(configuration), IDataMutationService
+        IMessagingPublisher messagingPublisher,
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ServiceBase(configuration), IDataMutationService
     {
         public async Task<UserModel?> CreateUserAsync(UserModel entity, string host)
         {
@@ -29,11 +29,7 @@ namespace WhoOwesWho.UserService.Services
             try
             {
 
-                entity.Password = await protectValueEventService.SendAsync(new ProtectValueRequestModel
-                {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                    Text = entity.Password!
-                });
+                entity.Password = await encryptionGatewayService.ProtectAsync(entity.Password!, true);
 
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
@@ -162,11 +158,7 @@ namespace WhoOwesWho.UserService.Services
                     User = entity
                 };
 
-                var result = await signUpMessageSender.SendAsync(request);
-                if (!result)
-                {
-                    throw new Exception("Failed to send account confirmation message.");
-                }
+                await messagingPublisher.DispatchAsync(request);
             }
             catch (Exception e)
             {

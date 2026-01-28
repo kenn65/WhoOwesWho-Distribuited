@@ -2,8 +2,8 @@
 using System.Net.Mail;
 using WhoOwesWho.MessagingService.Models;
 using WhoOwesWho.MessagingService.Services.Base;
+using WhoOwesWho.MessagingService.Services.Gateways;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Encryption;
 
 namespace WhoOwesWho.MessagingService.Services
 {
@@ -18,11 +18,10 @@ namespace WhoOwesWho.MessagingService.Services
     {
         Task<bool> SendEmailAsync(MessagingRequestModel request);
     }
-
-
     public class EmailMessagingService(
         IConfiguration configuration, 
-        IProtectValueMessageSender protectValueEventService) : ServiceBase(configuration), IEmailMessagingService
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ServiceBase(configuration), IEmailMessagingService
     {
         public async Task<bool> SendEmailAsync(MessagingRequestModel request)
         {
@@ -82,11 +81,7 @@ namespace WhoOwesWho.MessagingService.Services
             var protectedEmailAddress = string.Empty;
             if (!string.Equals(path, AppSettings.AuthenticationTemplatePath, StringComparison.InvariantCultureIgnoreCase))
             {
-                protectedEmailAddress = await protectValueEventService.SendAsync(new ProtectValueRequestModel
-                {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                    Text = entity.EmailAddress!
-                });
+                protectedEmailAddress = await encryptionGatewayService.ProtectAsync(entity.EmailAddress!);
             }
             var body = await File.ReadAllTextAsync(path);
             body = body.Replace("#fullname#", entity.FullName);

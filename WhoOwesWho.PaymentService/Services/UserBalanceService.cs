@@ -1,10 +1,8 @@
-﻿using WhoOwesWho.EventService.Models;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.User;
+﻿using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services.Base;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Event;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Services
 {
@@ -16,41 +14,29 @@ namespace WhoOwesWho.PaymentService.Services
     public class UserBalanceService(
         IConfiguration configuration,
         IDataQueryService dataSelectionService,
-        IProtectValueMessageSender protectValueMessageSender,
-        IPaymentEventMessageSender paymentEventMessageSender,
-        IPaymentUserMessageSender paymentUserMessageSender)
-        : ServiceBase(configuration), IUserBalanceService
+        IUserGatewayService userGatewayService,
+        IEventGatewayService eventGatewayService,
+        IEncryptionGatewayService encryptionGatewayService
+
+
+        ) : ServiceBase(configuration), IUserBalanceService
     {
         public async Task<UserBalanceResponseModel> GetUserBalanceAsync(UserBalanceRequestModel request, bool active)
         {
             try
             {
-                var thisEvent = await paymentEventMessageSender.SendAsync(new SbEventRequestModel 
-                { 
-                    UserOrEventId = request.EventId!, 
-                    Active = active 
-                });
-                
-                var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                    Text = request.UserId!
-                });
-
+                var thisEvent = await eventGatewayService.GetEventAsync(request.EventId!, request.Token!, true, active);
+                var protectedUserId = await encryptionGatewayService.ProtectAsync(request.UserId!);
                 var userCredits = (await dataSelectionService.GetUserPaymentsAsync(request, true)).ToList();
                 var userDebits = (await dataSelectionService.GetUserPaymentsAsync(request, false)).ToList();
-
+                
                 var creditUserAmountSum = userCredits.Any() ? userCredits.Sum(c => c.Amount) : 0;
                 var debitUserAmountSum = userDebits.Any() ? userDebits.Sum(d => d.Amount) : 0;
 
                 return await Task.FromResult(new UserBalanceResponseModel
                 {
-                    User = await paymentUserMessageSender.SendAsync(new UserRequestModel 
-                    { 
-                        ApiKey = AppSettings.UserMicroServiceApiKey!,
-                        IdOrEmailAddress = protectedUserId, 
-                        IncludePassword = false 
-                    }),
+                    User = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!, true,
+                        false),
                     Balance = decimal.Round(creditUserAmountSum - debitUserAmountSum, 2, MidpointRounding.AwayFromZero),
                     CurrencySymbol = thisEvent.CurrencySymbol
                 });

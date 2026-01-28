@@ -1,7 +1,3 @@
-using Aspire.Hosting;
-using k8s.KubeConfigModels;
-using Microsoft.Extensions.Logging;
-
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
 // --- DATABASE BACKUP FILES SEEDING CONTAINER ----------------------------------------------------
@@ -97,60 +93,19 @@ var serviceBus = builder
         .WithContainerName("wow-service-bus-emulator")
         .WithLifetime(ContainerLifetime.Persistent));
 
+serviceBus
+    .AddServiceBusTopic("whooweswho-messaging-dispatch-request")
+    .AddServiceBusSubscription("messaging");
+
+serviceBus
+    .AddServiceBusTopic("whooweswho-messaging-dispatch-succeeded")
+    .AddServiceBusSubscription("messaging-observability-succeeded");
+
+serviceBus
+    .AddServiceBusTopic("whooweswho-messaging-dispatch-failed")
+    .AddServiceBusSubscription("messaging-observability-failed");
 
 
-serviceBus.AddServiceBusQueue("AuthorizationUnprotectRequest");
-serviceBus.AddServiceBusQueue("AuthorizationProtectCookiesRequest");
-serviceBus.AddServiceBusQueue("MessagingProtectRequest");
-serviceBus.AddServiceBusQueue("EventProtectRequest");
-serviceBus.AddServiceBusQueue("EventUnprotectRequest");
-serviceBus.AddServiceBusQueue("PaymentProtectReuest");
-serviceBus.AddServiceBusQueue("PaymentUnprotectRequest");
-serviceBus.AddServiceBusQueue("UserProtectRequest");
-serviceBus.AddServiceBusQueue("UserUnprotectRequest");
-serviceBus.AddServiceBusQueue("AuthorizatonUnprotectResponse");
-serviceBus.AddServiceBusQueue("AuthorizationProtectCookiesResponse");
-serviceBus.AddServiceBusQueue("MessagingProtectResponse");
-serviceBus.AddServiceBusQueue("EventProtectResponse");
-serviceBus.AddServiceBusQueue("EventUnprotectResponse");
-serviceBus.AddServiceBusQueue("PaymentProtectResponse");
-serviceBus.AddServiceBusQueue("PaymentUnprotectResponse");
-serviceBus.AddServiceBusQueue("UserProtectResponse");
-serviceBus.AddServiceBusQueue("UserUnprotectResponse");
-
-serviceBus.AddServiceBusQueue("AuthorizationUserRequest");
-serviceBus.AddServiceBusQueue("EventUserRequest");
-serviceBus.AddServiceBusQueue("PaymentUserRequest");
-serviceBus.AddServiceBusQueue("AuthorizationUserResponse");
-serviceBus.AddServiceBusQueue("EventUserResponse");
-serviceBus.AddServiceBusQueue("PaymentUserResponse");
-
-serviceBus.AddServiceBusQueue("SignUpRequest");
-serviceBus.AddServiceBusQueue("AuthenticationValidateRequest");
-serviceBus.AddServiceBusQueue("ForgotPasswordRequest");
-serviceBus.AddServiceBusQueue("SignUpResponse");
-serviceBus.AddServiceBusQueue("AuthenticationValidateResponse");
-serviceBus.AddServiceBusQueue("ForgotPasswordResponse");
-
-serviceBus.AddServiceBusQueue("CurrencyRequest");
-serviceBus.AddServiceBusQueue("CurrenciesRequest");
-serviceBus.AddServiceBusQueue("ExchangeRateRequest");
-serviceBus.AddServiceBusQueue("CurrencyResponse");
-serviceBus.AddServiceBusQueue("CurrenciesResponse");
-serviceBus.AddServiceBusQueue("ExchangeRateResponse");
-
-serviceBus.AddServiceBusQueue("UserEventRequest");
-serviceBus.AddServiceBusQueue("PaymentEventRequest");
-serviceBus.AddServiceBusQueue("EventUsersRequest");
-serviceBus.AddServiceBusQueue("UserEventUsersRequest");
-serviceBus.AddServiceBusQueue("PaymentEventUsersRequest");
-serviceBus.AddServiceBusQueue("PaymentUserEventRequest");
-serviceBus.AddServiceBusQueue("UserEventResponse");
-serviceBus.AddServiceBusQueue("PaymentEventResponse");
-serviceBus.AddServiceBusQueue("EventUsersResponse");
-serviceBus.AddServiceBusQueue("UserEventUsersResponse");
-serviceBus.AddServiceBusQueue("PaymentEventUsersResponse");
-serviceBus.AddServiceBusQueue("PaymentUserEventResponse");
 
 // --- WHO OWES WHO MICROSERVICES ----------------------------------------------------
 
@@ -196,30 +151,30 @@ var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservi
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
-var frontend = builder.AddExecutable(
-    "frontend",
-    "npm",
-    @"D:\WhoOwesWhoAspire\WhoOwesWho.Next\whooweswho-app",
-    "run",
-    "dev"
-)
-.WithHttpEndpoint(targetPort: 3000).WaitFor(authorizationService)
-        .WaitFor(userService)
-        .WaitFor(currencyService)
-        .WaitFor(eventService)
-        .WaitFor(paymentService);
+//var frontend = builder.AddExecutable(
+//    "frontend",
+//    "npm",
+//    @"D:\WhoOwesWhoAspire\WhoOwesWho.Next\whooweswho-app",
+//    "run",
+//    "dev"
+//)
+//.WithHttpEndpoint(targetPort: 3000).WaitFor(authorizationService)
+//        .WaitFor(userService)
+//        .WaitFor(currencyService)
+//        .WaitFor(eventService)
+//        .WaitFor(paymentService);
 
 
-var gateway = builder.AddProject<Projects.WhoOwesWho_Gateway>("gateway")
-        .WaitFor(frontend);
+//var gateway = builder.AddProject<Projects.WhoOwesWho_Gateway>("gateway")
+//        .WaitFor(frontend);
 
-authorizationService.WithReference(serviceBus).WithReference(sql);
-currencyService.WithReference(serviceBus).WithReference(sql);
-encryptionService.WithReference(serviceBus).WithReference(sql);
-eventService.WithReference(serviceBus).WithReference(sql);
-messagingService.WithReference(serviceBus).WithReference(sql);
-paymentService.WithReference(serviceBus).WithReference(sql);
-userService.WithReference(serviceBus).WithReference(sql);
-gateway.WithReference(serviceBus).WithReference(sql);
+//authorizationService.WithReference(serviceBus).WithReference(sql);
+//currencyService.WithReference(serviceBus).WithReference(sql);
+//encryptionService.WithReference(serviceBus).WithReference(sql);
+//eventService.WithReference(serviceBus).WithReference(sql);
+//messagingService.WithReference(serviceBus).WithReference(sql);
+//paymentService.WithReference(serviceBus).WithReference(sql);
+//userService.WithReference(serviceBus).WithReference(sql);
+//gateway.WithReference(serviceBus).WithReference(sql);
 
 builder.Build().Run();

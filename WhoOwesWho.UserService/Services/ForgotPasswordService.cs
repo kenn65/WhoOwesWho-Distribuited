@@ -1,8 +1,9 @@
-﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
+﻿using Microsoft.AspNetCore.Components;
+using WhoOwesWho.Models.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Messaging;
+using WhoOwesWho.UserService.Services.Gateways;
+using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
 
 namespace WhoOwesWho.UserService.Services
 {
@@ -14,9 +15,9 @@ namespace WhoOwesWho.UserService.Services
         IConfiguration configuration, 
         IDataQueryService dataSelectionService, 
         IDataMutationService dataModificationService,
-        IProtectValueMessageSender protectValueEventService, 
-        IForgotPasswordMessageSender forgotPasswordMessageService)
-        : ServiceBase(configuration), IForgotPasswordService
+        IEncryptionGatewayService encryptionGatewayService,
+        IMessagingPublisher messagingPublisher
+       ) : ServiceBase(configuration), IForgotPasswordService
     {
         public async Task<bool> SendForgotPasswordEmailAsync(ForgotPasswordRequestModel request)
         {
@@ -28,10 +29,8 @@ namespace WhoOwesWho.UserService.Services
                     return false; // User not found
                 }
 
-                var forgotPasswordToken = await protectValueEventService.SendAsync(new ProtectValueRequestModel{
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                    Text = AppSettings.ForgotPasswordTokenSecret });
-                                
+                var forgotPasswordToken = await encryptionGatewayService.ProtectAsync(AppSettings.ForgotPasswordTokenSecret, true);
+                                                
                 await SendForgotPasswordMessage(user!, request.Host!, forgotPasswordToken);
                 return true;
             }
@@ -67,12 +66,7 @@ namespace WhoOwesWho.UserService.Services
                     throw new Exception("Failed to create forgot password token in the database.");
                 }
 
-                var result = await forgotPasswordMessageService.SendAsync(request);
-                
-                if (!result)
-                {
-                    throw new Exception("Failed to send forgot password message.");
-                }   
+                await messagingPublisher.DispatchAsync(request);
             }
             catch (Exception e)
             {

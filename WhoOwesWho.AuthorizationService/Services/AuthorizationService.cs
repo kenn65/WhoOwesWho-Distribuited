@@ -4,9 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Encryption;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Messaging;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.AuthorizationService.Services.Gateways;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -16,17 +14,14 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
     public class AuthorizationService(
         IConfiguration configuration,
-        IUnprotectValueMessageSender unprotectValueMessageSender,
-        IProtectCookiesMessageSender protectCookiesMessageSender,
-        IUserMessageSender userMessageSender) : ServiceBase(configuration), IAuthorizationService
+        IEncryptionGatewayService encryptionGatewayService,
+        IUserGatewayService userGatewayService
+        ) : ServiceBase(configuration), IAuthorizationService
     {
         public async Task<AuthorizationResponseModel?> Authorize(AuthorizationRequestModel request)
         {
-            var unprotectedEmailAddress = await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                Text = request.EmailAddress! 
-            });
-            
+            var unprotectedEmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, unprotectedEmailAddress!)
@@ -44,27 +39,8 @@ namespace WhoOwesWho.AuthorizationService.Services
 
             var token = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
-            var user = await userMessageSender.SendAsync(new UserRequestModel
-            {
-                ApiKey =  AppSettings.UserMicroServiceApiKey,
-                IdOrEmailAddress = request.EmailAddress!,
-                IncludePassword = true
-            });
-                      
-            var userResponse = await protectCookiesMessageSender.SendAsync(new CookiesRequestModel
-            {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                User = user
-            });
-                        
-            var response = new AuthorizationResponseModel
-            {
-                TokenValue = token,
-                UserIdValue = userResponse.UserIdValue,
-                UserEmailAddressValue = userResponse.UserEmailAddressValue,
-                AdminValue = userResponse.AdminValue,
-                Success = true
-            };
+            var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
+            var response = await encryptionGatewayService.ProtectCookiesAsync(user, token, true);
             return await Task.FromResult(response);
         }
     }

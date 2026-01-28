@@ -2,11 +2,10 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
 using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Event;
+using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
@@ -15,16 +14,15 @@ namespace WhoOwesWho.UserService.Services
         Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password);
         Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = false);
         Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
-        Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request);
+        Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token);
     }
     public class ValidationService(
         IConfiguration configuration,
         IDataQueryService userSelectionService,
         IDataMutationService userModificationService,
-        IUnprotectValueMessageSender unprotectValueMessageSender,
-        IUserEventMessageSender userEventMessageSender,
-        IUserEventUsersMessageSender UserEventUsersMessageSender) 
-        : ServiceBase(configuration), IValidationService
+        IEncryptionGatewayService encryptionGatewayService,
+        IEventGatewayService eventGatewayService
+        ) : ServiceBase(configuration), IValidationService
     {
         public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password)
         {
@@ -105,30 +103,17 @@ namespace WhoOwesWho.UserService.Services
             return await userModificationService.UpdateUserAsync(user);
         }
 
-        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request)
+        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token)
         {
             try
             {
-                var thisEvent = await userEventMessageSender.SendAsync(new SbEventRequestModel
-                {
-                    ApiKey = AppSettings.EventMicroServiceApiKey!,
-                    UserOrEventId = request.ProtectedId!,
-                    Active = true
-                });
-                
-                var eventUsers = await UserEventUsersMessageSender.SendAsync(new SbEventRequestModel
-                {
-                    ApiKey = AppSettings.EventMicroServiceApiKey!,
-                    UserOrEventId = thisEvent.Id.ToString(),
-                    Active = true 
-                });
-                                
-                var id = await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel 
-                { 
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey, 
-                    Text = request.ProtectedId! 
-                });
-                
+
+                var thisEvent = await eventGatewayService.GetUserEventAsync(request.ProtectedId!, token, true, true);
+                var eventUsers =
+                    (await eventGatewayService.GetEventUsersAsync(thisEvent.Id.ToString(), token, true, true))
+                    .ToList();
+                var id = await encryptionGatewayService.UnprotectAsync(request.ProtectedId!, true);
+
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
                 if (existingAdmin == null)
                 {

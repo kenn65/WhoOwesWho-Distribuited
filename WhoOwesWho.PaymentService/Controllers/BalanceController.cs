@@ -1,15 +1,18 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.Models.Models.Extensions;
+using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class BalanceController(IUserBalanceService userBalanceService, IUnprotectValueMessageSender unprotectValueMessageSender) : ControllerBase
+    public class BalanceController(
+        IUserBalanceService userBalanceService, 
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ControllerBase
     {
         [HttpGet("{userId}/balance")]
         [Authorize]
@@ -17,8 +20,8 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var unprotectedUserId = await unprotectValueMessageSender.SendAsync(userId);
-
+                var unprotectedUserId = await encryptionGatewayService.UnprotectAsync(userId);
+                
                 var request = new UserBalanceRequestModel
                 {
                     UserId = unprotectedUserId,

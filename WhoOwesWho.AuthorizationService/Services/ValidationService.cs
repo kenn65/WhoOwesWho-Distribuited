@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Encryption;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Messaging;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.AuthorizationService.Services.Gateways;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -12,8 +10,9 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
     public class ValidationService(
         IConfiguration configuration,
-        IUnprotectValueMessageSender unprotectValueMessageSender,
-        IUserMessageSender userMessageSender) : ServiceBase(configuration), IValidationService
+        IEncryptionGatewayService encryptionGatewayService,
+        IUserGatewayService userGatewayService 
+        ) : ServiceBase(configuration), IValidationService
     {
         public async Task<bool> ValidateUserCredentialsAsync([Required] string emailAddress, [Required] string password)
         {
@@ -21,12 +20,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 throw new ArgumentException("Email or password argument was not provided");
             }
-            var user = await userMessageSender.SendAsync(new UserRequestModel
-            {
-                ApiKey = AppSettings.UserMicroServiceApiKey,
-                IdOrEmailAddress = emailAddress!,
-                IncludePassword = true
-            });
+            var user = await userGatewayService.GetUserAsync(emailAddress, false);
 
             if (user == null)
             {
@@ -38,12 +32,8 @@ namespace WhoOwesWho.AuthorizationService.Services
                 return await Task.FromResult(false);
             }
 
-            var unprotectedUserPassword = await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel
-            {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                Text = user.Password!
-            });
-            
+            var unprotectedUserPassword = await encryptionGatewayService.UnprotectAsync(user.Password!, true);
+
             return await Task.FromResult(password == unprotectedUserPassword);
         }
     }

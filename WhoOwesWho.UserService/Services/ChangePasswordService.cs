@@ -1,7 +1,6 @@
-﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
-using WhoOwesWho.UserService.Models;
+﻿using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
+using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
@@ -13,9 +12,8 @@ namespace WhoOwesWho.UserService.Services
         IConfiguration configuration,
         IDataMutationService dataModificationService,
         IDataQueryService dataSelectionService,
-        IProtectValueMessageSender protectValueMessageSender,
-        IUnprotectValueMessageSender unprotectValueEventService)
-        : ServiceBase(configuration), IChangePasswordService
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ServiceBase(configuration), IChangePasswordService
     {
         public async Task<ChangePasswordResponseModel?> ChangePasswordAsync(ChangePasswordRequestModel request)
         {
@@ -30,12 +28,8 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
 
-            var unprotectedExistingPassword = await unprotectValueEventService.SendAsync(new UnprotectValueRequestModel
-            {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                Text = user.Password!
-            });
-                        
+            var unprotectedExistingPassword = await encryptionGatewayService.UnprotectAsync(user.Password!, true);
+
             if (unprotectedExistingPassword != request.Password)
             {
                 return await Task.FromResult(new ChangePasswordResponseModel
@@ -55,12 +49,8 @@ namespace WhoOwesWho.UserService.Services
             }
 
 
-            user.Password = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-            {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                Text = request.NewPassword1!
-            });
-            
+            user.Password = await encryptionGatewayService.ProtectAsync(request.NewPassword1!, true);
+
             var entity = await dataModificationService.UpdateUserAsync(user);
             if (entity != null)
             {

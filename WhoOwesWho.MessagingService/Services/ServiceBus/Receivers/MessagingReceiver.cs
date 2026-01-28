@@ -1,92 +1,91 @@
 ﻿using Azure.Messaging.ServiceBus;
-using WhoOwesWho.Models.Models.Base.ServiceBus;
+using WhoOwesWho.Models.Models.Base;
+using static WhoOwesWho.Models.Models.Base.ServiceBus.ObservabilityRecords;
 
-namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
+public sealed class MessagingReceiver
 {
-    public class MessagingReceiver : BackgroundService
+    private readonly ServiceBusClient _client;
+    private ServiceBusProcessor? _success;
+    private ServiceBusProcessor? _failed;
+
+    public MessagingReceiver(ServiceBusClient client)
     {
-        private readonly ServiceBusClient _client;
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly IEnumerable<IQueueHandlerRegistration> _registrations;
-        private readonly List<ServiceBusProcessor> _processors = new();
+        _client = client;
+    }
 
+    public async Task StartAsync(CancellationToken ct)
+    {
+        _success = _client.CreateProcessor(
+            ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
+            "messaging-observability");
 
-        public MessagingReceiver(ServiceBusClient client, IServiceScopeFactory scopeFactory, IEnumerable<IQueueHandlerRegistration> registrations)
+        _failed = _client.CreateProcessor(
+            ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
+            "messaging-observability");
+
+        _success.ProcessMessageAsync += HandleSuccessAsync;
+        _success.ProcessErrorAsync += HandleErrorAsync;
+
+        _failed.ProcessMessageAsync += HandleFailedAsync;
+        _failed.ProcessErrorAsync += HandleErrorAsync;
+
+        await _success.StartProcessingAsync(ct);
+        await _failed.StartProcessingAsync(ct);
+    }
+
+    public async Task StopAsync(CancellationToken ct)
+    {
+        if (_success != null)
         {
-            _client = client;
-            _scopeFactory = scopeFactory;
-            _registrations = registrations;
+            await _success.StopProcessingAsync(ct);
+            await _success.DisposeAsync();
         }
 
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        if (_failed != null)
         {
-            foreach (var reg in _registrations)
-            {
-                var processor = _client.CreateProcessor(reg.QueueName, new ServiceBusProcessorOptions
-                {
-                    AutoCompleteMessages = false,
-                    MaxConcurrentCalls = 1
-                });
-
-
-                processor.ProcessMessageAsync += async args =>
-                {
-                    using var scope = _scopeFactory.CreateScope();
-                    var handler = (IServiceBusMessageHandler)scope.ServiceProvider.GetRequiredService(reg.HandlerType);
-
-
-                    try
-                    {
-                        var result = await handler.HandleAsync(args.Message);
-
-
-                        if (!string.IsNullOrWhiteSpace(args.Message.ReplyTo) && result != null)
-                        {
-                            var sender = _client.CreateSender(args.Message.ReplyTo);
-                            var response = new ServiceBusMessage(BinaryData.FromObjectAsJson(result))
-                            {
-                                CorrelationId = args.Message.CorrelationId
-                            };
-
-
-                            await sender.SendMessageAsync(response);
-                        }
-
-
-                        await args.CompleteMessageAsync(args.Message);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Handler error for queue '{reg.QueueName}': {ex}");
-                        // optionally dead-letter
-                        await args.DeadLetterMessageAsync(args.Message, ex.Message);
-                    }
-                };
-
-
-                processor.ProcessErrorAsync += args =>
-                {
-                    Console.WriteLine($"Processor error for queue '{reg.QueueName}': {args.Exception}");
-                    return Task.CompletedTask;
-                };
-
-
-                await processor.StartProcessingAsync(stoppingToken);
-                _processors.Add(processor);
-
-
-                Console.WriteLine($"Started processor for queue: {reg.QueueName}");
-            }
+            await _failed.StopProcessingAsync(ct);
+            await _failed.DisposeAsync();
         }
+    }
 
-        public override async Task StopAsync(CancellationToken cancellationToken)
-        {
-            foreach (var p in _processors)
-            {
-                await p.StopProcessingAsync(cancellationToken);
-                await p.DisposeAsync();
-            }
-        }
+    // ----------------------------
+    // MESSAGE HANDLERS
+    // ----------------------------
+
+    private async Task HandleSuccessAsync(ProcessMessageEventArgs args)
+    {
+        var evt = args.Message.Body
+            .ToObjectFromJson<MessagingDispatchedEvent>();
+
+        Console.WriteLine(
+            $"[MESSAGING][SUCCESS] Type={evt?.Type} User={evt?.UserEmail}");
+
+        await args.CompleteMessageAsync(args.Message);
+    }
+
+    private async Task HandleFailedAsync(ProcessMessageEventArgs args)
+    {
+        var evt = args.Message.Body
+            .ToObjectFromJson<MessagingDispatchFailedEvent>();
+
+        Console.WriteLine(
+            $"[MESSAGING][FAILED] Type={evt?.Type} User={evt?.UserEmail} Reason={evt?.Reason}");
+
+        await args.CompleteMessageAsync(args.Message);
+    }
+
+    // ----------------------------
+    // ERROR HANDLER
+    // ----------------------------
+
+    private Task HandleErrorAsync(ProcessErrorEventArgs args)
+    {
+        Console.WriteLine(
+            $"[MESSAGING][ERROR] " +
+            $"Entity={args.EntityPath} " +
+            $"ErrorSource={args.ErrorSource} " +
+            $"Exception={args.Exception}");
+
+        return Task.CompletedTask;
     }
 }

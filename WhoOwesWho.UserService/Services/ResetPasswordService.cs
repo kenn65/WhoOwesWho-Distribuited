@@ -1,7 +1,7 @@
 ﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
+using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
@@ -15,8 +15,8 @@ namespace WhoOwesWho.UserService.Services
         IConfiguration configuration,
         IDataQueryService dataSelectionService,
         IDataMutationService dataModificationService,
-        IProtectValueMessageSender protectValueEventService)
-        : ServiceBase(configuration), IResetPasswordService
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ServiceBase(configuration), IResetPasswordService
     {
         public async Task<UserModel?> ResetPasswordAsync(ResetPasswordRequestModel request)
         {
@@ -30,11 +30,7 @@ namespace WhoOwesWho.UserService.Services
                 };
             }
 
-            var protectedPassword = await protectValueEventService.SendAsync(new ProtectValueRequestModel
-            {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                Text = request.NewPassword!
-            });
+            var protectedPassword = await encryptionGatewayService.ProtectAsync(request.NewPassword!, true);
                         
             user.Password = protectedPassword;
 
@@ -54,12 +50,7 @@ namespace WhoOwesWho.UserService.Services
         {
             try
             {
-                emailAddress = await protectValueEventService.SendAsync(new ProtectValueRequestModel
-                {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey,
-                    Text = emailAddress
-                });
-
+                emailAddress = await encryptionGatewayService.ProtectAsync(emailAddress, true);
                 var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(emailAddress, true);
                 var response = await dataSelectionService.GetForgotPasswordTokenAsync(user!.Id);
 

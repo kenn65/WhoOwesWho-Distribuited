@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Encryption;
+using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.AuthorizationService.Controllers
@@ -10,12 +9,11 @@ namespace WhoOwesWho.AuthorizationService.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class AuthorizationController(
-        IConfiguration configuration,
         IAuthorizationService authorizationService, 
         IAuthenticationService authenticationService, 
         IValidationService validationService, 
-        IUnprotectValueMessageSender unprotectMessageSender
-         ) : ControllerBase
+        IEncryptionGatewayService encryptionGatewayService
+        ) : ControllerBase
     {
         [HttpPost]
         [Route("authenticate")]
@@ -25,12 +23,8 @@ namespace WhoOwesWho.AuthorizationService.Controllers
             
             try
             {
-                request.Password = await unprotectMessageSender.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = configuration["EncryptionMicroService:Security:ApiKey"]!,
-                    Text = request.Password!
-                });
-                
+                request.Password = await encryptionGatewayService.UnprotectAsync(request.Password!, false);
+
                 if (string.IsNullOrWhiteSpace(request.EmailAddress) || string.IsNullOrWhiteSpace(request.Password))
                 {
                     actionResult.Message = "E-mail address or password was not provided";

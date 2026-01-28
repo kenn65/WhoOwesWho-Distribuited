@@ -2,9 +2,8 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.OpenApi.Models;
 using WhoOwesWho.AuthorizationService.Middleware;
 using WhoOwesWho.AuthorizationService.Services;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Encryption;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Messaging;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.User;
+using WhoOwesWho.AuthorizationService.Services.Gateways;
+using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,14 +16,12 @@ builder.Services.AddSingleton(provider =>
     return new ServiceBusClient(connectionString);
 });
 
-builder.Services.AddSingleton<IProtectCookiesMessageSender, ProtectCookiesMessageSender>();
-builder.Services.AddSingleton<IUnprotectValueMessageSender, UnprotectValueMessageSender>();
-builder.Services.AddSingleton<IAuthenticationMessageSender, AuthenticationMessageSender>();
-builder.Services.AddSingleton<IUserMessageSender, UserMessageSender>();
-
+builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IValidationService, ValidationService>();
+builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

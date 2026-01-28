@@ -1,13 +1,12 @@
+using Azure.Core;
 using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus.Administration;
 using Microsoft.OpenApi.Models;
 using WhoOwesWho.MessagingService.Middleware;
 using WhoOwesWho.MessagingService.Services;
-using WhoOwesWho.MessagingService.Services.ServiceBus.Handlers;
+using WhoOwesWho.MessagingService.Services.Gateways;
+using WhoOwesWho.MessagingService.Services.ServiceBus;
 using WhoOwesWho.MessagingService.Services.ServiceBus.Handling;
-using WhoOwesWho.MessagingService.Services.ServiceBus.Receivers;
-using WhoOwesWho.Models.Models.Base.ServiceBus;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Encryption;
-using static WhoOwesWho.Models.Models.Base.Queues;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,22 +19,16 @@ builder.Services.AddSingleton(provider =>
     return new ServiceBusClient(connectionString);
 });
 
-builder.Services.AddSingleton<IProtectValueMessageSender, ProtectValueMessageSender>();
-
-builder.Services.AddScoped<IMessageResolverService, MessageResolverService>();
-
-builder.Services.AddScoped<AuthenticationValidationHandler>();
-builder.Services.AddScoped<ForgotPasswordHandler>();
-builder.Services.AddScoped<SignUpHandler>();
-
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<AuthenticationValidationHandler>(MessagingQueues.AuthenticationValidateRequest));
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<ForgotPasswordHandler>(MessagingQueues.ForgotPasswordRequest));
-builder.Services.AddSingleton<IQueueHandlerRegistration>(new QueueHandlerRegistration<SignUpHandler>(MessagingQueues.SignUpRequest));
-
-builder.Services.AddHostedService<MessagingReceiver>();
+builder.Services.AddSingleton<MessagingReceiver>();
+builder.Services.AddHostedService<MessagingStartupService>();
 
 builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddScoped<IMessageResolverService, MessageResolverService>();
+
+
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

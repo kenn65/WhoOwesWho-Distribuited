@@ -1,34 +1,32 @@
-﻿using System.Data;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
+using System.Data;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services.Base;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.Encryption;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.User;
+using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.EventService.Services
 {
     public interface IDataQueryService
     {
-        Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true);
+        Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true);
 
-        Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
+        Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true);
 
-        Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true);
 
-        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, 
-            bool active = true);
+        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true);
 
-        Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, bool active = true);
+        Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active = true);
     }
 
     public class DataQueryService(
         IConfiguration configuration,
-        IProtectValueMessageSender protectValueMessageSender, 
-        IUnprotectValueMessageSender unprotectValueMessageSender, 
-        IEventUserMessageSender eventUserEventService) : ServiceBase(configuration), IDataQueryService
+        IEncryptionGatewayService encryptionGatewayService,
+        IUserGatewayService userGatewayService
+        ) : ServiceBase(configuration), IDataQueryService
     {
-        public async Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true)
+        public async Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true)
         {
 
             EventResponseModel? response = null;
@@ -45,7 +43,7 @@ namespace WhoOwesWho.EventService.Services
                         connection);
                     command.Parameters.AddWithValue("@id", id);
                     var reader = await command.ExecuteReaderAsync();
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         response = new EventResponseModel
                         {
@@ -67,21 +65,11 @@ namespace WhoOwesWho.EventService.Services
                         connection);
                     command.Parameters.AddWithValue("@eventId", response?.Id);
                     reader = await command.ExecuteReaderAsync();
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
-                        var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                        {
-                            ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                            Text = reader.GetGuid(0).ToString()
-                        });
+                        var protectedUserId = await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString());
+                        var user = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true);
 
-                        var user = await eventUserEventService.SendAsync(new UserRequestModel
-                        {
-                            ApiKey = AppSettings.UserMicroServiceApiKey!,
-                            IdOrEmailAddress = protectedUserId,
-                            IncludePassword = true
-                        });
-                                                
                         users.Add(user);
                     }
 
@@ -98,14 +86,9 @@ namespace WhoOwesWho.EventService.Services
             return await Task.FromResult(response);
         }
 
-        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true)
+        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true)
         {
-            var unprotectedUserId = Guid.Parse(await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel
-            {
-                ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                Text = userId
-            }));
-            
+            var unprotectedUserId = Guid.Parse(await encryptionGatewayService.UnprotectAsync(userId));
             EventResponseModel eventResponseModel = null!;
             var users = new List<UserModel>();
             var settled = active ? 0 : 1;
@@ -117,7 +100,7 @@ namespace WhoOwesWho.EventService.Services
                     connection);
                 command.Parameters.AddWithValue("@userId", unprotectedUserId);
                 var reader = await command.ExecuteReaderAsync();
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
 
                     eventResponseModel = new EventResponseModel
@@ -132,12 +115,7 @@ namespace WhoOwesWho.EventService.Services
                         Settled = reader.GetBoolean(7),
                     };
 
-                    var user = await eventUserEventService.SendAsync(new UserRequestModel
-                    {
-                        ApiKey = AppSettings.UserMicroServiceApiKey!,
-                        IdOrEmailAddress = userId,
-                        IncludePassword = false
-                    });
+                    var user = await userGatewayService.GetAuthorizedUserAsync(userId, token, false);
                     users.Add(user);
                 }
 
@@ -154,7 +132,7 @@ namespace WhoOwesWho.EventService.Services
             return await Task.FromResult(eventResponseModel);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true)
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true)
         {
             var response = new List<EventResponseModel>();
 
@@ -168,7 +146,7 @@ namespace WhoOwesWho.EventService.Services
                         $"SELECT * FROM [WoW.Events].[dbo].[WoW.Event] WHERE Settled = {settled}",
                         connection);
                     var reader = await command.ExecuteReaderAsync();
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         var model = new EventResponseModel()
                         {
@@ -194,20 +172,10 @@ namespace WhoOwesWho.EventService.Services
                             connection);
                         command.Parameters.AddWithValue("@eventId", item.Id);
                         reader = await command.ExecuteReaderAsync();
-                        while (reader.Read())
+                        while (await reader.ReadAsync())
                         {
-                            var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                            {
-                                ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                                Text = reader.GetGuid(0).ToString()
-                            });
-
-                            var user = await eventUserEventService.SendAsync(new UserRequestModel
-                            {
-                                ApiKey = AppSettings.UserMicroServiceApiKey!,
-                                IdOrEmailAddress = protectedUserId, 
-                                IncludePassword = true 
-                            });
+                            var protectedUserId = await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString());
+                            var user = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true, true);
                             users.Add(user);
                         }
                         
@@ -226,18 +194,14 @@ namespace WhoOwesWho.EventService.Services
             }
         }
 
-        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true)
+        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true)
         {
             EventAssignmentModel? response = null;
             try
             {
                 var settled = active ? 0 : 1;
-                var userId = Guid.Parse(await unprotectValueMessageSender.SendAsync(new UnprotectValueRequestModel
-                {
-                    ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                    Text = protectedUserId
-                }));
-                                
+                var userId = Guid.Parse(await encryptionGatewayService.UnprotectAsync(protectedUserId));
+
                 await using var connection = new SqlConnection(AppSettings.DatabaseConnectionString);
                 connection.Open();
                 var command = new SqlCommand(
@@ -246,19 +210,13 @@ namespace WhoOwesWho.EventService.Services
                 command.Parameters.AddWithValue("@userId", userId.ToString());
 
                 var reader = await command.ExecuteReaderAsync();
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
-                    var user = await eventUserEventService.SendAsync(new UserRequestModel
-                    {
-                        ApiKey = AppSettings.UserMicroServiceApiKey!,
-                        IdOrEmailAddress = protectedUserId,
-                        IncludePassword = false
-                    });
-                    
                     response = new EventAssignmentModel
                     {
                         EventId = reader.GetGuid(0),
-                        User = user
+                        User = await userGatewayService.GetAuthorizedUserAsync(
+                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString()), token, false)
                     };
                 }
 
@@ -272,7 +230,7 @@ namespace WhoOwesWho.EventService.Services
             }
         }
 
-        public async Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, bool active = true)
+        public async Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active = true)
         {
             try
             {
@@ -286,21 +244,10 @@ namespace WhoOwesWho.EventService.Services
                 command.Parameters.AddWithValue("@eventId", Guid.Parse(eventId));
                 command.CommandType = CommandType.Text;
                 var reader = await command.ExecuteReaderAsync();
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
-                    var protectedUserId = await protectValueMessageSender.SendAsync(new ProtectValueRequestModel
-                    {
-                        ApiKey = AppSettings.EncryptionMicroServiceApiKey!,
-                        Text = reader.GetGuid(0).ToString()
-                    });
-
-                    var user = await eventUserEventService.SendAsync(new UserRequestModel 
-                    { 
-                        ApiKey = AppSettings.UserMicroServiceApiKey!,
-                        IdOrEmailAddress = protectedUserId, 
-                        IncludePassword = false 
-                    }); 
-                    userModels.Add(user);
+                    var protectedUserId = await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString());
+                    userModels.Add(await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true, false));
                 }
 
                 await reader.CloseAsync();

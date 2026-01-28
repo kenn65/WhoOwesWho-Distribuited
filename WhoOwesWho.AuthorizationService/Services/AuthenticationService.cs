@@ -1,7 +1,7 @@
 ﻿using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.Messaging;
-using WhoOwesWho.AuthorizationService.Services.ServiveBus.Senders.User;
+using WhoOwesWho.AuthorizationService.Services.Gateways;
+using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
 using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
@@ -12,23 +12,18 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
     public class AuthenticationService(
         IConfiguration configuration, 
-        IUserMessageSender userMessageSender, 
-        IAuthenticationMessageSender authenticationMessageSender) : ServiceBase(configuration), IAuthenticationService
+        IUserGatewayService userGatewayService, 
+        IMessagingPublisher messagingPublisher 
+        ) : ServiceBase(configuration), IAuthenticationService
     {
         public async Task<string> SendAuthenticationMessage(AuthenticationRequestModel request)
         {
-            var user = await userMessageSender.SendAsync(new UserRequestModel
-            {
-                ApiKey = AppSettings.UserMicroServiceApiKey,
-                IdOrEmailAddress = request.EmailAddress!,
-                IncludePassword = false
-            });
-                       
+            var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
             if (user == null)
             {
                 throw new ArgumentException($"User with e-mail address: {request.EmailAddress} was not found");
             }
-            
+                        
             try
             {
                 var messagingRequest = new MessagingRequestModel
@@ -40,13 +35,7 @@ namespace WhoOwesWho.AuthorizationService.Services
                     Code = await CreateRandomAuthenticationCode()
                 };
 
-                var result = await authenticationMessageSender.SendAsync(messagingRequest);
-                
-                if (result == false)
-                {
-                    throw new Exception("Failed to send authentication message");
-                }
-               
+                await messagingPublisher.DispatchAsync(messagingRequest);
                 return await Task.FromResult(messagingRequest.Code);
             }
             catch (Exception e)

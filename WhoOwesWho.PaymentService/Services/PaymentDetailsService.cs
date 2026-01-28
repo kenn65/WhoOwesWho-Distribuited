@@ -1,15 +1,10 @@
-﻿using WhoOwesWho.EventService.Models;
-using WhoOwesWho.Models.Models;
-using WhoOwesWho.Models.Models.Base.ServiceBus.RequestModels.Base;
+﻿using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services.Base;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Currency;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Event;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Event;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Services
 {
-
     public interface IPaymentDetailsService
     {
         Task<PaymentDetailsPageResponseModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request);
@@ -22,34 +17,17 @@ namespace WhoOwesWho.PaymentService.Services
         IConfiguration configuration,
         IDataQueryService dataSelectionService,
         IDataMutationService dataModificationService,
-        IPaymentEventMessageSender paymentEventMessageSender,
-        IPaymenEventUsersMessageSender paymenEventUsersMessageSender,
-        IPaymentCurrenciesMessageSender paymentCurrenciesMessageSender,
-        IPaymentExchangeRateMessageSender paymentExchangeRateMessageSender) : ServiceBase(configuration), IPaymentDetailsService
+        IEventGatewayService eventGatewayService,
+        ICurrencyGatewayService currencyGatewayService
+        ) : ServiceBase(configuration), IPaymentDetailsService
     {
         public async Task<PaymentDetailsPageResponseModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request)
         {
             var paymentDetails = await dataSelectionService.GetPaymentDetailsAsync(request);
+            var activeEvent = await eventGatewayService.GetEventAsync(paymentDetails.EventId!, request.Token!, true, true);
+            activeEvent.Users = await eventGatewayService.GetEventUsersAsync(activeEvent.Id.ToString(), request.Token!, true, true);
+            var currencies = await currencyGatewayService.GetCurrenciesAsync(request.Token!);
 
-            var activeEvent = await paymentEventMessageSender.SendAsync(new SbEventRequestModel
-            {
-                ApiKey = AppSettings.EventMicroServiceApiKey!,
-                UserOrEventId = paymentDetails.EventId!,
-                Active = true
-            });
-
-            activeEvent.Users = await paymenEventUsersMessageSender.SendAsync(new SbEventRequestModel
-            {
-                ApiKey = AppSettings.EventMicroServiceApiKey!,
-                UserOrEventId = activeEvent.Id.ToString(),
-                Active = true
-            });
-            
-            var currencies = await paymentCurrenciesMessageSender.SendAsync(new RequestModelBase
-            {
-                ApiKey = AppSettings.CurrencyMicroServiceApiKey!
-            });
-            
             return await Task.FromResult(new PaymentDetailsPageResponseModel()
             {
                 PaymentDetails = paymentDetails,
@@ -61,26 +39,10 @@ namespace WhoOwesWho.PaymentService.Services
         public async Task<PaymentDetailsPageResponseModel> GetSettlementDetailsAsync(SettlementDetailsRequestModel request)
         {
             var paymentDetails = await dataSelectionService.GetPaymentDetailsAsync(request);
+            var activeEvent = await eventGatewayService.GetEventAsync(paymentDetails.EventId!, request.Token!, true, false);
+            activeEvent.Users = await eventGatewayService.GetEventUsersAsync(activeEvent.Id.ToString(), request.Token!, true, false);
+            var currencies = await currencyGatewayService.GetCurrenciesAsync(request.Token!);
 
-            var activeEvent = await paymentEventMessageSender.SendAsync(new SbEventRequestModel
-            {
-                ApiKey = AppSettings.EventMicroServiceApiKey!,
-                UserOrEventId = paymentDetails.EventId!,
-                Active = false
-            });
-
-            activeEvent.Users = await paymenEventUsersMessageSender.SendAsync(new SbEventRequestModel
-            {
-                ApiKey = AppSettings.EventMicroServiceApiKey!,
-                UserOrEventId = activeEvent.Id.ToString(),
-                Active = false
-            });
-            
-            var currencies = await paymentCurrenciesMessageSender.SendAsync(new RequestModelBase
-            {
-                ApiKey = AppSettings.CurrencyMicroServiceApiKey!
-            });
-            
             return await Task.FromResult(new PaymentDetailsPageResponseModel()
             {
                 PaymentDetails = paymentDetails,
@@ -147,20 +109,9 @@ namespace WhoOwesWho.PaymentService.Services
 
         private async Task<CalculateAmountResponseModel> CalculateAmount(UpdatePaymentRequestModel request)
         {
-            var activeEventResponse = await paymentEventMessageSender.SendAsync(new SbEventRequestModel
-            {
-                ApiKey = AppSettings.EventMicroServiceApiKey!,
-                UserOrEventId = request.EventId!,
-                Active = true
-            });
-
-            var exchangeRateResponse = await paymentExchangeRateMessageSender.SendAsync(new ExchangeRateRequestModel
-            {
-                ApiKey = AppSettings.CurrencyMicroServiceApiKey!,
-                PaymentCurrencyIso = request.OriginalCurrency!,
-                EventCurrencyIso = activeEventResponse.Currency!
-            });
-
+            var activeEventResponse = await eventGatewayService.GetEventAsync(request.EventId!, request.Token!, true, true);
+            var exchangeRateResponse = await currencyGatewayService.GetExchangeRateAsync(request.OriginalCurrency!,
+                activeEventResponse.Currency!, request.Token!);
             var usersCount = request.UserIds!.Count();
             var totalAmount = request.OriginalAmount * exchangeRateResponse.ExchangeRate;
             return await Task.FromResult(new CalculateAmountResponseModel

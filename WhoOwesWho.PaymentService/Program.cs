@@ -1,41 +1,26 @@
-using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using WhoOwesWho.EventService.Services.ServiceBus.Senders.User;
+using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.PaymentService.Middleware;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Currency;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Encryption;
-using WhoOwesWho.PaymentService.Services.ServiceBus.Senders.Event;
-using WhoOwesWho.UserService.Services.ServiceBus.Senders.Event;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
 // Add services to the container.
-builder.Services.AddSingleton(provider =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("sbemulatorns");
-    return new ServiceBusClient(connectionString);
-});
-
-builder.Services.AddSingleton<IPaymentCurrenciesMessageSender, PaymentCurrenciesMessageSender>();
-builder.Services.AddSingleton<IPaymentExchangeRateMessageSender, PaymentExchangeRateMessageSender> ();
-builder.Services.AddSingleton<IProtectValueMessageSender, ProtectValueMessageSender>();
-builder.Services.AddSingleton<IUnprotectValueMessageSender, UnprotectValueMessageSender>();
-builder.Services.AddSingleton<IPaymenEventUsersMessageSender, PaymenEventUsersMessageSender>();
-builder.Services.AddSingleton<IPaymentEventMessageSender, PaymentEventMessageSender>();
-builder.Services.AddSingleton<IPaymentUserEventMessageSender, PaymentUserEventMessageSender>();
-builder.Services.AddSingleton<IPaymentUserMessageSender, PaymentUserMessageSender>();
-
 builder.Services.AddScoped<IUserBalanceService, UserBalanceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPaymentDetailsService, PaymentDetailsService>();
 builder.Services.AddScoped<IDataQueryService, DataQueryService>();
 builder.Services.AddScoped<IDataMutationService, DataMutationService>();
+builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
+builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
+builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddTransient<IEventGatewayService, EventGatewayService>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

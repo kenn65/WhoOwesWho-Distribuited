@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.Models.Models.Base.ServiceBus.RequestModels.Base;
+﻿using WhoOwesWho.Models.Models.Base.ServiceBus;
 
 namespace WhoOwesWho.Models.Models
 {
