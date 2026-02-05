@@ -20,7 +20,7 @@ namespace WhoOwesWho.UserService.Services
     {
         public async Task<UserModel?> ResetPasswordAsync(ResetPasswordRequestModel request)
         {
-            var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(request.EmailAddress);
+            var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
             if (user == null)
             {
                 return new UserModel
@@ -30,9 +30,9 @@ namespace WhoOwesWho.UserService.Services
                 };
             }
 
-            var protectedPassword = await encryptionGatewayService.ProtectAsync(request.NewPassword!, true);
-                        
-            user.Password = protectedPassword;
+            //var protectedPassword = await encryptionGatewayService.ProtectAsync(Uri.EscapeDataString(request.NewPassword!), true);
+
+            user.Password = request.NewPassword;
 
             var response = await dataModificationService.UpdateUserAsync(user);
             if (response == null)
@@ -50,7 +50,7 @@ namespace WhoOwesWho.UserService.Services
         {
             try
             {
-                emailAddress = await encryptionGatewayService.ProtectAsync(emailAddress, true);
+                emailAddress = await encryptionGatewayService.UnprotectAsync(emailAddress, true);
                 var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(emailAddress, true);
                 var response = await dataSelectionService.GetForgotPasswordTokenAsync(user!.Id);
 

@@ -86,7 +86,7 @@ namespace WhoOwesWho.PaymentService.Services
                     if (reader.GetBoolean(9))
                     {
                         var protectedUserId =
-                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(9).ToString());
+                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(8).ToString());
 
                         userPaymentModels.Add(new UserPaymentModel
                         {

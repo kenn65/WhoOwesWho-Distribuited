@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.CurrencyService.Services;
 
 namespace WhoOwesWho.CurrencyService.Controllers
@@ -11,7 +10,6 @@ namespace WhoOwesWho.CurrencyService.Controllers
     public class CurrencyController(ICurrencyService currencyService) : ControllerBase
     {
         [HttpGet]
-        [Route("all/get")]
         [Authorize]
         public async Task<IActionResult> Get()
         {
@@ -26,7 +24,7 @@ namespace WhoOwesWho.CurrencyService.Controllers
         }
 
         [HttpGet]
-        [Route("single/get")]
+        [Route("{iso}")]
         [Authorize]
         public async Task<IActionResult> GetCurrencyAsync(string iso)
         {
@@ -41,9 +39,9 @@ namespace WhoOwesWho.CurrencyService.Controllers
         }
 
         [HttpGet]
-        [Route("exchange/rate")]
+        [Route("{paymentCurrencyIso}/{eventCurrencyIso}")]
         [Authorize]
-        public async Task<IActionResult> GetExchangeRate([Required] string paymentCurrencyIso, [Required] string eventCurrencyIso)
+        public async Task<IActionResult> GetExchangeRate(string paymentCurrencyIso, string eventCurrencyIso)
         {
             try
             {

@@ -14,19 +14,21 @@ namespace WhoOwesWho.PaymentService.Services.Gateways
     {
         public async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync(string token)
         {
-            return await Get<IEnumerable<CurrencyResponseModel>>($"{AppSettings.CurrencyMicroServiceBaseAddress}/all/get", AppSettings.CurrencyMicroServiceApiKey!, false, new Dictionary<string, dynamic>(), token);
+            return await Get<IEnumerable<CurrencyResponseModel>>(
+                $"{AppSettings.CurrencyMicroServiceBaseAddress}", 
+                AppSettings.CurrencyMicroServiceApiKey!, 
+                false, 
+                parameters: null, 
+                token);
         }
 
         public async Task<string> GetCurrencySymbolAsync(string currencyIso, string token)
         {
             return (await Get<CurrencyResponseModel>(
-                $"{AppSettings.CurrencyMicroServiceBaseAddress}/single/get",
+                $"{AppSettings.CurrencyMicroServiceBaseAddress}/{currencyIso}",
                 AppSettings.CurrencyMicroServiceApiKey!,
                 false,
-                new Dictionary<string, dynamic>
-                {
-                    { "iso", currencyIso }
-                },
+                parameters: null,
                 token
             )).Symbol!;
         }
@@ -34,14 +36,10 @@ namespace WhoOwesWho.PaymentService.Services.Gateways
         public async Task<ExchangeRateResponseModel> GetExchangeRateAsync(string paymentCurrencyIso, string eventCurrencyIso, string token)
         {
             return (await Get<ExchangeRateResponseModel>(
-                $"{AppSettings.CurrencyMicroServiceBaseAddress}/exchange/rate",
+                $"{AppSettings.CurrencyMicroServiceBaseAddress}/{paymentCurrencyIso}/{eventCurrencyIso}",
                 AppSettings.CurrencyMicroServiceApiKey!,
                 false,
-                new Dictionary<string, dynamic>
-                {
-                    { "paymentCurrencyIso", paymentCurrencyIso },
-                    { "eventCurrencyIso", eventCurrencyIso}
-                },
+                parameters: null,
                 token
             ));
         }

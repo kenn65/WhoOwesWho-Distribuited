@@ -16,20 +16,15 @@ namespace WhoOwesWho.UserService.Services
     }
 
     public class DataMutationService(
-        IConfiguration configuration,
-        IMessagingPublisher messagingPublisher,
-        IEncryptionGatewayService encryptionGatewayService
+        IConfiguration configuration
         ) : ServiceBase(configuration), IDataMutationService
     {
         public async Task<UserModel?> CreateUserAsync(UserModel entity, string host)
         {
-            await SendAccountConfirmationMessage(entity, host);
-
+            
             entity.Id = Guid.NewGuid();
             try
             {
-
-                entity.Password = await encryptionGatewayService.ProtectAsync(entity.Password!, true);
 
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
@@ -144,28 +139,6 @@ namespace WhoOwesWho.UserService.Services
             {
                 return await Task.FromResult(false);
             }
-        }
-
-        private async Task SendAccountConfirmationMessage(UserModel entity, string host)
-        {
-            try
-            {
-                var request = new MessagingRequestModel
-                {
-                    ApiKey = AppSettings.MessagingMicroServiceApiKey,
-                    Host = host,
-                    Type = "SignUp",
-                    User = entity
-                };
-
-                await messagingPublisher.DispatchAsync(request);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"An error occurred while sending the account confirmation message: {e.Message}",
-                    e);
-            }
-
         }
     }
 }

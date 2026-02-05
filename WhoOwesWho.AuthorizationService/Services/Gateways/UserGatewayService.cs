@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.AuthorizationService.Services.Base;
+﻿using System.Web;
+using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services.Gateways
@@ -17,7 +18,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Gateways
                 encode,
                 new Dictionary<string, dynamic>
                 {
-                   { "complete", complete }
+                   { "complete", complete.ToString().ToLowerInvariant() }
                 });
         }
     }

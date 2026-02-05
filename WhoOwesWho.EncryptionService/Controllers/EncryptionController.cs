@@ -11,8 +11,8 @@ namespace WhoOwesWho.EncryptionService.Controllers
         : ControllerBase
     {
         [HttpGet]
-        [Route("protect")]
-        public async Task<IActionResult> Protect([FromQuery] string text)
+        [Route("protect/{text}")]
+        public async Task<IActionResult> Protect(string text)
         {
             try
             {
@@ -25,8 +25,8 @@ namespace WhoOwesWho.EncryptionService.Controllers
         }
 
         [HttpGet]
-        [Route("unprotect")]
-        public async Task<IActionResult> Unprotect([FromQuery] string text)
+        [Route("unprotect/{text}")]
+        public async Task<IActionResult> Unprotect(string text)
         {
             try
             {

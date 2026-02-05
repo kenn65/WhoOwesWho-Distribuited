@@ -20,7 +20,7 @@ namespace WhoOwesWho.EventService.Services
 
     public class DataMutationService(
         IConfiguration configuration,
-        IDataQueryService dataSelectionService,
+        IDataQueryService dataQueryService,
         IEncryptionGatewayService encryptionGatewayService,
         IUserGatewayService userGatewayService,
         ICurrencyGatewayService currencyGatewayService
@@ -74,7 +74,7 @@ namespace WhoOwesWho.EventService.Services
                     });
                 }
 
-                var response = await dataSelectionService.GetEventAsync(request.Id, request.Token!, true);
+                var response = await dataQueryService.GetEventAsync(request.Id, request.Token!, true);
 
                 response!.Success = true;
                 response.Message = "The event was successfully created.";
@@ -116,7 +116,7 @@ namespace WhoOwesWho.EventService.Services
                 }
 
                 response.Success = true;
-                response.Message = "Event was successfully updated.";
+                response.Message = "The event was successfully updated.";
 
             }
             catch (Exception)
@@ -181,9 +181,10 @@ namespace WhoOwesWho.EventService.Services
                     await command.ExecuteNonQueryAsync();
                     connection.Close();
                 }
+                var thisEvent = await dataQueryService.GetEventAsync(Guid.Parse(request.EventId!), request.Token!, true);
 
                 response.Success = true;
-                response.Message = "Successfully assigned user to event.";
+                response.Message = $"You successfully assigned to event: {thisEvent?.Name} ({thisEvent?.Location}).";
             }
             catch (Exception)
             {
@@ -213,9 +214,9 @@ namespace WhoOwesWho.EventService.Services
                     await command.ExecuteNonQueryAsync();
                     connection.Close();
                 }
-
+                var thisEvent = await dataQueryService.GetEventAsync(Guid.Parse(request.EventId!), request.Token!, true);
                 response.Success = true;
-                response.Message = "Successfully removed event user assignment.";
+                response.Message = $"You successfully unassigned from event: {thisEvent?.Name} ({thisEvent?.Location}).";
             }
             catch (Exception)
             {

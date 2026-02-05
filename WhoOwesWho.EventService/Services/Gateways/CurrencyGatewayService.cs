@@ -13,13 +13,10 @@ namespace WhoOwesWho.EventService.Services.Gateways
         public async Task<string> GetCurrencySymbolAsync(string currencyIso, string token)
         {
             return (await Get<CurrencyResponseModel>(
-                $"{AppSettings.CurrencyMicroServiceBaseAddress}/single/get",
+                $"{AppSettings.CurrencyMicroServiceBaseAddress}/{currencyIso}",
                 AppSettings.CurrencyMicroServiceApiKey!,
                 false,
-                new Dictionary<string, dynamic>
-                {
-                    { "iso", currencyIso }
-                },
+                parameters: null,
                 token
             )).Symbol!;
         }

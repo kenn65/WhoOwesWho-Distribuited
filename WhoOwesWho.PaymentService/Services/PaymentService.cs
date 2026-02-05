@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.EventService.Models;
+using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
@@ -115,8 +116,9 @@ namespace WhoOwesWho.PaymentService.Services
                 };
                 return await Task.FromResult(response);
             }
-            catch
+            catch (Exception e)
             {
+                var test = e.Message;
                 return await Task.FromResult(new PaymentPageResponseModel
                 {
                     Success = false,

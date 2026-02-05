@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.EventService.Models;
 using WhoOwesWho.Models.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Models
@@ -7,7 +6,7 @@ namespace WhoOwesWho.PaymentService.Models
     public class PaymentPageResponseModel : ModelBase
     {
         [JsonProperty("event")]
-        public EventResponseModel? Event { get; set; }
+        public EventModel? Event { get; set; }
 
         [JsonProperty("payments")]
         public IEnumerable<UserPaymentModel>? Payments { get; set; }

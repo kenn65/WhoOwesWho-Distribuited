@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using Flurl.Http;
 using Microsoft.OpenApi.Models;
 using WhoOwesWho.AuthorizationService.Middleware;
 using WhoOwesWho.AuthorizationService.Services;
@@ -24,6 +25,7 @@ builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>(
 builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
 
 builder.Services.AddControllers();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();

@@ -11,8 +11,7 @@ namespace WhoOwesWho.UserService.Services
     public class ChangePasswordService(
         IConfiguration configuration,
         IDataMutationService dataModificationService,
-        IDataQueryService dataSelectionService,
-        IEncryptionGatewayService encryptionGatewayService
+        IDataQueryService dataSelectionService
         ) : ServiceBase(configuration), IChangePasswordService
     {
         public async Task<ChangePasswordResponseModel?> ChangePasswordAsync(ChangePasswordRequestModel request)
@@ -28,9 +27,7 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
 
-            var unprotectedExistingPassword = await encryptionGatewayService.UnprotectAsync(user.Password!, true);
-
-            if (unprotectedExistingPassword != request.Password)
+           if (user.Password != request.Password)
             {
                 return await Task.FromResult(new ChangePasswordResponseModel
                 {
@@ -39,17 +36,8 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
 
-            if (request.NewPassword1 != request.NewPassword2)
-            {
-                return await Task.FromResult(new ChangePasswordResponseModel
-                {
-                    Message = "The new passwords do not match.",
-                    Success = false
-                });
-            }
-
-
-            user.Password = await encryptionGatewayService.ProtectAsync(request.NewPassword1!, true);
+            user.Password = request.NewPassword1;
+            //user.Password = await encryptionGatewayService.ProtectAsync(request.NewPassword1!, true);
 
             var entity = await dataModificationService.UpdateUserAsync(user);
             if (entity != null)

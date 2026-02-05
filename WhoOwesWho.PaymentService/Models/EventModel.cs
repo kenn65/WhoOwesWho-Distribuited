@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.UserService.Auxiliaries;
+using WhoOwesWho.Models.Models.Extensions;
 
-namespace WhoOwesWho.UserService.Models
+namespace WhoOwesWho.PaymentService.Models
 {
     public class EventModel
     {

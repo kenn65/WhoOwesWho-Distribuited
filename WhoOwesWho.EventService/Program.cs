@@ -4,6 +4,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using WhoOwesWho.EventService.Middleware;
 using WhoOwesWho.EventService.Services;
+using WhoOwesWho.EventService.Services.Gateways;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,9 @@ builder.AddServiceDefaults();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IDataMutationService, DataMutationService>();
 builder.Services.AddScoped<IDataQueryService, DataQueryService>();
+builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
+builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
 
 
 
