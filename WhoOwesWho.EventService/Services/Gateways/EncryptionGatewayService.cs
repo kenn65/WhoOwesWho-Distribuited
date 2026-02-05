@@ -15,26 +15,22 @@ namespace WhoOwesWho.EventService.Services.Gateways
         public async Task<string> ProtectAsync(string text)
         {
             return (await Get<ProtectionResponseModel>(
-                $"{AppSettings.EncryptionMicroServiceBaseAddress}/protect",
+                $"{AppSettings.EncryptionMicroServiceBaseAddress}/protect/{text}",
                 AppSettings.EncryptionMicroServiceApiKey!,
-                true,
-                new Dictionary<string, dynamic>
-                {
-                    { "text", text }
-                }
+                false,
+                new Dictionary<string, dynamic>()
             )).ProtectedValue!;
         }
 
         public async Task<string> UnprotectAsync(string text)
         {
             return (await Get<ProtectionResponseModel>(
-                $"{AppSettings.EncryptionMicroServiceBaseAddress}/unprotect",
+                $"{AppSettings.EncryptionMicroServiceBaseAddress}/unprotect/{text}",
                 AppSettings.EncryptionMicroServiceApiKey!,
                 true,
-                new Dictionary<string, dynamic>
-                {
-                    { "text", text }
-                }
+                new Dictionary<string, dynamic>()
+                
+                
             )).UnprotectedValue!;
         }
     }

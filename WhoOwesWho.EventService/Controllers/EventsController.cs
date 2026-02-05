@@ -13,7 +13,8 @@ namespace WhoOwesWho.EventService.Controllers
         IDataQueryService dataSelectionService)
         : ControllerBase
     {
-        [HttpPost]
+        [HttpPut]
+        [Route("create")]
         [Authorize]
         public async Task<IActionResult> CreateEventAsync([FromBody] EventRequestModel request)
         {
@@ -29,8 +30,10 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
         [HttpGet]
+        [Route("{active}")]
         [Authorize]
-        public async Task<IActionResult> GetEventsAsync([FromQuery] bool active)
+
+        public async Task<IActionResult> GetEventsAsync(bool active)
         {
             try
             {
@@ -44,9 +47,9 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
 
-        [HttpGet("{eventId}")]
+        [HttpGet("{eventId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetEventAsync(string eventId, [FromQuery] bool active)
+        public async Task<IActionResult> GetEventAsync(string eventId, bool active)
         {
             try
             {
@@ -60,14 +63,14 @@ namespace WhoOwesWho.EventService.Controllers
         }
              
 
-        [HttpPatch("{eventId}")]
+        [HttpPatch]
+        [Route("update")]
         [Authorize]
-        public async Task<IActionResult> UpdateEventAsync(string eventId, [FromBody] EventRequestModel request)
+        public async Task<IActionResult> UpdateEventAsync([FromBody] EventRequestModel request)
         {
             try
             {
                 request.Token = HttpContext.ToTokenValue();
-                request.Id = Guid.Parse(eventId);
                 return Ok(await dataModificationService.UpdateEventAsync(request));
             }
             catch (Exception e)
@@ -76,7 +79,8 @@ namespace WhoOwesWho.EventService.Controllers
             }
         }
 
-        [HttpDelete("{eventId}")]
+        [HttpDelete]
+        [Route("{eventId}")]
         [Authorize]
         public async Task<IActionResult> DeleteEventAsync(string eventId)
         {
@@ -91,7 +95,7 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
 
-        [HttpPost("{eventId}/settle")]
+        [Route("{eventId}/settle")]
         [Authorize]
         public async Task<IActionResult> SettleEventAsync(string eventId)
         {

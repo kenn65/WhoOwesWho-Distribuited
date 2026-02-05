@@ -42,7 +42,7 @@ namespace WhoOwesWho.EncryptionService.Services
                     array = memoryStream.ToArray();
                 }
             }
-
+           
             return await Task.FromResult(new ProtectionResponseModel
             {
                 ProtectedValue = WebEncoders.Base64UrlEncode(array)

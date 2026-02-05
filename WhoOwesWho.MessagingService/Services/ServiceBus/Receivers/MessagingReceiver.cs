@@ -1,91 +1,135 @@
 ﻿using Azure.Messaging.ServiceBus;
+using Microsoft.AspNetCore.Components;
+using WhoOwesWho.MessagingService.Services.ServiceBus.Handling;
+using WhoOwesWho.Models.Models;
 using WhoOwesWho.Models.Models.Base;
 using static WhoOwesWho.Models.Models.Base.ServiceBus.ObservabilityRecords;
 
 public sealed class MessagingReceiver
 {
     private readonly ServiceBusClient _client;
-    private ServiceBusProcessor? _success;
-    private ServiceBusProcessor? _failed;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public MessagingReceiver(ServiceBusClient client)
+    private ServiceBusProcessor? _requestProcessor;
+    private ServiceBusSender? _succeededSender;
+    private ServiceBusSender? _failedSender;
+
+    public MessagingReceiver(
+        ServiceBusClient client,
+        IServiceScopeFactory scopeFactory)
     {
         _client = client;
+        _scopeFactory = scopeFactory;
     }
+
+    // ----------------------------
+    // START / STOP
+    // ----------------------------
 
     public async Task StartAsync(CancellationToken ct)
     {
-        _success = _client.CreateProcessor(
-            ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
-            "messaging-observability");
+        // Command consumer
+        _requestProcessor = _client.CreateProcessor(
+            ServiceBusTopics.MessagingTopics.MessagingDispatchRequest,
+            "messaging",
+            new ServiceBusProcessorOptions
+            {
+                AutoCompleteMessages = false,
+                MaxConcurrentCalls = 1
+            });
 
-        _failed = _client.CreateProcessor(
-            ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
-            "messaging-observability");
+        // Observability publishers
+        _succeededSender = _client.CreateSender(
+            ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded);
 
-        _success.ProcessMessageAsync += HandleSuccessAsync;
-        _success.ProcessErrorAsync += HandleErrorAsync;
+        _failedSender = _client.CreateSender(
+            ServiceBusTopics.MessagingTopics.MessagingDispatchFailed);
 
-        _failed.ProcessMessageAsync += HandleFailedAsync;
-        _failed.ProcessErrorAsync += HandleErrorAsync;
+        _requestProcessor.ProcessMessageAsync += HandleRequestAsync;
+        _requestProcessor.ProcessErrorAsync += HandleErrorAsync;
 
-        await _success.StartProcessingAsync(ct);
-        await _failed.StartProcessingAsync(ct);
+        await _requestProcessor.StartProcessingAsync(ct);
+
+        Console.WriteLine("[MESSAGING] Request receiver started");
     }
 
     public async Task StopAsync(CancellationToken ct)
     {
-        if (_success != null)
+        if (_requestProcessor != null)
         {
-            await _success.StopProcessingAsync(ct);
-            await _success.DisposeAsync();
+            await _requestProcessor.StopProcessingAsync(ct);
+            await _requestProcessor.DisposeAsync();
         }
 
-        if (_failed != null)
+        if (_succeededSender != null)
+            await _succeededSender.DisposeAsync();
+
+        if (_failedSender != null)
+            await _failedSender.DisposeAsync();
+    }
+    
+    private async Task HandleRequestAsync(ProcessMessageEventArgs args)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var resolver = scope.ServiceProvider.GetRequiredService<IMessageResolverService>();
+
+        var request = args.Message.Body
+            .ToObjectFromJson<MessagingRequestModel>();
+
+        if (request == null)
         {
-            await _failed.StopProcessingAsync(ct);
-            await _failed.DisposeAsync();
+            await args.DeadLetterMessageAsync(
+                args.Message,
+                "InvalidPayload",
+                "Could not deserialize MessagingRequestModel");
+            return;
+        }
+
+        try
+        {
+            await resolver.SendEmailAsync(request);
+
+            // ---- publish succeeded event ----
+            var succeeded = new MessagingDispatchedEvent(
+                request.Type,
+                request?.User?.EmailAddress,
+                DateTimeOffset.Now
+                );
+
+            await _succeededSender!.SendMessageAsync(
+                new ServiceBusMessage(BinaryData.FromObjectAsJson(succeeded)));
+
+            await args.CompleteMessageAsync(args.Message);
+
+            Console.WriteLine(
+                $"[MESSAGING][SUCCESS] Type={request?.Type} User={request?.User?.EmailAddress}");
+        }
+        catch (Exception ex)
+        {
+            var failed = new MessagingDispatchFailedEvent(
+                request.Type,
+                request?.User?.EmailAddress,
+                ex.Message,
+                DateTimeOffset.Now);
+
+            await _failedSender!.SendMessageAsync(
+                new ServiceBusMessage(BinaryData.FromObjectAsJson(failed)));
+
+            Console.WriteLine(
+                $"[MESSAGING][FAILED] Type={request?.Type} User={request?.User?.EmailAddress} Reason={ex.Message}");
+            throw;
         }
     }
-
-    // ----------------------------
-    // MESSAGE HANDLERS
-    // ----------------------------
-
-    private async Task HandleSuccessAsync(ProcessMessageEventArgs args)
-    {
-        var evt = args.Message.Body
-            .ToObjectFromJson<MessagingDispatchedEvent>();
-
-        Console.WriteLine(
-            $"[MESSAGING][SUCCESS] Type={evt?.Type} User={evt?.UserEmail}");
-
-        await args.CompleteMessageAsync(args.Message);
-    }
-
-    private async Task HandleFailedAsync(ProcessMessageEventArgs args)
-    {
-        var evt = args.Message.Body
-            .ToObjectFromJson<MessagingDispatchFailedEvent>();
-
-        Console.WriteLine(
-            $"[MESSAGING][FAILED] Type={evt?.Type} User={evt?.UserEmail} Reason={evt?.Reason}");
-
-        await args.CompleteMessageAsync(args.Message);
-    }
-
-    // ----------------------------
-    // ERROR HANDLER
-    // ----------------------------
-
+      
     private Task HandleErrorAsync(ProcessErrorEventArgs args)
     {
         Console.WriteLine(
             $"[MESSAGING][ERROR] " +
             $"Entity={args.EntityPath} " +
-            $"ErrorSource={args.ErrorSource} " +
+            $"Source={args.ErrorSource} " +
             $"Exception={args.Exception}");
 
         return Task.CompletedTask;
     }
 }
+

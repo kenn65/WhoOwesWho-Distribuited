@@ -16,7 +16,8 @@ namespace WhoOwesWho.PaymentService.Controllers
         IEncryptionGatewayService encryptionGatewayService
         ) : ControllerBase
     {
-        [HttpPost]
+        [HttpPut]
+        [Route("create")]
         [Authorize]
         public async Task<IActionResult> CreatePaymentAsync(CreatePaymentRequestModel request)
         {
@@ -43,8 +44,9 @@ namespace WhoOwesWho.PaymentService.Controllers
 
 
         [HttpGet]
+        [Route("{userId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetPaymentsAsync([FromQuery] string userId, [FromQuery] bool active)
+        public async Task<IActionResult> GetPaymentsAsync(string userId, bool active)
         {
             try
             {
@@ -64,9 +66,10 @@ namespace WhoOwesWho.PaymentService.Controllers
         }
 
 
-        [HttpGet("{paymentId}")]
+        [HttpGet]
+        [Route("{paymentId}")]
         [Authorize]
-        public async Task<IActionResult> GetPaymentAsync([Required] string paymentId)
+        public async Task<IActionResult> GetPaymentAsync(string paymentId)
         {
             try
             {
@@ -84,13 +87,13 @@ namespace WhoOwesWho.PaymentService.Controllers
             }
         }
         
-        [HttpPut("{paymentId}")]
+        [HttpPatch]
+        [Route("update")]
         [Authorize]
-        public async Task<IActionResult> UpdatePaymentAsync(string paymentId, [FromBody] UpdatePaymentRequestModel request)
+        public async Task<IActionResult> UpdatePaymentAsync([FromBody] UpdatePaymentRequestModel request)
         {
             try
             {
-                request.PaymentId = Guid.Parse(paymentId);
                 request.CreditorId = await encryptionGatewayService.UnprotectAsync(request.CreditorId!);
                 
                 var userIdList = request.UserIds!.ToList();
@@ -111,16 +114,14 @@ namespace WhoOwesWho.PaymentService.Controllers
             }
         }
 
-        [HttpDelete("{paymentId}")]
+        [HttpDelete]
+        [Route("delete/{paymentId}")]
         [Authorize]
         public async Task<IActionResult> RemovePaymentAsync(string paymentId)
         {
             try
             {
-                return Ok(await paymentDetailsService.DeletePaymentAsync(new DeletePaymentRequestModel
-                {
-                    PaymentId = paymentId
-                }));
+                return Ok(await paymentDetailsService.DeletePaymentAsync(paymentId));
             }
             catch
             {

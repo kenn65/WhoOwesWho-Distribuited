@@ -10,7 +10,7 @@ namespace WhoOwesWho.PaymentService.Services
         Task<PaymentDetailsPageResponseModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request);
         Task<PaymentDetailsPageResponseModel> GetSettlementDetailsAsync(SettlementDetailsRequestModel request);
         Task<UpdatePaymentResponseModel> UpdatePaymentDetailsAsync(UpdatePaymentRequestModel request);
-        Task<DeletePaymentResponseModel> DeletePaymentAsync(DeletePaymentRequestModel request);
+        Task<DeletePaymentResponseModel> DeletePaymentAsync(string paymentId);
     }
 
     public class PaymentDetailsService(
@@ -102,9 +102,9 @@ namespace WhoOwesWho.PaymentService.Services
             });
         }
 
-        public async Task<DeletePaymentResponseModel> DeletePaymentAsync(DeletePaymentRequestModel request)
+        public async Task<DeletePaymentResponseModel> DeletePaymentAsync(string paymentId)
         {
-            return await Task.FromResult(await dataModificationService.DeletePaymentAsync(request));
+            return await Task.FromResult(await dataModificationService.DeletePaymentAsync(paymentId));
         }
 
         private async Task<CalculateAmountResponseModel> CalculateAmount(UpdatePaymentRequestModel request)

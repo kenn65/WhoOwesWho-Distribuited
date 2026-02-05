@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.Models.Models.Extensions;
@@ -12,8 +11,9 @@ namespace WhoOwesWho.PaymentService.Controllers
     public class SettlementsController(IPaymentService paymentService, IPaymentDetailsService paymentDetailsService) : ControllerBase
     {
         [HttpGet]
+        [Route("{eventId}/{active}")]
         [Authorize]     
-        public async Task<IActionResult> GetSettlementsAsync([FromQuery] string eventId, [FromQuery] bool active)
+        public async Task<IActionResult> GetSettlementsAsync(string eventId, bool active)
         {
             try
             {
@@ -33,7 +33,8 @@ namespace WhoOwesWho.PaymentService.Controllers
         }
 
 
-        [HttpGet("{paymentId}")]
+        [HttpGet]
+        [Route("{paymentId}")]
         [Authorize]
         public async Task<IActionResult> GetSettlementAsync(string paymentId)
         {

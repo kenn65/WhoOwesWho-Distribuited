@@ -1,19 +1,22 @@
 ﻿using WhoOwesWho.Models.Models;
 using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.Gateways;
+using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
 
 namespace WhoOwesWho.UserService.Services
 {
     public interface IUserService
     {
         Task<UserModel?> UpdateUserAsync(UserModel request, string token);
+        Task SendAccountConfirmationMessage(UserModel entity, string host);
     }
     public class UserService(
         IConfiguration configuration, 
         IValidationService validationService, 
         IDataMutationService dataModificationService, 
         IDataQueryService dataSelectionService,
-        IEncryptionGatewayService encryptionGatewayService
+        IEncryptionGatewayService encryptionGatewayService,
+        IMessagingPublisher messagingPublisher
         ) : ServiceBase(configuration), IUserService
     {
         public async Task<UserModel?> UpdateUserAsync(UserModel request, string token)
@@ -45,7 +48,27 @@ namespace WhoOwesWho.UserService.Services
                 });
             }
             return await Task.FromResult(response);
-            
+        }
+
+        public async Task SendAccountConfirmationMessage(UserModel entity, string host)
+        {
+            try
+            {
+                var request = new MessagingRequestModel
+                {
+                    ApiKey = AppSettings.MessagingMicroServiceApiKey,
+                    Host = host,
+                    Type = "SignUp",
+                    User = entity
+                };
+
+                await messagingPublisher.DispatchAsync(request);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"An error occurred while sending the account confirmation message: {e.Message}",
+                    e);
+            }
 
         }
     }

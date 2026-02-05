@@ -56,33 +56,33 @@ var restoreContainer = builder
         .WithLifetime(ContainerLifetime.Session);
 
 // --- DATABASES BACKUP CONTAINER ----------------------------------------------------
-var backupContainer = builder
-    .AddContainer("sql-backup", "mcr.microsoft.com/mssql-tools")
-    .WithContainerName("wow-sql-bak-bakup")
-    .WithReference(sql)
-    .WithVolume("sqlserver-backup-data", "/backup")
-    .WithEnvironment("MSSQL_SA_PASSWORD", builder.Configuration["Parameters:dbPassword"])
-    .WithEntrypoint("/bin/bash")
-    .WithArgs("-c", @"
-    echo 'SQL BACKUP SIDEcar started.';
-    echo 'Waiting for SQL Server...';
-        until /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -Q 'SELECT 1' > /dev/null 2>&1
-        do
-           sleep 10
-        done
-    while true
-    do
-        echo 'SQL Server ready...'
-        sleep 300
-        echo 'Running SQL BACKUP...';
-        /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Users]   TO DISK='/backup/WoW.Users.bak'   WITH INIT"";
-        /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Events]  TO DISK='/backup/WoW.Events.bak'  WITH INIT"";
-        /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Payments] TO DISK='/backup/WoW.Payments.bak' WITH INIT"";
-        echo 'SQL BACKUP DONE. Sleeping 120 seconds...';
-        sleep 300
-    done
-    ".Replace("\r\n", "\n"))
-        .WithLifetime(ContainerLifetime.Persistent);
+//var backupContainer = builder
+//    .AddContainer("sql-backup", "mcr.microsoft.com/mssql-tools")
+//    .WithContainerName("wow-sql-bak-bakup")
+//    .WithReference(sql)
+//    .WithVolume("sqlserver-backup-data", "/backup")
+//    .WithEnvironment("MSSQL_SA_PASSWORD", builder.Configuration["Parameters:dbPassword"])
+//    .WithEntrypoint("/bin/bash")
+//    .WithArgs("-c", @"
+//    echo 'SQL BACKUP SIDEcar started.';
+//    echo 'Waiting for SQL Server...';
+//        until /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -Q 'SELECT 1' > /dev/null 2>&1
+//        do
+//           sleep 10
+//        done
+//    while true
+//    do
+//        echo 'SQL Server ready...'
+//        sleep 300
+//        echo 'Running SQL BACKUP...';
+//        /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Users]   TO DISK='/backup/WoW.Users.bak'   WITH INIT"";
+//        /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Events]  TO DISK='/backup/WoW.Events.bak'  WITH INIT"";
+//        /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q ""BACKUP DATABASE [WoW.Payments] TO DISK='/backup/WoW.Payments.bak' WITH INIT"";
+//        echo 'SQL BACKUP DONE. Sleeping 120 seconds...';
+//        sleep 300
+//    done
+//    ".Replace("\r\n", "\n"))
+//        .WithLifetime(ContainerLifetime.Persistent);
 
 
 
@@ -167,14 +167,5 @@ var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservi
 
 //var gateway = builder.AddProject<Projects.WhoOwesWho_Gateway>("gateway")
 //        .WaitFor(frontend);
-
-//authorizationService.WithReference(serviceBus).WithReference(sql);
-//currencyService.WithReference(serviceBus).WithReference(sql);
-//encryptionService.WithReference(serviceBus).WithReference(sql);
-//eventService.WithReference(serviceBus).WithReference(sql);
-//messagingService.WithReference(serviceBus).WithReference(sql);
-//paymentService.WithReference(serviceBus).WithReference(sql);
-//userService.WithReference(serviceBus).WithReference(sql);
-//gateway.WithReference(serviceBus).WithReference(sql);
 
 builder.Build().Run();

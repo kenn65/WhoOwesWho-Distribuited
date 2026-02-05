@@ -15,7 +15,7 @@ namespace WhoOwesWho.EventService.Services
 
         Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true);
 
-        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true);
+        Task<EventAssignmentModel> GetUserAssignmentAsync(string protectedUserId, string token, bool active = true);
 
         Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active = true);
     }
@@ -69,7 +69,6 @@ namespace WhoOwesWho.EventService.Services
                     {
                         var protectedUserId = await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString());
                         var user = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true);
-
                         users.Add(user);
                     }
 
@@ -186,6 +185,8 @@ namespace WhoOwesWho.EventService.Services
                     await connection.CloseAsync();
                 }
                 
+                
+
                 return await Task.FromResult(response);
             }
             catch (Exception e)
@@ -194,7 +195,7 @@ namespace WhoOwesWho.EventService.Services
             }
         }
 
-        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true)
+        public async Task<EventAssignmentModel> GetUserAssignmentAsync(string protectedUserId, string token, bool active = true)
         {
             EventAssignmentModel? response = null;
             try
@@ -216,7 +217,7 @@ namespace WhoOwesWho.EventService.Services
                     {
                         EventId = reader.GetGuid(0),
                         User = await userGatewayService.GetAuthorizedUserAsync(
-                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(0).ToString()), token, false)
+                            await encryptionGatewayService.ProtectAsync(reader.GetGuid(1).ToString()), token, false)
                     };
                 }
 

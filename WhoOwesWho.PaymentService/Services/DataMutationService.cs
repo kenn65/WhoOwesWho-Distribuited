@@ -11,7 +11,7 @@ namespace WhoOwesWho.PaymentService.Services
         Task<CreatePaymentResponseModel> AddPaymentUserAsync(CreatePaymentRequestModel request, long timeTicks, bool isCreditor);
 
         Task<UpdatePaymentResponseModel> UpdatePaymentAsync(UpdatePaymentRequestModel request);
-        Task<DeletePaymentResponseModel> DeletePaymentAsync(DeletePaymentRequestModel request);
+        Task<DeletePaymentResponseModel> DeletePaymentAsync(string paymentId);
         Task<DeletePaymentResponseModel> DeletePaymentUsersAsync(DeletePaymentRequestModel request);
 
     }
@@ -123,7 +123,7 @@ namespace WhoOwesWho.PaymentService.Services
             }
         }
 
-        public async Task<DeletePaymentResponseModel> DeletePaymentAsync(DeletePaymentRequestModel request)
+        public async Task<DeletePaymentResponseModel> DeletePaymentAsync(string paymentId)
         {
             try
             {
@@ -134,14 +134,14 @@ namespace WhoOwesWho.PaymentService.Services
                         new SqlCommand(
                             "DELETE FROM [WoW.Payments].[dbo].[WoW.PaymentUsers] WHERE [PaymentId] = @paymentId",
                             connection);
-                    deletePaymentUsersCommand.Parameters.AddWithValue("@paymentId", request.PaymentId);
+                    deletePaymentUsersCommand.Parameters.AddWithValue("@paymentId", paymentId);
                     deletePaymentUsersCommand.CommandType = CommandType.Text;
                     await deletePaymentUsersCommand.ExecuteNonQueryAsync();
 
                     var deletePaymentCommand =
                         new SqlCommand("DELETE FROM [WoW.Payments].[dbo].[WoW.Payment] WHERE [Id] = @paymentId",
                             connection);
-                    deletePaymentCommand.Parameters.AddWithValue("@paymentId", request.PaymentId);
+                    deletePaymentCommand.Parameters.AddWithValue("@paymentId", paymentId);
                     deletePaymentUsersCommand.CommandType = CommandType.Text;
                     await deletePaymentUsersCommand.ExecuteNonQueryAsync();
                     await connection.CloseAsync();

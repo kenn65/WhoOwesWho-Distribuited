@@ -6,20 +6,19 @@ using WhoOwesWho.EventService.Services;
 
 namespace WhoOwesWho.EventService.Controllers
 {
-    [Route("api/events/{eventId}/users")]
+    [Route("api/[controller]")]
     [ApiController]
     public class EventUsersController(IEventService eventService, IDataQueryService dataQueryService, IDataMutationService dataMutationService) : ControllerBase
     {
-
-
         [HttpGet]
+        [Route("{userId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetEventUsersAsync(string eventId, [FromQuery] bool active = true)
+        public async Task<IActionResult> GetEventUsersAsync(string userId, bool active = true)
         {
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataQueryService.GetEventUsersAsync(eventId, token, active));
+                return Ok(await dataQueryService.GetEventUsersAsync(userId, token, active));
             }
             catch (Exception e)
             {
@@ -28,14 +27,15 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
 
-        [HttpGet("{userId}")]
+        [HttpGet]
+        [Route("{userId}")]
         [Authorize]
-        public async Task<IActionResult> CheckUserAssignmentAsync(string eventId, string userId)
+        public async Task<IActionResult> CheckUserAssignmentAsync(string userId)
         {
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataQueryService.GetAssignmentAsync(userId!, token, true));
+                return Ok(await dataQueryService.GetUserAssignmentAsync(userId, token, true));
             }
             catch (Exception e)
             {
@@ -44,12 +44,12 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
         [HttpPost]
+        [Route("assign")]
         [Authorize]
-        public async Task<IActionResult> AssignUserAsync(string eventId, [FromBody] AssignmentRequestModel request)
+        public async Task<IActionResult> AssignUserAsync([FromBody] AssignmentRequestModel request)
         {
             try
             {
-                request.EventId = eventId;
                 request.Token = HttpContext.ToTokenValue();
                 return Ok(await eventService.AssignAsync(request));
             }
@@ -60,17 +60,14 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
 
-        [HttpDelete("{userId}")]
+        [HttpPost]
+        [Route("unassign")]
         [Authorize]
-        public async Task<IActionResult> UnassignUserAsync(string eventId, string userId)
+        public async Task<IActionResult> UnassignUserAsync([FromBody] UnassignmentRequestModel request)
         {
             try
             {
-                var request = new UnassignmentRequestModel
-                {
-                    EventId = eventId,
-                    UserId = userId,
-                };
+                request.Token = HttpContext.ToTokenValue();
                 return Ok(await dataMutationService.UnassignFromEventAsync(request));
             }
             catch (Exception e)

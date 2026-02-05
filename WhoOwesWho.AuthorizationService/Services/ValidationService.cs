@@ -20,7 +20,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 throw new ArgumentException("Email or password argument was not provided");
             }
-            var user = await userGatewayService.GetUserAsync(emailAddress, false);
+            var user = await userGatewayService.GetUserAsync(emailAddress, true);
 
             if (user == null)
             {

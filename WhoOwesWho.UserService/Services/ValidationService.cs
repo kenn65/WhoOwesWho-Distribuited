@@ -11,7 +11,7 @@ namespace WhoOwesWho.UserService.Services
 {
     public interface IValidationService
     {
-        Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password);
+        Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encrypted = false);
         Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = false);
         Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
         Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token);
@@ -24,12 +24,16 @@ namespace WhoOwesWho.UserService.Services
         IEventGatewayService eventGatewayService
         ) : ServiceBase(configuration), IValidationService
     {
-        public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password)
+        public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encypted = false)
         {
+            if (encypted)
+            {
+                password = await encryptionGatewayService.UnprotectAsync(password!, false);
+            }
             var errorMessage = string.Empty;
             var check = password!.Length >= int.Parse(AppSettings.PasswordLengthRequired)
-                        && password.Where(char.IsUpper).Count() >= int.Parse(AppSettings.PasswordUppercaseRequired)
-                        && password.Where(char.IsDigit).Count() >= int.Parse(AppSettings.PasswordDigitsRequired);
+                        && password.Count(char.IsUpper) >= int.Parse(AppSettings.PasswordUppercaseRequired)
+                        && password.Count(char.IsDigit) >= int.Parse(AppSettings.PasswordDigitsRequired);
 
             if (!check)
             {

@@ -1,4 +1,5 @@
 ﻿using Flurl.Http;
+using Flurl.Http.Configuration;
 using WhoOwesWho.CurrencyService.Settings;
 
 namespace WhoOwesWho.CurrencyService.Services.Base
@@ -9,8 +10,14 @@ namespace WhoOwesWho.CurrencyService.Services.Base
         protected AppSettings AppSettings => _settings;
 
         protected IFlurlClient GetClient(string endpoint)
-        {
-            var client = new FlurlClient(endpoint);
+        { 
+            var client = new FlurlClientBuilder(endpoint)
+            .ConfigureInnerHandler(handler =>
+            {
+                handler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            })
+            .Build();
             AddHeaders(client);
             return client;
         }

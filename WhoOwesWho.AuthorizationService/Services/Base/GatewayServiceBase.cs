@@ -8,10 +8,17 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
     {
         public async Task<T> Get<T>(string baseEndpoint, string apiKey, bool encode, IDictionary<string, dynamic>? parameters = null, string? token = null)
         {
-            var endpoint = await BuildEndpoint(baseEndpoint, encode, parameters);
-            using var client = GetClient(endpoint, apiKey, token);
-            var response = await client.Request().GetJsonAsync<T>();
-            return await Task.FromResult(response);
+            try
+            {
+                var endpoint = await BuildEndpoint(baseEndpoint, encode, parameters);
+                using var client = GetClient(endpoint, apiKey, token);
+                var response = await client.Request().GetJsonAsync<T>();
+                return await Task.FromResult(response);
+            }
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
+            }
         }
 
         public async Task<T> Post<T, TR>(string baseEndpoint, TR request, string apiKey, bool encode, IDictionary<string, dynamic>? parameters = null, string? token = null) where T : class where TR : class
@@ -28,7 +35,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
 
         public async Task<string> BuildEndpoint(string baseEndpoint, bool encode, IDictionary<string, dynamic>? parameters)
         {
-            if (parameters == null)
+            if (parameters == null || !parameters.Any())
             {
                 return baseEndpoint;
             }
@@ -36,7 +43,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
             endpointBuilder.Append(baseEndpoint);
             foreach (var parameter in parameters)
             {
-                endpointBuilder.Append(endpointBuilder.ToString().Contains("?") ? "&" : "?");
+                endpointBuilder.Append(endpointBuilder.ToString().Contains('?') ? "&" : "?");
                 endpointBuilder.Append(parameter.Key);
                 endpointBuilder.Append("=");
                 if (parameter.Value is bool)

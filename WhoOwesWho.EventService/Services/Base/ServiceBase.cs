@@ -1,4 +1,5 @@
 ﻿using Flurl.Http;
+using Flurl.Http.Configuration;
 using WhoOwesWho.EventService.Settings;
 
 namespace WhoOwesWho.EventService.Services.Base
@@ -10,11 +11,13 @@ namespace WhoOwesWho.EventService.Services.Base
 
         protected IFlurlClient GetClient(string endpoint, string apiKey, string? token = null)
         {
-            var httpClientHandler = new HttpClientHandler();
-            httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain,
-                errors) => true;
-            var httpClient = new HttpClient(httpClientHandler);
-            var client = new FlurlClient(httpClient, endpoint);
+            var client = new FlurlClientBuilder(endpoint)
+            .ConfigureInnerHandler(handler =>
+            {
+                handler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            })
+            .Build();
             AddHeaders(client, apiKey, token);
             return client;
         }

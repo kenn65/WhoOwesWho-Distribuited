@@ -14,9 +14,10 @@ namespace WhoOwesWho.PaymentService.Controllers
         IEncryptionGatewayService encryptionGatewayService
         ) : ControllerBase
     {
-        [HttpGet("{userId}/balance")]
+        [HttpGet]
+        [Route("{userId}/{eventId}")]
         [Authorize]
-        public async Task<IActionResult> GetUserBalanceAsync(string userId, [FromQuery] string eventId)
+        public async Task<IActionResult> GetUserBalanceAsync(string userId, string eventId)
         {
             try
             {

@@ -18,11 +18,21 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Only wait for AMQP/data plane
-            await WaitForDataPlaneAsync(stoppingToken);
+            await WaitForSubscriptionAsync(
+                ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
+                "messaging-observability-succeeded",
+                stoppingToken);
 
-            // Start receivers
+            await WaitForSubscriptionAsync(
+                ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
+                "messaging-observability-failed",
+                stoppingToken);
+
             await _receiver.StartAsync(stoppingToken);
+
+            Console.WriteLine("[MESSAGING] Receivers started");
+
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
@@ -30,17 +40,21 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus
             await _receiver.StopAsync(cancellationToken);
         }
 
-        private async Task WaitForDataPlaneAsync(CancellationToken ct)
+      private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
         {
-            for (var i = 0; i < 15; i++)
+            for (var i = 0; i < 20; i++)
             {
                 try
                 {
-                    await using var sender =
-                        _client.CreateSender(
-                            ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded);
+                    await using var receiver =
+                        _client.CreateReceiver(topic, subscription);
 
-                    return; // ready
+                    await receiver.PeekMessageAsync(cancellationToken: ct);
+
+                    Console.WriteLine(
+                        $"[MESSAGING] Subscription ready: {topic}/{subscription}");
+
+                    return;
                 }
                 catch
                 {
@@ -49,7 +63,7 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus
             }
 
             throw new InvalidOperationException(
-                "Service Bus emulator data plane did not become ready.");
+                $"Service Bus subscription {topic}/{subscription} did not become ready.");
         }
     }
 }
