@@ -1,6 +1,5 @@
 ﻿using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
