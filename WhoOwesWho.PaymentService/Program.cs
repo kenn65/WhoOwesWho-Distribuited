@@ -1,13 +1,20 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using WhoOwesWho.EventService.Services.Gateways;
+using WhoOwesWho.PaymentService.EfCore.Context;
+using WhoOwesWho.PaymentService.EfCore.Extensions;
 using WhoOwesWho.PaymentService.Middleware;
+using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.PaymentService.Services.Gateways;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<PaymentDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("whooweswho-payments")));
 
 builder.AddServiceDefaults();
 
@@ -15,8 +22,8 @@ builder.AddServiceDefaults();
 builder.Services.AddScoped<IUserBalanceService, UserBalanceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPaymentDetailsService, PaymentDetailsService>();
-builder.Services.AddScoped<IDataQueryService, DataQueryService>();
-builder.Services.AddScoped<IDataMutationService, DataMutationService>();
+builder.Services.AddScoped<IPaymentQueryRepository, PaymentQueryRepository>();
+builder.Services.AddScoped<IPaymentMutationRepository , PaymentMutationRepository>();
 builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
@@ -95,6 +102,7 @@ app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    await app.ConfigureDatabaseAsync();
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.PaymentService API"));

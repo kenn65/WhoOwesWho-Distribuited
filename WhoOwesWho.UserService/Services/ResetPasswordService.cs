@@ -1,5 +1,6 @@
 ﻿using WhoOwesWho.Models.Models;
 using WhoOwesWho.UserService.Models;
+using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.Gateways;
 
@@ -13,14 +14,14 @@ namespace WhoOwesWho.UserService.Services
 
     public class ResetPasswordService(
         IConfiguration configuration,
-        IDataQueryService dataSelectionService,
-        IDataMutationService dataModificationService,
+        IUserQueryRepository userQueryRepository,
+        IUserMutationRepository userMutationRepository,
         IEncryptionGatewayService encryptionGatewayService
         ) : ServiceBase(configuration), IResetPasswordService
     {
         public async Task<UserModel?> ResetPasswordAsync(ResetPasswordRequestModel request)
         {
-            var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
+            var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress);
             if (user == null)
             {
                 return new UserModel
@@ -29,12 +30,10 @@ namespace WhoOwesWho.UserService.Services
                     Message = $"Could not find the account with e-mail address: {request.EmailAddress}"
                 };
             }
-
-            //var protectedPassword = await encryptionGatewayService.ProtectAsync(Uri.EscapeDataString(request.NewPassword!), true);
-
+                        
             user.Password = request.NewPassword;
 
-            var response = await dataModificationService.UpdateUserAsync(user);
+            var response = await userMutationRepository.UpdateUserAsync(user);
             if (response == null)
                 return await Task.FromResult(new UserModel
                 {
@@ -42,8 +41,8 @@ namespace WhoOwesWho.UserService.Services
                     Message = "An unexpected error occurred. Please, try again."
                 });
             response.Success = true;
-            response.Message = "Password was successfully reset.";
-            return await Task.FromResult(response);
+            response.Message = "Your password was succesfully reset.";
+            return response;
         }
 
         public async Task<ResetPasswordResponseModel> VerifyResetPassword(string emailAddress, string forgotPasswordToken)
@@ -51,8 +50,8 @@ namespace WhoOwesWho.UserService.Services
             try
             {
                 emailAddress = await encryptionGatewayService.UnprotectAsync(emailAddress, true);
-                var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(emailAddress, true);
-                var response = await dataSelectionService.GetForgotPasswordTokenAsync(user!.Id);
+                var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
+                var response = await userQueryRepository.GetForgotPasswordTokenAsync(user!.Id);
 
                 if (response.ForgotPasswordToken == forgotPasswordToken && DateTime.Now <= new DateTime(response.ExpirationTime))
                 {

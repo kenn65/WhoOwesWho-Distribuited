@@ -1,4 +1,6 @@
 ﻿using WhoOwesWho.Models.Models;
+using WhoOwesWho.UserService.Models;
+using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.Gateways;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
@@ -8,17 +10,36 @@ namespace WhoOwesWho.UserService.Services
     public interface IUserService
     {
         Task<UserModel?> UpdateUserAsync(UserModel request, string token);
-        Task SendAccountConfirmationMessage(UserModel entity, string host);
+        Task<UserModel?> CreateUserAsync(UserModel request, string host);
+        Task<UserModel?> GetSingleUserByEmailAddressAsync(string? emailAddress, bool complete = false);
+        Task<UserModel?> GetSingleUserByIdAsync(Guid id, bool complete = false);
+        Task<IEnumerable<UserModel>> GetAllUsersAsync();
+        Task<ForgotPasswordTokenModel> GetForgotPasswordTokenAsync(Guid userId);
     }
     public class UserService(
-        IConfiguration configuration, 
-        IValidationService validationService, 
-        IDataMutationService dataModificationService, 
-        IDataQueryService dataSelectionService,
+        IConfiguration configuration,
+        IUserMutationRepository userMutationRepository,
+        IUserQueryRepository userQueryRepository,
+        IValidationService validationService,
         IEncryptionGatewayService encryptionGatewayService,
         IMessagingPublisher messagingPublisher
         ) : ServiceBase(configuration), IUserService
     {
+        public async Task<UserModel?> CreateUserAsync(UserModel request, string host)
+        {
+            var user = await userMutationRepository.CreateUserAsync(request);
+            if (user is null)
+            {
+                return await Task.FromResult(new UserModel()
+                {
+                    Success = false,
+                    Message = "An error occurred while creating the user. Please, try again."
+                });
+            }
+            await SendAccountConfirmationMessage(user, host);
+            return await userQueryRepository.GetSingleUserByEmailAddressAsync(user.EmailAddress, true);
+        }
+
         public async Task<UserModel?> UpdateUserAsync(UserModel request, string token)
         {
             var validationResult = await validationService.VerifyUpdate(request, token);
@@ -32,13 +53,12 @@ namespace WhoOwesWho.UserService.Services
             }
 
             request.Id = Guid.Parse(await encryptionGatewayService.UnprotectAsync(request.ProtectedId!, true));
-            
-                        
-            var userEntity = await dataSelectionService.GetSingleUserByIdAsync(request.Id, true);
+            var userEntity = await userQueryRepository.GetSingleUserByIdAsync(request.Id, true);
             userEntity!.FullName = request.FullName;
             userEntity.MobilePhoneNumber = request.MobilePhoneNumber;
             userEntity.Admin = request.Admin;
-            var response = await Task.FromResult(await dataModificationService.UpdateUserAsync(userEntity));
+
+            var response = await Task.FromResult(await userMutationRepository.UpdateUserAsync(userEntity));
             if (validationResult is { Success: true, NoAdmin: true })
             {
                 return await Task.FromResult(new UserModel()
@@ -47,10 +67,31 @@ namespace WhoOwesWho.UserService.Services
                     Message = "The event running is now left with no administrator. This is indeed not recommended as event and payment edit, delete and settlement are not available as these can only be performed by an administrator."
                 });
             }
-            return await Task.FromResult(response);
+            response!.Message = "Profile updated successfully.";
+            return response;
         }
 
-        public async Task SendAccountConfirmationMessage(UserModel entity, string host)
+        public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
+        {
+            return await userQueryRepository.GetAllUsersAsync();
+        }
+
+        public async Task<ForgotPasswordTokenModel> GetForgotPasswordTokenAsync(Guid userId)
+        {
+            return await userQueryRepository.GetForgotPasswordTokenAsync(userId);
+        }
+
+        public async Task<UserModel?> GetSingleUserByEmailAddressAsync(string? emailAddress, bool complete = false)
+        {
+            return await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, complete);
+        }
+
+        public async Task<UserModel?> GetSingleUserByIdAsync(Guid id, bool complete = false)
+        {
+            return await userQueryRepository.GetSingleUserByIdAsync(id, complete);
+        }
+
+        private async Task SendAccountConfirmationMessage(UserModel entity, string host)
         {
             try
             {
@@ -71,5 +112,10 @@ namespace WhoOwesWho.UserService.Services
             }
 
         }
+
+
+
+
+
     }
 }

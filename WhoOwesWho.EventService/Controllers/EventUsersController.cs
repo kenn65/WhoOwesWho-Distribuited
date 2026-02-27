@@ -2,23 +2,24 @@
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Models;
+using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services;
 
 namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventUsersController(IEventService eventService, IDataQueryService dataQueryService, IDataMutationService dataMutationService) : ControllerBase
+    public class EventUsersController(IEventService eventService, IEventQueryRepository eventQueryRepository) : ControllerBase
     {
         [HttpGet]
-        [Route("{userId}/{active}")]
+        [Route("{eventId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetEventUsersAsync(string userId, bool active = true)
+        public async Task<IActionResult> GetEventUsersAsync(string eventId, bool active = true)
         {
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataQueryService.GetEventUsersAsync(userId, token, active));
+                return Ok(await eventQueryRepository.GetEventUsersAsync(eventId, token, active));
             }
             catch (Exception e)
             {
@@ -35,7 +36,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataQueryService.GetUserAssignmentAsync(userId, token, true));
+                return Ok(await eventQueryRepository.GetAssignmentAsync(userId!, token, true));
             }
             catch (Exception e)
             {
@@ -67,8 +68,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                request.Token = HttpContext.ToTokenValue();
-                return Ok(await dataMutationService.UnassignFromEventAsync(request));
+                return Ok(await eventService.UnassignFromEventAsync(request));
             }
             catch (Exception e)
             {

@@ -6,15 +6,12 @@ using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services;
 using WhoOwesWho.UserService.Services.Gateways;
-using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
 
 namespace WhoOwesWho.UserService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UserController(
-        IDataMutationService dataModificationService,
-        IDataQueryService dataSelectionService,
         IValidationService validationService,
         IForgotPasswordService forgotPasswordService,
         IResetPasswordService resetPasswordService,
@@ -32,7 +29,6 @@ namespace WhoOwesWho.UserService.Controllers
             {
                 request.Entity!.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.Entity.EmailAddress!, true);
                 
-
                 if (string.IsNullOrWhiteSpace(request.Entity?.FullName))
                 {
                     actionResult.Message = "Full name is required.";
@@ -52,17 +48,12 @@ namespace WhoOwesWho.UserService.Controllers
                     actionResult.Message = passwordCheck.errorMessage;
                     return Ok(actionResult);
                 }
-                                                
-                var user = await dataModificationService.CreateUserAsync(request.Entity, request.Host!);
-                var check = user != null;
-;               actionResult.Success = check;
+
+                var check = await userService.CreateUserAsync(request.Entity, request.Host!) is not null;
+                actionResult.Success = check;
                 actionResult.Message = !check
                     ? "An unexpected error occurred, please try again."
                     : "<p><strong>Sign up successful!</strong><br /> An e-mail has been sent to you for your account verification.</p>";
-                if (check)
-                {
-                    await userService.SendAccountConfirmationMessage(user!, request.Host!);
-                }
                 return Ok(actionResult);
             }
             catch (Exception e)
@@ -78,7 +69,7 @@ namespace WhoOwesWho.UserService.Controllers
             try
             {
                 var unprotectedValue = await encryptionGatewayService.UnprotectAsync(idOrEmailAddress, true);
-                return Ok(await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
+                return Ok(await userService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
             }
             catch (Exception e)
             {
@@ -97,8 +88,8 @@ namespace WhoOwesWho.UserService.Controllers
                 var checkEmail = await validationService.ValidateEmailAsync(unprotectedValue, true);
 
                 var user = checkEmail.isValid
-                    ? await dataSelectionService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete)
-                    : await dataSelectionService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete);
+                    ? await userService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete)
+                    : await userService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete);
 
                 if (user == null)
                 {
@@ -107,21 +98,21 @@ namespace WhoOwesWho.UserService.Controllers
                         Message = "An unexpected error occurred. Please, try again."
                     });
                 }
-                return Ok(user);
+                    return Ok(user);
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
         }
-        
+
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetUsersAsync()
         {
             try
             {
-                return Ok(await dataSelectionService.GetAllUsersAsync());
+                return Ok(await userService.GetAllUsersAsync());
             }
             catch (Exception e)
             {
@@ -136,8 +127,9 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
+                var unprotectedUserId = await encryptionGatewayService.UnprotectAsync(userId, true);    
                 var token = HttpContext.ToTokenValue();
-                entity!.Id = Guid.Parse(userId);
+                entity!.Id = Guid.Parse(unprotectedUserId);
                 return Ok(await userService.UpdateUserAsync(entity!, token));
             }
             catch (Exception e)
@@ -152,7 +144,7 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);    
+                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
 
                 return Ok(await validationService.VerifyUserEmailAddress(request.EmailAddress!));
             }
@@ -170,8 +162,8 @@ namespace WhoOwesWho.UserService.Controllers
 
             try
             {
-                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true); 
-                                
+                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+
                 if (string.IsNullOrWhiteSpace(request.Host))
                 {
                     actionResult.Message = "Host is not provided.";
@@ -198,7 +190,7 @@ namespace WhoOwesWho.UserService.Controllers
                 return BadRequest(e.Message);
             }
         }
-
+        
         [HttpGet]
         [Route("password/reset/verify/{emailAddress}/{forgotPasswordToken}")]
         public async Task<IActionResult> VerifyResetPassword(string emailAddress, string forgotPasswordToken)
@@ -241,7 +233,7 @@ namespace WhoOwesWho.UserService.Controllers
                     return Ok(actionResult);
                 }
 
-                var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(emailAddress, true);
+                var user = await userService.GetSingleUserByEmailAddressAsync(emailAddress, true);
                 if (user == null)
                 {
                     actionResult.Message = $"Could not find the account with e-mail address: {request.EmailAddress}";
@@ -271,9 +263,9 @@ namespace WhoOwesWho.UserService.Controllers
                 }
 
                 request.EmailAddress = emailAddress;
-                var response = await resetPasswordService.ResetPasswordAsync(request);
-                actionResult.Success = response!.Success;
-                actionResult.Message = response.Message;
+                var result = await resetPasswordService.ResetPasswordAsync(request);
+                actionResult.Success = result!.Success;
+                actionResult.Message = result.Message;
                 return Ok(actionResult);
             }
             catch (Exception e)
@@ -281,7 +273,7 @@ namespace WhoOwesWho.UserService.Controllers
                 return BadRequest(e.Message);
             }
         }
-        
+
         [HttpPatch]
         [Authorize]
         [Route("password/change")]

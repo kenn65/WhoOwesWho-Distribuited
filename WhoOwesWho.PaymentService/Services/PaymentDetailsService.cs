@@ -1,5 +1,5 @@
-﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Models;
+﻿using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
 
@@ -15,15 +15,15 @@ namespace WhoOwesWho.PaymentService.Services
 
     public class PaymentDetailsService(
         IConfiguration configuration,
-        IDataQueryService dataSelectionService,
-        IDataMutationService dataModificationService,
+        IPaymentQueryRepository paymentQueryRepository,
+        IPaymentMutationRepository paymentMutationRepository,
         IEventGatewayService eventGatewayService,
         ICurrencyGatewayService currencyGatewayService
         ) : ServiceBase(configuration), IPaymentDetailsService
     {
         public async Task<PaymentDetailsPageResponseModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request)
         {
-            var paymentDetails = await dataSelectionService.GetPaymentDetailsAsync(request);
+            var paymentDetails = await paymentQueryRepository.GetPaymentDetailsAsync(request);
             var activeEvent = await eventGatewayService.GetEventAsync(paymentDetails.EventId!, request.Token!, true, true);
             activeEvent.Users = await eventGatewayService.GetEventUsersAsync(activeEvent.Id.ToString(), request.Token!, true, true);
             var currencies = await currencyGatewayService.GetCurrenciesAsync(request.Token!);
@@ -38,7 +38,7 @@ namespace WhoOwesWho.PaymentService.Services
 
         public async Task<PaymentDetailsPageResponseModel> GetSettlementDetailsAsync(SettlementDetailsRequestModel request)
         {
-            var paymentDetails = await dataSelectionService.GetPaymentDetailsAsync(request);
+            var paymentDetails = await paymentQueryRepository.GetPaymentDetailsAsync(request);
             var activeEvent = await eventGatewayService.GetEventAsync(paymentDetails.EventId!, request.Token!, true, false);
             activeEvent.Users = await eventGatewayService.GetEventUsersAsync(activeEvent.Id.ToString(), request.Token!, true, false);
             var currencies = await currencyGatewayService.GetCurrenciesAsync(request.Token!);
@@ -60,7 +60,7 @@ namespace WhoOwesWho.PaymentService.Services
             request.PaymentId = request.PaymentId;
             request.CreditorIncluded = request.UserIds!.Any(u => u == request.CreditorId);
 
-            var paymentAddition = await dataModificationService.UpdatePaymentAsync(request);
+            var paymentAddition = await paymentMutationRepository.UpdatePaymentAsync(request);
             if (!paymentAddition.Success)
             {
                 await CreateUnsuccessfulPaymentResponseAsync();
@@ -71,7 +71,7 @@ namespace WhoOwesWho.PaymentService.Services
                 PaymentId = request.PaymentId.ToString()
             };
 
-            var response = await dataModificationService.DeletePaymentUsersAsync(deletePaymentUsersRequest);
+            var response = await paymentMutationRepository.DeletePaymentUsersAsync(deletePaymentUsersRequest);
             if (!response.Success)
             {
                 await CreateUnsuccessfulPaymentResponseAsync();
@@ -80,7 +80,7 @@ namespace WhoOwesWho.PaymentService.Services
             foreach (var userId in request.UserIds!.Where(u => u != request.CreditorId))
             {
                 timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
-                var creditUserAddition = await dataModificationService.AddPaymentUserAsync(request, timeTicks, true);
+                var creditUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, true);
                 if (!creditUserAddition.Success)
                 {
                     return await CreateUnsuccessfulPaymentResponseAsync();
@@ -88,7 +88,7 @@ namespace WhoOwesWho.PaymentService.Services
 
                 timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
                 request.DebitorId = userId;
-                var debitUserAddition = await dataModificationService.AddPaymentUserAsync(request, timeTicks, false);
+                var debitUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, false);
                 if (!debitUserAddition.Success)
                 {
                     return await CreateUnsuccessfulPaymentResponseAsync();
@@ -104,7 +104,7 @@ namespace WhoOwesWho.PaymentService.Services
 
         public async Task<DeletePaymentResponseModel> DeletePaymentAsync(string paymentId)
         {
-            return await Task.FromResult(await dataModificationService.DeletePaymentAsync(paymentId));
+            return await Task.FromResult(await paymentMutationRepository.DeletePaymentAsync(paymentId));
         }
 
         private async Task<CalculateAmountResponseModel> CalculateAmount(UpdatePaymentRequestModel request)

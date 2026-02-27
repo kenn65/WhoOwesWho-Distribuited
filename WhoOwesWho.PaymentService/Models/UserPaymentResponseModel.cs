@@ -4,7 +4,7 @@ using WhoOwesWho.PaymentService.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Models
 {
-    public class UserPaymentModel : PaymentModelBase
+    public class UserPaymentResponseModel : PaymentModelBase
     {
         [JsonProperty("id")]
         public Guid Id { get; set; }

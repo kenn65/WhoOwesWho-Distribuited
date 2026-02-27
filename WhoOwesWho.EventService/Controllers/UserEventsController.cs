@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Services.Gateways;
@@ -10,7 +9,7 @@ namespace WhoOwesWho.EventService.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class UserEventsController(
-        IDataQueryService dataQueryService,
+        IEventService eventService,
         IEncryptionGatewayService encryptionGatewayService
         ) : ControllerBase
     {
@@ -23,7 +22,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataQueryService.GetEventByUserAsync(userId, token, active));
+                return Ok(await eventService.GetEventByUserAsync(userId, token, active));
             }
             catch (Exception e)
             {
@@ -43,7 +42,7 @@ namespace WhoOwesWho.EventService.Controllers
                 }
                 var token = HttpContext.ToTokenValue();
                 var id = await encryptionGatewayService.UnprotectAsync(userId);
-                var allEvents = (await dataQueryService.GetEventsAsync(token, active)).ToList();
+                var allEvents = (await eventService.GetEventsAsync(token, active)).ToList();
                 return Ok(allEvents.Where(e => e.Settled && e.Users!.Any(u => u.Id == Guid.Parse(id))));
             }
             catch (Exception e)

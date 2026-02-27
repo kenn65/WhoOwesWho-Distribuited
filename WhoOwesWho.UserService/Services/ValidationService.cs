@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using WhoOwesWho.Models.Models;
 using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
+using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.Gateways;
 
@@ -18,8 +19,8 @@ namespace WhoOwesWho.UserService.Services
     }
     public class ValidationService(
         IConfiguration configuration,
-        IDataQueryService userSelectionService,
-        IDataMutationService userModificationService,
+        IUserQueryRepository userQueryRepository,
+        IUserMutationRepository userMutationRepository,
         IEncryptionGatewayService encryptionGatewayService,
         IEventGatewayService eventGatewayService
         ) : ServiceBase(configuration), IValidationService
@@ -42,7 +43,7 @@ namespace WhoOwesWho.UserService.Services
                     AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
             }
 
-            return await Task.FromResult((check, errorMessage));
+            return (check, errorMessage);
         }
 
         public async Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = null)
@@ -53,7 +54,7 @@ namespace WhoOwesWho.UserService.Services
                 var regex = new Regex(pattern, RegexOptions.IgnoreCase);
                 if (!regex.IsMatch(emailAddress))
                 {
-                    return await Task.FromResult((false, Constants.CredentialsErrorMessages.EmailAddressNotValid));
+                    return (false, Constants.CredentialsErrorMessages.EmailAddressNotValid);
                 }
 
                 switch (shouldExist)
@@ -63,28 +64,26 @@ namespace WhoOwesWho.UserService.Services
                             var any = await ValidateEmailExists(emailAddress);
                             if (any.isValid)
                             {
-                                return await Task.FromResult((false, EmailAlreadyExists: Constants.CredentialsErrorMessages.EmailAddressAlreadyExists));
+                                return (false, Constants.CredentialsErrorMessages.EmailAddressAlreadyExists);
                             }
-
-                            break;
+                            return (true, string.Empty);
                         }
                     case true:
                         {
                             var any = await ValidateEmailExists(emailAddress);
                             if (!any.isValid)
                             {
-                                return await Task.FromResult((false, Constants.CredentialsErrorMessages.EmailAdddressDoesNotExist));
+                               return (false, Constants.CredentialsErrorMessages.EmailAdddressDoesNotExist);
                             }
-
                             break;
                         }
                 }
 
-                return await Task.FromResult((true, string.Empty));
+                return (true, string.Empty);
             }
             catch
             {
-                return await Task.FromResult((false, Constants.CredentialsErrorMessages.EmailAddressNotValid));
+                return (false, Constants.CredentialsErrorMessages.EmailAddressNotValid);
             }
         }
 
@@ -95,7 +94,7 @@ namespace WhoOwesWho.UserService.Services
                 throw new ArgumentException("Email address argument was not provided.");
             }
 
-            var user = await userSelectionService.GetSingleUserByEmailAddressAsync(emailAddress, true);
+            var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
             if (user == null)
             {
                 return null;
@@ -104,15 +103,18 @@ namespace WhoOwesWho.UserService.Services
             user.EmailAddressVerified = true;
 
 
-            return await userModificationService.UpdateUserAsync(user);
+            return await userMutationRepository.UpdateUserAsync(user);
         }
 
         public async Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token)
         {
             try
             {
-
                 var thisEvent = await eventGatewayService.GetUserEventAsync(request.ProtectedId!, token, true, true);
+                if (thisEvent.Name == null)
+                {
+                    return await CreateResponse(true);
+                }
                 var eventUsers =
                     (await eventGatewayService.GetEventUsersAsync(thisEvent.Id.ToString(), token, true, true))
                     .ToList();
@@ -121,56 +123,39 @@ namespace WhoOwesWho.UserService.Services
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
                 if (existingAdmin == null)
                 {
-                    return await await Task.FromResult(CreateResponse(true));
+                    return await CreateResponse(true);
                 }
 
                 if (existingAdmin.Id == Guid.Parse(id))
                 {
-                    return await await Task.FromResult(CreateResponse(true, true));
+                    return await CreateResponse(true, true);
                 }
                 
-                return await await Task.FromResult(CreateResponse(false));
+                return await CreateResponse(false);
             }
             catch
             {
-                return await await Task.FromResult(CreateResponse(false));
+                return await CreateResponse(false);
             }
         }
 
         private async Task<(bool isValid, string errorMessage)> ValidateEmailExists(string emailAddress)
         {
-            try
+            var check = await userQueryRepository.GetUserEmailExists(emailAddress);
+            if (check)
             {
-                await using var connection = new SqlConnection(AppSettings.DatabaseConnectionString);
-                connection.Open();
-                var command =
-                    new SqlCommand(
-                        $"SELECT COUNT([Id]) FROM [WoW.Users].[dbo].[WoW.User] WHERE [EmailAddress] = @emailAddress", connection);
-                command.Parameters.AddWithValue("@emailAddress", emailAddress);
-                var result = await command.ExecuteScalarAsync();
-                if ((int)result! > 0)
-                {
-                    return await Task.FromResult((true, string.Empty));
-                }
-                return await Task.FromResult((false, Constants.CredentialsErrorMessages.EmailAddressAlreadyExists));
+                return (true, string.Empty);
             }
-            catch (SqlException e)
-            {
-                throw new Exception($"An error occurred while validating the email address: {e.Message}", e);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"An error occurred while validating the email address: {e.Message}", e);
-            }
+            return (false, string.Empty);
         }
 
         private static async Task<UpdateUserVerificationModel> CreateResponse(bool success, bool noAdmin = false)
         {
-            return await Task.FromResult(new UpdateUserVerificationModel
+            return new UpdateUserVerificationModel
             {
                 Success = success,
                 NoAdmin = noAdmin
-            });
+            };
         }
     }
 }

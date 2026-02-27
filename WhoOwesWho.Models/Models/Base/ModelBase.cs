@@ -16,7 +16,7 @@ namespace WhoOwesWho.Models.Models.Base
     public abstract class ModelBase
     {
         [JsonProperty("success")]
-        public bool Success { get; set; }
+        public bool Success { get; set; } = false;
 
         [JsonProperty("message")]
         public string? Message { get; set; }

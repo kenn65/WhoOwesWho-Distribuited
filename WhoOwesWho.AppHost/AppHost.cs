@@ -1,22 +1,29 @@
+
+
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
+//var sql = builder.AddSqlServer("SqlServer")
+//    .WithLifetime(ContainerLifetime.Persistent)
+//    .WithDataVolume()
+//    .AddDatabase("WhoOwesWho");
+
 // --- DATABASE BACKUP FILES SEEDING CONTAINER ----------------------------------------------------
-IResourceBuilder<ContainerResource> seedContainer = builder.AddContainer("sql-bak-seeder", "alpine")
-    .WithContainerName("wow-sql-bak-seeder")
-    .WithBindMount(@"\\wsl.localhost\Ubuntu\home\kenn\who-owes-who-backups", "/seed")
-    .WithVolume("sqlserver-backup-data", "/backup")
-    .WithEntrypoint("sh")
-    .WithArgs("-c", @"
-        echo 'Seeding .bak files...';
-        cp -f /seed/*.bak /backup/ || echo 'No .bak files found in /seed';
-        echo 'Fixing permissions so SQL can read the files...';
-        chown -R 10001:0 /backup;
-        echo 'Backup seed complete.';
-    ")
-    .WithLifetime(ContainerLifetime.Session);
+//IResourceBuilder<ContainerResource> seedContainer = builder.AddContainer("sql-bak-seeder", "alpine")
+//    .WithContainerName("wow-sql-bak-seeder")
+//    .WithBindMount(@"D:\WhoOwesWhoAspire\Databases", "/seed")
+//    .WithVolume("sqlserver-backup-data", "/backup")
+//    .WithEntrypoint("sh")
+//    .WithArgs("-c", @"
+//        echo 'Seeding .bak files...';
+//        cp -f /seed/*.bak /backup/ || echo 'No .bak files found in /seed';
+//        echo 'Fixing permissions so SQL can read the files...';
+//        chown -R 10001:0 /backup;
+//        echo 'Backup seed complete.';
+//    ")
+//    .WithLifetime(ContainerLifetime.Session);
 
 
-// --- SQL SERVER ------------------------------------------------------------------------
+//// --- SQL SERVER ------------------------------------------------------------------------
 IResourceBuilder<ParameterResource>? dbPassword = builder.AddParameter("dbPassword", true);
 var sql = builder.AddSqlServer("sql", dbPassword, 1455)
     .WithContainerName("wow-sql-server")
@@ -26,34 +33,40 @@ var sql = builder.AddSqlServer("sql", dbPassword, 1455)
     .WithEnvironment("MSSQL_SA_PASSWORD", dbPassword)
     .WithLifetime(ContainerLifetime.Persistent);
 
+var whooweswhoUsers = sql.AddDatabase("whooweswho-users");
+var whooweswhoEvents = sql.AddDatabase("whooweswho-events");
+var whooweswhoPayments = sql.AddDatabase("whooweswho-payments");
 
-// --- DATABASES RESTORE CONTAINER ----------------------------------------------------
-var restoreContainer = builder
-    .AddContainer("sql-restore", "mcr.microsoft.com/mssql-tools")
-    .WithContainerName("wow-sql-restore")
-    .WithReference(sql)
-    .WithVolume("sqlserver-backup-data", "/backup")
-    .WithEnvironment("MSSQL_SA_PASSWORD", builder.Configuration["Parameters:dbPassword"])
-    .WithEntrypoint("/bin/sh")
-    .WithArgs("-c", @"
-    echo 'Fixing permissions...';
-    chown -R 10001:0 /backup;
-    echo 'Waiting for SQL Server...';
-    until /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -Q 'SELECT 1' > /dev/null 2>&1
-    do
-        echo 'SQL not ready yet...'
-        sleep 2
-    done
-    echo 'SQL is ready. Restoring databases...';
-    /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q \
-     ""RESTORE DATABASE [WoW.Users] FROM DISK='/backup/WoW.Users.bak' WITH REPLACE, STATS=5"";
-    /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q \
-     ""RESTORE DATABASE [WoW.Events] FROM DISK='/backup/WoW.Events.bak' WITH REPLACE, STATS=5"";
-    /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q \
-     ""RESTORE DATABASE [WoW.Payments] FROM DISK='/backup/WoW.Payments.bak' WITH REPLACE, STATS=5"";
-    echo 'SQL RESTORE COMPLETE';
-    ".Replace("\r\n", "\n"))
-        .WithLifetime(ContainerLifetime.Session);
+
+
+
+//// --- DATABASES RESTORE CONTAINER ----------------------------------------------------
+//var restoreContainer = builder
+//    .AddContainer("sql-restore", "mcr.microsoft.com/mssql-tools")
+//    .WithContainerName("wow-sql-restore")
+//    .WithReference(sql)
+//    .WithVolume("sqlserver-backup-data", "/backup")
+//    .WithEnvironment("MSSQL_SA_PASSWORD", builder.Configuration["Parameters:dbPassword"])
+//    .WithEntrypoint("/bin/sh")
+//    .WithArgs("-c", @"
+//    echo 'Fixing permissions...';
+//    chown -R 10001:0 /backup;
+//    echo 'Waiting for SQL Server...';
+//    until /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -Q 'SELECT 1' > /dev/null 2>&1
+//    do
+//        echo 'SQL not ready yet...'
+//        sleep 2
+//    done
+//    echo 'SQL is ready. Restoring databases...';
+//    /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q \
+//     ""RESTORE DATABASE [WoW.Users] FROM DISK='/backup/WoW.Users.bak' WITH REPLACE, STATS=5"";
+//    /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q \
+//     ""RESTORE DATABASE [WoW.Events] FROM DISK='/backup/WoW.Events.bak' WITH REPLACE, STATS=5"";
+//    /opt/mssql-tools/bin/sqlcmd -S sql,1433 -U sa -P $MSSQL_SA_PASSWORD -d master -Q \
+//     ""RESTORE DATABASE [WoW.Payments] FROM DISK='/backup/WoW.Payments.bak' WITH REPLACE, STATS=5"";
+//    echo 'SQL RESTORE COMPLETE';
+//    ".Replace("\r\n", "\n"))
+//        .WithLifetime(ContainerLifetime.Session);
 
 // --- DATABASES BACKUP CONTAINER ----------------------------------------------------
 //var backupContainer = builder
@@ -130,6 +143,7 @@ var encryptionService = builder.AddProject<Projects.WhoOwesWho_EncryptionService
 var eventService = builder.AddProject<Projects.WhoOwesWho_EventService>("eventservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(whooweswhoEvents)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
@@ -142,12 +156,14 @@ var messagingService = builder.AddProject<Projects.WhoOwesWho_MessagingService>(
 var paymentService = builder.AddProject<Projects.WhoOwesWho_PaymentService>("paymentservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(whooweswhoPayments)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
 var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(whooweswhoUsers)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 

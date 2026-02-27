@@ -31,10 +31,10 @@ namespace WhoOwesWho.EventService.Models
             [JsonProperty("startDateIso")] 
             public string StartDateIso => new DateTime(StartDate).ToDisplayDateFormat();
 
-        [JsonProperty("startDateIsoYmd")]
+            [JsonProperty("startDateIsoYmd")]
             public string StartDateIsoYmd => new DateTime(StartDate).ToIsoDateTimeFormat();
 
-        [JsonProperty("settled")]
+            [JsonProperty("settled")]
             public bool Settled { get; set; }
 
             [JsonProperty("users")]
