@@ -10,8 +10,8 @@ namespace WhoOwesWho.PaymentService.Services
 {
     public interface IDataQueryService
     {
-        Task<IEnumerable<UserPaymentModel>> GetUserPaymentsAsync(UserBalanceRequestModel request, bool I);
-        Task<IEnumerable<UserPaymentModel>> GetPaymentsAsync(PaymentsRequestModel request);
+        Task<IEnumerable<UserPaymentResponseModel>> GetUserPaymentsAsync(UserBalanceRequestModel request, bool isCreditor);
+        Task<IEnumerable<UserPaymentResponseModel>> GetPaymentsAsync(PaymentsRequestModel request);
         Task<PaymentDetailsModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request);
     }
 
@@ -21,13 +21,13 @@ namespace WhoOwesWho.PaymentService.Services
         IUserGatewayService userGatewayService
         ) : ServiceBase(configuration), IDataQueryService
     {
-        public async Task<IEnumerable<UserPaymentModel>> GetUserPaymentsAsync(UserBalanceRequestModel request,
+        public async Task<IEnumerable<UserPaymentResponseModel>> GetUserPaymentsAsync(UserBalanceRequestModel request,
             bool isCreditor)
         {
             try
             {
                 var creditor = isCreditor ? 1 : 0;
-                var userPaymentModels = new List<UserPaymentModel>();
+                var userPaymentModels = new List<UserPaymentResponseModel>();
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {
                     await connection.OpenAsync();
@@ -43,7 +43,7 @@ namespace WhoOwesWho.PaymentService.Services
 
                     while (await reader.ReadAsync())
                     {
-                        userPaymentModels.Add(new UserPaymentModel
+                        userPaymentModels.Add(new UserPaymentResponseModel
                         {
                             Id = reader.GetGuid(0),
                             EventId = reader.GetGuid(1),
@@ -66,9 +66,9 @@ namespace WhoOwesWho.PaymentService.Services
             }
         }
 
-        public async Task<IEnumerable<UserPaymentModel>> GetPaymentsAsync(PaymentsRequestModel request)
+        public async Task<IEnumerable<UserPaymentResponseModel>> GetPaymentsAsync(PaymentsRequestModel request)
         {
-            var userPaymentModels = new List<UserPaymentModel>();
+            var userPaymentModels = new List<UserPaymentResponseModel>();
 
             try
             {
@@ -88,7 +88,7 @@ namespace WhoOwesWho.PaymentService.Services
                         var protectedUserId =
                             await encryptionGatewayService.ProtectAsync(reader.GetGuid(8).ToString());
 
-                        userPaymentModels.Add(new UserPaymentModel
+                        userPaymentModels.Add(new UserPaymentResponseModel
                         {
                             Id = reader.GetGuid(0),
                             EventId = reader.GetGuid(1),

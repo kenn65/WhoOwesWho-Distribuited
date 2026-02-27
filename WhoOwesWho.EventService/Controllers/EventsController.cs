@@ -8,20 +8,16 @@ namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventsController(
-        IDataMutationService dataModificationService, 
-        IDataQueryService dataSelectionService)
-        : ControllerBase
+    public class EventsController(IEventService eventService) : ControllerBase
     {
         [HttpPut]
-        [Route("create")]
         [Authorize]
         public async Task<IActionResult> CreateEventAsync([FromBody] EventRequestModel request)
         {
             try
             {
                 request.Token = HttpContext.ToTokenValue();
-                return Ok(await dataModificationService.CreateEventAsync(request));
+                return Ok(await eventService.CreateEventAsync(request));
             }
             catch (Exception e)
             {
@@ -38,7 +34,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataSelectionService.GetEventsAsync(token, active));
+                return Ok(await eventService.GetEventsAsync(token, active));
             }
             catch (Exception e)
             {
@@ -54,7 +50,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await dataSelectionService.GetEventAsync(Guid.Parse(eventId), token, active));
+                return Ok(await eventService.GetEventAsync(Guid.Parse(eventId), token, active));
             }
             catch (Exception e)
             {
@@ -71,7 +67,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 request.Token = HttpContext.ToTokenValue();
-                return Ok(await dataModificationService.UpdateEventAsync(request));
+                return Ok(await eventService.UpdateEventAsync(request));
             }
             catch (Exception e)
             {
@@ -86,7 +82,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await dataModificationService.DeleteEventAsync(Guid.Parse(eventId)));
+                return Ok(await eventService.DeleteEventAsync(Guid.Parse(eventId)));
             }
             catch (Exception e)
             {
@@ -105,7 +101,7 @@ namespace WhoOwesWho.EventService.Controllers
                 {
                     EventId = eventId
                 };
-                var response = await dataModificationService.SettleEventAsync(request);
+                var response = await eventService.SettleEventAsync(request);
                 return Ok(response);
             }
             catch (Exception e)

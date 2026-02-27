@@ -9,7 +9,7 @@ namespace WhoOwesWho.PaymentService.Models
         public EventModel? Event { get; set; }
 
         [JsonProperty("payments")]
-        public IEnumerable<UserPaymentModel>? Payments { get; set; }
+        public IEnumerable<UserPaymentResponseModel>? Payments { get; set; }
 
         [JsonProperty("balances")]
         public IEnumerable<UserBalanceResponseModel>? Balances { get; set; }

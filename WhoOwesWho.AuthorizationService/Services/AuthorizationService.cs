@@ -20,11 +20,14 @@ namespace WhoOwesWho.AuthorizationService.Services
     {
         public async Task<AuthorizationResponseModel?> Authorize(AuthorizationRequestModel request)
         {
-            var unprotectedEmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+            var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, unprotectedEmailAddress!)
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Email, user.EmailAddress!),
+                new(JwtRegisteredClaimNames.Name, user.FullName ?? ""),
+                new("admin", user.Admin.ToString())
             };
 
             var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(AppSettings.AuthorizationJwtSecret));
@@ -39,7 +42,6 @@ namespace WhoOwesWho.AuthorizationService.Services
 
             var token = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
-            var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
             var response = await encryptionGatewayService.ProtectCookiesAsync(user, token, true);
             return await Task.FromResult(response);
         }

@@ -1,6 +1,6 @@
 ﻿using WhoOwesWho.EventService.Services.Gateways;
-using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
 
@@ -13,7 +13,7 @@ namespace WhoOwesWho.PaymentService.Services
 
     public class UserBalanceService(
         IConfiguration configuration,
-        IDataQueryService dataSelectionService,
+        IPaymentQueryRepository paymentQueryRepository,
         IUserGatewayService userGatewayService,
         IEventGatewayService eventGatewayService,
         IEncryptionGatewayService encryptionGatewayService
@@ -27,8 +27,8 @@ namespace WhoOwesWho.PaymentService.Services
             {
                 var thisEvent = await eventGatewayService.GetEventAsync(request.EventId!, request.Token!, true, active);
                 var protectedUserId = await encryptionGatewayService.ProtectAsync(request.UserId!);
-                var userCredits = (await dataSelectionService.GetUserPaymentsAsync(request, true)).ToList();
-                var userDebits = (await dataSelectionService.GetUserPaymentsAsync(request, false)).ToList();
+                var userCredits = (await paymentQueryRepository.GetUserPaymentsAsync(request, true)).ToList();
+                var userDebits = (await paymentQueryRepository.GetUserPaymentsAsync(request, false)).ToList();
                 
                 var creditUserAmountSum = userCredits.Any() ? userCredits.Sum(c => c.Amount) : 0;
                 var debitUserAmountSum = userDebits.Any() ? userDebits.Sum(d => d.Amount) : 0;

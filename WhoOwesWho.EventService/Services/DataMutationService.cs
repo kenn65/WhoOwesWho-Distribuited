@@ -24,7 +24,7 @@ namespace WhoOwesWho.EventService.Services
         IEncryptionGatewayService encryptionGatewayService,
         IUserGatewayService userGatewayService,
         ICurrencyGatewayService currencyGatewayService
-        ) : ServiceBase(configuration), IDataMutationService
+        ) : ServiceBase(configuration) 
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
@@ -95,7 +95,7 @@ namespace WhoOwesWho.EventService.Services
             var response = new UpdateResponseModel();
             try
             {
-                await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
+                //await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
 
                 await using (var connection = new SqlConnection(AppSettings.DatabaseConnectionString))
                 {

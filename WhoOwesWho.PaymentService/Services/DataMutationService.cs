@@ -111,7 +111,7 @@ namespace WhoOwesWho.PaymentService.Services
 
                 return await Task.FromResult(new UpdatePaymentResponseModel
                 {
-                    Success = true,
+                    Success = true
                 });
             }
             catch 
@@ -153,12 +153,12 @@ namespace WhoOwesWho.PaymentService.Services
                     Message = "Payment deleted successfully."
                 });
             }
-            catch 
+            catch (Exception e)
             {
                 return await Task.FromResult(new DeletePaymentResponseModel
                 {
                     Success = false,
-                    Message = "An unexpected error occurred. Please, try again."
+                    Message = $"An unexpected error occurred: {e.Message}. Please, try again."
                 });
             }
         }

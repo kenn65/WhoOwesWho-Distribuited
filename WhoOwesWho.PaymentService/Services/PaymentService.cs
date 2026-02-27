@@ -1,6 +1,7 @@
 ﻿using WhoOwesWho.EventService.Models;
 using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
 
@@ -14,8 +15,8 @@ namespace WhoOwesWho.PaymentService.Services
 
     public class PaymentService(
         IConfiguration configuration,
-        IDataQueryService dataSelectionService,
-        IDataMutationService dataModificationService,
+        IPaymentQueryRepository paymentQueryRepository,
+        IPaymentMutationRepository paymentMutationRepository,
         IUserBalanceService userBalanceService,
         IEncryptionGatewayService encryptionGatewayService,
         IEventGatewayService eventGatewayService,
@@ -40,7 +41,7 @@ namespace WhoOwesWho.PaymentService.Services
                 });
             }
 
-            var paymentAddition = await dataModificationService.AddPaymentAsync(request, timeTicks);
+            var paymentAddition = await paymentMutationRepository.AddPaymentAsync(request, timeTicks);
             if (!paymentAddition.Success)
             {
                 await CreateUnsuccessfulPaymentResponseAsync();
@@ -49,7 +50,7 @@ namespace WhoOwesWho.PaymentService.Services
             foreach (var userId in request.UserIds!.Where(u => u != request.CreditorId))
             {
                 timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
-                var creditUserAddition = await dataModificationService.AddPaymentUserAsync(request, timeTicks, true);
+                var creditUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, true);
                 if (!creditUserAddition.Success)
                 {
                     return await CreateUnsuccessfulPaymentResponseAsync();
@@ -57,18 +58,18 @@ namespace WhoOwesWho.PaymentService.Services
 
                 timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
                 request.DebitorId = userId;
-                var debitUserAddition = await dataModificationService.AddPaymentUserAsync(request, timeTicks, false);
+                var debitUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, false);
                 if (!debitUserAddition.Success)
                 {
                     return await CreateUnsuccessfulPaymentResponseAsync();
                 }
             }
 
-            return await Task.FromResult(new CreatePaymentResponseModel()
+            return new CreatePaymentResponseModel
             {
                 Message = "Payment added successfully.",
                 Success = true
-            });
+            };
         }
 
         public async Task<PaymentPageResponseModel> GetPaymentsPageDataAsync(PaymentsRequestModel request)
@@ -87,7 +88,7 @@ namespace WhoOwesWho.PaymentService.Services
                     .ToList();
                 var balances = (await CalculateUserBalances(request, eventUsers)).OrderByDescending(a => a.Balance)
                     .ToList();
-                var payments = (await dataSelectionService.GetPaymentsAsync(request)).ToList();
+                var payments = (await paymentQueryRepository.GetPaymentsAsync(request)).ToList();
 
 
                 for (var i = payments.Count - 1; i > -1; i--)

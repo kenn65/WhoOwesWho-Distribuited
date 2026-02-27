@@ -1,4 +1,5 @@
 ﻿using WhoOwesWho.UserService.Models;
+using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 
 namespace WhoOwesWho.UserService.Services
@@ -9,14 +10,13 @@ namespace WhoOwesWho.UserService.Services
     }
     public class ChangePasswordService(
         IConfiguration configuration,
-        IDataMutationService dataModificationService,
-        IDataQueryService dataSelectionService
+        IUserQueryRepository userQueryRepository,
+        IUserMutationRepository userMutationRepository
         ) : ServiceBase(configuration), IChangePasswordService
     {
         public async Task<ChangePasswordResponseModel?> ChangePasswordAsync(ChangePasswordRequestModel request)
         {
-
-            var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
+              var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
             if (user == null)
             {
                 return await Task.FromResult(new ChangePasswordResponseModel
@@ -38,7 +38,7 @@ namespace WhoOwesWho.UserService.Services
             user.Password = request.NewPassword1;
             //user.Password = await encryptionGatewayService.ProtectAsync(request.NewPassword1!, true);
 
-            var entity = await dataModificationService.UpdateUserAsync(user);
+            var entity = await userMutationRepository.UpdateUserAsync(user);
             if (entity != null)
             {
                 return await Task.FromResult(new ChangePasswordResponseModel

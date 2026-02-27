@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Components;
-using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.Models.Models;
 using WhoOwesWho.UserService.Models;
+using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.Gateways;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
@@ -13,8 +13,8 @@ namespace WhoOwesWho.UserService.Services
     }
     public class ForgotPasswordService(
         IConfiguration configuration, 
-        IDataQueryService dataSelectionService, 
-        IDataMutationService dataModificationService,
+        IUserQueryRepository userQueryRepository, 
+        IUserMutationRepository userMutationRepository,
         IEncryptionGatewayService encryptionGatewayService,
         IMessagingPublisher messagingPublisher
        ) : ServiceBase(configuration), IForgotPasswordService
@@ -23,7 +23,7 @@ namespace WhoOwesWho.UserService.Services
         {
             try
             {
-                var user = await dataSelectionService.GetSingleUserByEmailAddressAsync(request.EmailAddress, false);
+                var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, false);
                 if (user == null)
                 {
                     return false; // User not found
@@ -54,8 +54,8 @@ namespace WhoOwesWho.UserService.Services
                 };
 
 
-                await dataModificationService.DeleteForgotPasswordTokenAsync(entity.Id);
-                if (!await dataModificationService.CreateForgotPasswordTokenAsync(new ForgotPasswordTokenModel
+                await userMutationRepository.DeleteForgotPasswordTokenAsync(entity.Id);
+                if (!await userMutationRepository.CreateForgotPasswordTokenAsync(new ForgotPasswordTokenModel
                 {
                     UserId = request.User.Id,
                     ForgotPasswordToken = request.ForgotPasswordToken,

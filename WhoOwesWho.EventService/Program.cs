@@ -1,25 +1,30 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using WhoOwesWho.EventService.EfCore.Context;
+using WhoOwesWho.EventService.EfCore.Extensions;
 using WhoOwesWho.EventService.Middleware;
+using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Services.Gateways;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<EventDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("whooweswho-events")));
+
 builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddScoped<IEventService, EventService>();
-builder.Services.AddScoped<IDataMutationService, DataMutationService>();
-builder.Services.AddScoped<IDataQueryService, DataQueryService>();
+builder.Services.AddScoped<IEventMutationRepository, EventMutationRepository>();
+builder.Services.AddScoped<IEventQueryRepository, EventQueryRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
-
-
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -92,6 +97,7 @@ app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    await app.ConfigureDatabaseAsync();
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.EventService API"));

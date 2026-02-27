@@ -30,6 +30,6 @@ namespace WhoOwesWho.Models.Models
         public bool EmailAddressVerified { get; set; }
 
         [JsonIgnore]
-        public decimal Balance { get; set; }
+        public decimal Balance { get; set; } = 0;
     }
 }
