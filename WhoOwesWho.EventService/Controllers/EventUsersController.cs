@@ -2,14 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Models;
-using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services;
 
 namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventUsersController(IEventService eventService, IEventQueryRepository eventQueryRepository) : ControllerBase
+    public class EventUsersController(IEventService eventService) : ControllerBase
     {
         [HttpGet]
         [Route("{eventId}/{active}")]
@@ -19,7 +18,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await eventQueryRepository.GetEventUsersAsync(eventId, token, active));
+                return Ok(await eventService.GetEventUsersAsync(eventId, token, active));
             }
             catch (Exception e)
             {
@@ -36,7 +35,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await eventQueryRepository.GetAssignmentAsync(userId!, token, true));
+                return Ok(await eventService.GetAssignmentAsync(userId!, token, true));
             }
             catch (Exception e)
             {
