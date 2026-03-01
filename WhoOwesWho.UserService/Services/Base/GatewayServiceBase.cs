@@ -27,7 +27,7 @@ namespace WhoOwesWho.UserService.Services.Base
 
         public async Task<string> BuildEndpoint(string baseEndpoint, IDictionary<string, dynamic>? parameters, bool encode)
         {
-            if (parameters == null)
+            if (parameters is null)
             {
                 return baseEndpoint;
             }

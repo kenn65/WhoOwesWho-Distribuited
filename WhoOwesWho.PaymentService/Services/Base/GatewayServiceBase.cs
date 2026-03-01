@@ -27,7 +27,7 @@ namespace WhoOwesWho.PaymentService.Services.Base
 
         private static async Task<string> BuildEndpoint(string baseEndpoint, bool encode, IDictionary<string, dynamic>? parameters)
         {
-            if (parameters == null)
+            if (parameters is null)
             {
                 return baseEndpoint;
             }

@@ -6,6 +6,7 @@ using WhoOwesWho.Models.Models;
 using WhoOwesWho.Models.Models.Extensions;
 using WhoOwesWho.PaymentService.EfCore.Context;
 using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Repositories
@@ -17,7 +18,7 @@ namespace WhoOwesWho.PaymentService.Repositories
         Task<PaymentDetailsModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request);
     }
 
-    public class PaymentQueryRepository(PaymentDbContext context, IEncryptionGatewayService encryptionGatewayService, IUserGatewayService userGatewayService) : IPaymentQueryRepository
+    public class PaymentQueryRepository(PaymentDbContext context, IPaymentSecurityService paymentSecurityService, IUserGatewayService userGatewayService) : IPaymentQueryRepository
     {
 
         public async Task<IEnumerable<UserPaymentResponseModel>> GetUserPaymentsAsync(UserBalanceRequestModel request, bool isCreditor)
@@ -68,7 +69,7 @@ namespace WhoOwesWho.PaymentService.Repositories
 
             foreach (var row in rows)
             {
-                var protectedUserId = await encryptionGatewayService.ProtectAsync(row.UserId.ToString());
+                var protectedUserId = await paymentSecurityService.ProtectAsync(row.UserId.ToString());
                 var authorizedUser = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!, true, false);
 
                 if (row.IsCreditor)
@@ -132,7 +133,7 @@ namespace WhoOwesWho.PaymentService.Repositories
             var userResults = await Task.WhenAll(
                 rows.Select(async row =>
                 {
-                    var protectedUserId = await encryptionGatewayService.ProtectAsync(row.UserId.ToString());
+                    var protectedUserId = await paymentSecurityService.ProtectAsync(row.UserId.ToString());
                     var user = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!, true, false);
 
                     return new

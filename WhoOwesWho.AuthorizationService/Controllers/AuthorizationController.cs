@@ -2,7 +2,6 @@
 using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
-using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.AuthorizationService.Controllers
 {
@@ -10,8 +9,8 @@ namespace WhoOwesWho.AuthorizationService.Controllers
     [ApiController]
     public class AuthorizationController(
         IAuthorizationService authorizationService, 
-        IAuthenticationService authenticationService, 
-        IValidationService validationService, 
+        IAuthenticationNotificationService authenticationNotificationService, 
+        IAuthenticationValidationService authenticationValidationService, 
         IEncryptionGatewayService encryptionGatewayService
         ) : ControllerBase
     {
@@ -31,13 +30,13 @@ namespace WhoOwesWho.AuthorizationService.Controllers
                     return Ok(actionResult);
                 }
 
-                if (!await validationService.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
+                if (!await authenticationValidationService.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
                 {
                     actionResult.Message = "Invalid combination of e-mail and password entered.";
                     return Ok(actionResult);
                 }
 
-                var code = await authenticationService.SendAuthenticationMessage(request);
+                var code = await authenticationNotificationService.SendAuthenticationMessage(request);
                 actionResult.Success = !string.IsNullOrWhiteSpace(code);
                 actionResult.Code = code;
                 actionResult.Message = actionResult.Success

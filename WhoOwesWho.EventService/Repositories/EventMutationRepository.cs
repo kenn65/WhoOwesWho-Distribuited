@@ -2,6 +2,7 @@
 using WhoOwesWho.EventService.EfCore.Context;
 using WhoOwesWho.EventService.EfCore.DataModels;
 using WhoOwesWho.EventService.Models;
+using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Services.Gateways;
 
 namespace WhoOwesWho.EventService.Repositories
@@ -16,7 +17,12 @@ namespace WhoOwesWho.EventService.Repositories
         Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request);
     }
 
-    public class EventMutationRepository(EventDbContext context, IEventQueryRepository eventQueryRepository, IUserGatewayService userGatewayService, ICurrencyGatewayService currencyGatewayService, IEncryptionGatewayService encryptionGatewayService) : IEventMutationRepository
+    public class EventMutationRepository(
+        EventDbContext context, 
+        IEventQueryRepository eventQueryRepository, 
+        IUserGatewayService userGatewayService, 
+        ICurrencyGatewayService currencyGatewayService, 
+        IEventSecurityService eventSecurityService) : IEventMutationRepository
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
@@ -43,7 +49,7 @@ namespace WhoOwesWho.EventService.Repositories
 
                 if (request.AutoAssign)
                 {
-                    var protectedUserId = await encryptionGatewayService.ProtectAsync(creationUser.Id.ToString());
+                    var protectedUserId = await eventSecurityService.ProtectAsync(creationUser.Id.ToString());
                     await AssignToEventAsync(new AssignmentRequestModel
                     {
                         EventId = request.Id.ToString(),
@@ -147,7 +153,7 @@ namespace WhoOwesWho.EventService.Repositories
         {
             try
             {
-                var userId = await encryptionGatewayService.UnprotectAsync(request.UserId!);
+                var userId = await eventSecurityService.UnprotectAsync(request.UserId!);
                 await context.EventAssingments
                        .Where(x => x.EventId == Guid.Parse(request.EventId!) && x.UserId == Guid.Parse(userId))
                        .ExecuteDeleteAsync();

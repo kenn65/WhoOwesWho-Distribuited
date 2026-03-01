@@ -10,6 +10,7 @@ using WhoOwesWho.PaymentService.Middleware;
 using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.PaymentService.Services.Gateways;
+using static WhoOwesWho.PaymentService.Services.IPaymentCalculationService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +21,10 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddScoped<IUserBalanceService, UserBalanceService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddScoped<IPaymentDetailsService, PaymentDetailsService>();
+builder.Services.AddScoped<IPaymentLookupService, PaymentLookupService>();
+builder.Services.AddScoped<IPaymentCommandService, PaymentCommandService>();
+builder.Services.AddScoped<IPaymentSecurityService, PaymentSecurityService>();
+builder.Services.AddScoped<IPaymentCalculationService, PaymentCalculationService>();
 builder.Services.AddScoped<IPaymentQueryRepository, PaymentQueryRepository>();
 builder.Services.AddScoped<IPaymentMutationRepository , PaymentMutationRepository>();
 builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();

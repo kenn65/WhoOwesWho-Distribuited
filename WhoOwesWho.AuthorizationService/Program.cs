@@ -1,5 +1,4 @@
 using Azure.Messaging.ServiceBus;
-using Flurl.Http;
 using Microsoft.OpenApi.Models;
 using WhoOwesWho.AuthorizationService.Middleware;
 using WhoOwesWho.AuthorizationService.Services;
@@ -19,8 +18,9 @@ builder.Services.AddSingleton(provider =>
 
 builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<IValidationService, ValidationService>();
+builder.Services.AddScoped<IAuthorizationSecurityService, AuthorizationSecurityService>();
+builder.Services.AddScoped<IAuthenticationNotificationService, AuthenticationNotificationService>();
+builder.Services.AddScoped<IAuthenticationValidationService, AuthenticationValidationService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
 

@@ -4,24 +4,26 @@ namespace WhoOwesWho.Models.Models.Extensions
 {
     public static class DateTimeExtensions
     {
+        public static CultureInfo CultureInfo => new CultureInfo("da-DK");
+
         public static string ToIsoDateTimeFormat(this DateTime value)
         {
-            return value.ToString("yyyy-MM-ddThh:mm:ss", CultureInfo.InvariantCulture);
+            return value.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo);
         }
 
         public static string ToDisplayDateTimeFormat(this DateTime value)
         {
-            return value.ToString("dd-MM-yyyy hh:mm:ss", CultureInfo.InvariantCulture);
+            return value.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo);
         }
 
         public static string ToDisplayDateFormat(this DateTime value)
         {
-            return value.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+            return value.ToString("dd-MM-yyyy", CultureInfo);
         }
 
         public static string ToIsoDateFormat(this DateTime value)
         {
-            return value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            return value.ToString("yyyy-MM-dd", CultureInfo);
         }
     }
 }

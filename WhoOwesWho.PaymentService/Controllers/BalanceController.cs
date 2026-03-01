@@ -11,7 +11,7 @@ namespace WhoOwesWho.PaymentService.Controllers
     [ApiController]
     public class BalanceController(
         IUserBalanceService userBalanceService, 
-        IEncryptionGatewayService encryptionGatewayService
+        IPaymentSecurityService paymentSecurityService
         ) : ControllerBase
     {
         [HttpGet]
@@ -21,7 +21,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var unprotectedUserId = await encryptionGatewayService.UnprotectAsync(userId);
+                var unprotectedUserId = await paymentSecurityService.UnprotectAsync(userId);
                 
                 var request = new UserBalanceRequestModel
                 {

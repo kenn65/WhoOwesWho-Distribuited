@@ -27,7 +27,7 @@ namespace WhoOwesWho.MessagingService.Services.Base
 
         public async Task<string> BuildEndpoint(string baseEndpoint, IDictionary<string, dynamic>? parameters)
         {
-            if (parameters == null)
+            if (parameters is null)
             {
                 return baseEndpoint;
             }

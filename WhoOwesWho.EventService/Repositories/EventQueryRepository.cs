@@ -4,6 +4,7 @@ using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.Models.Models;
 using Mapster;
+using WhoOwesWho.EventService.Services;
 
 namespace WhoOwesWho.EventService.Repositories
 {
@@ -16,7 +17,7 @@ namespace WhoOwesWho.EventService.Repositories
         Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true);
     }
 
-    public class EventQueryRepository(EventDbContext context, IEncryptionGatewayService encryptionGatewayService, IUserGatewayService userGatewayService) : IEventQueryRepository
+    public class EventQueryRepository(EventDbContext context, IEventSecurityService eventSecurityService, IUserGatewayService userGatewayService) : IEventQueryRepository
     {
         public async Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true)
         {
@@ -29,9 +30,9 @@ namespace WhoOwesWho.EventService.Repositories
 
         public async Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true)
         {
-            var unprotectedUserId = await encryptionGatewayService.UnprotectAsync(userId);
+            var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
                 var entityAssignments = await context.EventAssingments.Where(ea => ea.UserId.ToString() == unprotectedUserId).FirstOrDefaultAsync();
-            if (entityAssignments == null)
+            if (entityAssignments is null)
             {
                 return new EventResponseModel();
             }
@@ -71,9 +72,9 @@ namespace WhoOwesWho.EventService.Repositories
         }
         public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true)
         {
-            var userId = await encryptionGatewayService.UnprotectAsync(protectedUserId);
+            var userId = await eventSecurityService.UnprotectAsync(protectedUserId);
             var assignment = await context.EventAssingments.Where(ea => ea.UserId.ToString() == userId).FirstOrDefaultAsync();
-            if (assignment == null)
+            if (assignment is null)
             {
                 return new EventAssignmentModel();
             }
@@ -89,7 +90,7 @@ namespace WhoOwesWho.EventService.Repositories
         {
             var users = await Task.WhenAll(userIds.Select(async userId =>
             {
-                var protectedUserId = await encryptionGatewayService.ProtectAsync(userId.ToString());
+                var protectedUserId = await eventSecurityService.ProtectAsync(userId.ToString());
                 return await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true, false);
             }));
             return [.. users];

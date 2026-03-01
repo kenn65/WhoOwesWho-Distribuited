@@ -10,26 +10,26 @@ using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
-    public interface IValidationService
+    public interface IUserValidationService
     {
         Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encrypted = false);
         Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = false);
         Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
         Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token);
     }
-    public class ValidationService(
+    public class UserValidationService(
         IConfiguration configuration,
         IUserQueryRepository userQueryRepository,
         IUserMutationRepository userMutationRepository,
-        IEncryptionGatewayService encryptionGatewayService,
+        IUserSecurityService userSecurityService,
         IEventGatewayService eventGatewayService
-        ) : ServiceBase(configuration), IValidationService
+        ) : ServiceBase(configuration), IUserValidationService
     {
         public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encypted = false)
         {
             if (encypted)
             {
-                password = await encryptionGatewayService.UnprotectAsync(password!, false);
+                password = await userSecurityService.UnprotectAsync(password!);
             }
             var errorMessage = string.Empty;
             var check = password!.Length >= int.Parse(AppSettings.PasswordLengthRequired)
@@ -95,7 +95,7 @@ namespace WhoOwesWho.UserService.Services
             }
 
             var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
-            if (user == null)
+            if (user is null)
             {
                 return null;
             }
@@ -111,17 +111,17 @@ namespace WhoOwesWho.UserService.Services
             try
             {
                 var thisEvent = await eventGatewayService.GetUserEventAsync(request.ProtectedId!, token, true, true);
-                if (thisEvent.Name == null)
+                if (thisEvent.Name is null)
                 {
                     return await CreateResponse(true);
                 }
                 var eventUsers =
                     (await eventGatewayService.GetEventUsersAsync(thisEvent.Id.ToString(), token, true, true))
                     .ToList();
-                var id = await encryptionGatewayService.UnprotectAsync(request.ProtectedId!, true);
+                var id = await userSecurityService.UnprotectAsync(request.ProtectedId!);
 
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
-                if (existingAdmin == null)
+                if (existingAdmin is null)
                 {
                     return await CreateResponse(true);
                 }

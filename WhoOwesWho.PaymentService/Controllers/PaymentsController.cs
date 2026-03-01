@@ -11,8 +11,8 @@ namespace WhoOwesWho.PaymentService.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class PaymentsController(
-        IPaymentService paymentService, 
-        IPaymentDetailsService paymentDetailsService,
+        IPaymentLookupService paymentLookupService, 
+        IPaymentCommandService paymentCommandService,
         IEncryptionGatewayService encryptionGatewayService
         ) : ControllerBase
     {
@@ -33,7 +33,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     unprotectedUserIds.Add(userId);
                 }
                 request.UserIds = unprotectedUserIds;
-                var response = await paymentService.CreatePaymentAsync(request);
+                var response = await paymentCommandService.CreatePaymentAsync(request);
                 return Ok(response);
             }
             catch
@@ -56,7 +56,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     Active = active,
                     Token = HttpContext.ToTokenValue()
                 };
-                return Ok(await paymentService.GetPaymentsPageDataAsync(request));
+                return Ok(await paymentLookupService.GetPaymentsPageDataAsync(request));
             }
             catch
             {
@@ -78,7 +78,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     PaymentId = paymentId,
                     Token = HttpContext.ToTokenValue()
                 };
-                return Ok(await paymentDetailsService.GetPaymentDetailsAsync(request));
+                return Ok(await paymentLookupService.GetPaymentDetailsAsync(request));
             }
             catch
             {
@@ -104,7 +104,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     unprotectedUserIds.Add(userId);
                 }
                 request.UserIds = unprotectedUserIds;
-                var response = await paymentDetailsService.UpdatePaymentDetailsAsync(request);
+                var response = await paymentCommandService.UpdatePaymentDetailsAsync(request);
                 return Ok(response);
             }
             catch
@@ -121,7 +121,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                return Ok(await paymentDetailsService.DeletePaymentAsync(paymentId));
+                return Ok(await paymentCommandService.DeletePaymentAsync(paymentId));
             }
             catch
             {

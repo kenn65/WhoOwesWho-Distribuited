@@ -8,7 +8,7 @@ namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventUsersController(IEventService eventService) : ControllerBase
+    public class EventUsersController(IEventLookupService eventLookupService, IEventCommandService eventCommandService) : ControllerBase
     {
         [HttpGet]
         [Route("{eventId}/{active}")]
@@ -18,7 +18,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await eventService.GetEventUsersAsync(eventId, token, active));
+                return Ok(await eventLookupService.GetEventUsersAsync(eventId, token, active));
             }
             catch (Exception e)
             {
@@ -35,7 +35,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await eventService.GetAssignmentAsync(userId!, token, true));
+                return Ok(await eventLookupService.GetAssignmentAsync(userId!, token, true));
             }
             catch (Exception e)
             {
@@ -51,7 +51,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 request.Token = HttpContext.ToTokenValue();
-                return Ok(await eventService.AssignAsync(request));
+                return Ok(await eventCommandService.AssignAsync(request));
             }
             catch (Exception e)
             {
@@ -67,7 +67,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await eventService.UnassignFromEventAsync(request));
+                return Ok(await eventCommandService.UnassignFromEventAsync(request));
             }
             catch (Exception e)
             {

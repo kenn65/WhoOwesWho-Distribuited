@@ -2,45 +2,46 @@
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.Gateways;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
+using WhoOwesWho.UserService.Settings;
 
 namespace WhoOwesWho.UserService.Services
 {
-    public interface IForgotPasswordService
+    public interface IUserNotificationService
     {
-        public Task<bool> SendForgotPasswordEmailAsync(ForgotPasswordRequestModel requestModel);
+        Task SendAccountConfirmationMessage(UserModel entity, string host);
+        Task SendPasswordRecoveryMessage(UserModel entity, string host, string forgotPasswordToken);
     }
-    public class ForgotPasswordService(
-        IConfiguration configuration, 
-        IUserQueryRepository userQueryRepository, 
-        IUserMutationRepository userMutationRepository,
-        IEncryptionGatewayService encryptionGatewayService,
-        IMessagingPublisher messagingPublisher
-       ) : ServiceBase(configuration), IForgotPasswordService
+
+
+    public class UserNotificationService(
+         IConfiguration configuration,
+         IUserMutationRepository userMutationRepository,
+         IMessagingPublisher messagingPublisher
+         ) : ServiceBase(configuration), IUserNotificationService
     {
-        public async Task<bool> SendForgotPasswordEmailAsync(ForgotPasswordRequestModel request)
+        public async Task SendAccountConfirmationMessage(UserModel entity, string host)
         {
             try
             {
-                var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, false);
-                if (user == null)
+                var request = new MessagingRequestModel
                 {
-                    return false; // User not found
-                }
+                    ApiKey = AppSettings.MessagingMicroServiceApiKey,
+                    Host = host,
+                    Type = "SignUp",
+                    User = entity
+                };
 
-                var forgotPasswordToken = await encryptionGatewayService.ProtectAsync(AppSettings.ForgotPasswordTokenSecret, true);
-                                                
-                await SendForgotPasswordMessage(user!, request.Host!, forgotPasswordToken);
-                return true;
+                await messagingPublisher.DispatchAsync(request);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                return false;
+                throw new Exception($"An error occurred while sending the account confirmation message: {e.Message}",
+                    e);
             }
         }
 
-        private async Task SendForgotPasswordMessage(UserModel entity, string host, string forgotPasswordToken)
+        public async Task SendPasswordRecoveryMessage(UserModel entity, string host, string forgotPasswordToken)
         {
             try
             {
@@ -70,10 +71,9 @@ namespace WhoOwesWho.UserService.Services
             }
             catch (Exception e)
             {
-                throw new Exception($"An error occurred while sending the account confirmation message: {e.Message}",
+                throw new Exception($"An error occurred while sending forgot password message: {e.Message}",
                     e);
             }
         }
     }
 }
-
