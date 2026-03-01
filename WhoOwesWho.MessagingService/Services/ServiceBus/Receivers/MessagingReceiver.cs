@@ -1,5 +1,4 @@
 ﻿using Azure.Messaging.ServiceBus;
-using Microsoft.AspNetCore.Components;
 using WhoOwesWho.MessagingService.Services.ServiceBus.Handling;
 using WhoOwesWho.Models.Models;
 using WhoOwesWho.Models.Models.Base;

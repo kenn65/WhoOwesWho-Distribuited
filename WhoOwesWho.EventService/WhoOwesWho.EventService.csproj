@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WhoOwesWho.Models\WhoOwesWho.Models.csproj" />
     <ProjectReference Include="..\WhoOwesWho.ServiceDefaults\WhoOwesWho.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.Shared\WhoOwesWho.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace WhoOwesWho.Models.Models.Extensions
+namespace WhoOwesWho.Shared.Extensions
 {
     public static class FormatAmountExtension
     {

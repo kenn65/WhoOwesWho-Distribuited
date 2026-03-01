@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.Models.Models.Extensions;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.PaymentService.Services.Gateways;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.PaymentService.Controllers
 {

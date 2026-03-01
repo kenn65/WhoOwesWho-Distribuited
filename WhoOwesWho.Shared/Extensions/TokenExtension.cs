@@ -1,4 +1,6 @@
-﻿namespace WhoOwesWho.UserService.Auxiliaries
+﻿using Microsoft.AspNetCore.Http;
+
+namespace WhoOwesWho.Shared.Extensions
 {
     public static class TokenExtension
     {

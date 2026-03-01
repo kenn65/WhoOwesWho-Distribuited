@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.UserService.Controllers
 {
