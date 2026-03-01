@@ -1,7 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.Models.Models.Extensions;
+using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.PaymentService.Services.Gateways;

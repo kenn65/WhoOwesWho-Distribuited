@@ -1,13 +1,11 @@
 ﻿using Mapster;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.Models.Models;
-using WhoOwesWho.Models.Models.Extensions;
+using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.PaymentService.EfCore.Context;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Repositories
 {

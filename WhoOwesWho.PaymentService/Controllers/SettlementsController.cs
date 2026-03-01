@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.Models.Models.Extensions;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.PaymentService.Controllers
 {
