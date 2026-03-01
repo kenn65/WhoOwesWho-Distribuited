@@ -16,13 +16,13 @@ namespace WhoOwesWho.UserService.Services
         IConfiguration configuration,
         IUserQueryRepository userQueryRepository,
         IUserMutationRepository userMutationRepository,
-        IEncryptionGatewayService encryptionGatewayService
+        IUserSecurityService userSecurityService
         ) : ServiceBase(configuration), IResetPasswordService
     {
         public async Task<UserModel?> ResetPasswordAsync(ResetPasswordRequestModel request)
         {
             var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress);
-            if (user == null)
+            if (user is null)
             {
                 return new UserModel
                 {
@@ -34,7 +34,7 @@ namespace WhoOwesWho.UserService.Services
             user.Password = request.NewPassword;
 
             var response = await userMutationRepository.UpdateUserAsync(user);
-            if (response == null)
+            if (response is null)
                 return await Task.FromResult(new UserModel
                 {
                     Success = false,
@@ -49,7 +49,7 @@ namespace WhoOwesWho.UserService.Services
         {
             try
             {
-                emailAddress = await encryptionGatewayService.UnprotectAsync(emailAddress, true);
+                emailAddress = await userSecurityService.UnprotectAsync(emailAddress);
                 var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
                 var response = await userQueryRepository.GetForgotPasswordTokenAsync(user!.Id);
 

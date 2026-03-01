@@ -17,7 +17,7 @@ namespace WhoOwesWho.UserService.Services
         public async Task<ChangePasswordResponseModel?> ChangePasswordAsync(ChangePasswordRequestModel request)
         {
               var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
-            if (user == null)
+            if (user is null)
             {
                 return await Task.FromResult(new ChangePasswordResponseModel
                 {

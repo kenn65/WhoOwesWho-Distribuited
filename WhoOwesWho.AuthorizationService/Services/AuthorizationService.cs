@@ -14,7 +14,7 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
     public class AuthorizationService(
         IConfiguration configuration,
-        IEncryptionGatewayService encryptionGatewayService,
+        IAuthorizationSecurityService authorizationSecurityService,
         IUserGatewayService userGatewayService
         ) : ServiceBase(configuration), IAuthorizationService
     {
@@ -42,7 +42,7 @@ namespace WhoOwesWho.AuthorizationService.Services
 
             var token = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
-            var response = await encryptionGatewayService.ProtectCookiesAsync(user, token, true);
+            var response = await authorizationSecurityService.ProtectCookiesAsync(user, token, true);
             return await Task.FromResult(response);
         }
     }

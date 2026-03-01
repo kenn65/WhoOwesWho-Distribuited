@@ -8,7 +8,7 @@ namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventsController(IEventService eventService) : ControllerBase
+    public class EventsController(IEventCommandService eventCommanddService, IEventLookupService eventLookupService) : ControllerBase
     {
         [HttpPut]
         [Authorize]
@@ -17,7 +17,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 request.Token = HttpContext.ToTokenValue();
-                return Ok(await eventService.CreateEventAsync(request));
+                return Ok(await eventCommanddService.CreateEventAsync(request));
             }
             catch (Exception e)
             {
@@ -34,7 +34,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await eventService.GetEventsAsync(token, active));
+                return Ok(await eventLookupService.GetEventsAsync(token, active));
             }
             catch (Exception e)
             {
@@ -50,7 +50,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 var token = HttpContext.ToTokenValue();
-                return Ok(await eventService.GetEventAsync(Guid.Parse(eventId), token, active));
+                return Ok(await eventLookupService.GetEventAsync(Guid.Parse(eventId), token, active));
             }
             catch (Exception e)
             {
@@ -67,7 +67,7 @@ namespace WhoOwesWho.EventService.Controllers
             try
             {
                 request.Token = HttpContext.ToTokenValue();
-                return Ok(await eventService.UpdateEventAsync(request));
+                return Ok(await eventCommanddService.UpdateEventAsync(request));
             }
             catch (Exception e)
             {
@@ -82,7 +82,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await eventService.DeleteEventAsync(Guid.Parse(eventId)));
+                return Ok(await eventCommanddService.DeleteEventAsync(Guid.Parse(eventId)));
             }
             catch (Exception e)
             {
@@ -101,7 +101,7 @@ namespace WhoOwesWho.EventService.Controllers
                 {
                     EventId = eventId
                 };
-                var response = await eventService.SettleEventAsync(request);
+                var response = await eventCommanddService.SettleEventAsync(request);
                 return Ok(response);
             }
             catch (Exception e)

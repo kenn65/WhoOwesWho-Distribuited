@@ -57,7 +57,7 @@ namespace WhoOwesWho.UserService.Repositories
         public async Task<bool> GetUserEmailExists(string emailAddress)
         {
             var output = await context.Users.Where(x => x.EmailAddress == emailAddress).FirstOrDefaultAsync();
-            if (output == null)
+            if (output is null)
             {
                 return false;
             }

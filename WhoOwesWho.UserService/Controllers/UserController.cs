@@ -1,23 +1,22 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.Models.Models;
 using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services;
-using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UserController(
-        IValidationService validationService,
-        IForgotPasswordService forgotPasswordService,
+        IUserValidationService validationService,
+        IPasswordRecoveryService passwordRecoveryService,
         IResetPasswordService resetPasswordService,
         IChangePasswordService changePasswordService,
-        IUserService userService,
-        IEncryptionGatewayService encryptionGatewayService
+        IUserSecurityService userSecurityService,
+        IUserCommandService userCommandService,
+        IUserLookupService userLookupService
         ) : ControllerBase
     {
         [HttpPut]
@@ -27,7 +26,7 @@ namespace WhoOwesWho.UserService.Controllers
             var actionResult = new SignUpResponseModel();
             try
             {
-                request.Entity!.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.Entity.EmailAddress!, true);
+                request.Entity!.EmailAddress = await userSecurityService.UnprotectAsync(request.Entity.EmailAddress!);
                 
                 if (string.IsNullOrWhiteSpace(request.Entity?.FullName))
                 {
@@ -49,7 +48,7 @@ namespace WhoOwesWho.UserService.Controllers
                     return Ok(actionResult);
                 }
 
-                var check = await userService.CreateUserAsync(request.Entity, request.Host!) is not null;
+                var check = await userCommandService.CreateUserAsync(request.Entity, request.Host!) is not null;
                 actionResult.Success = check;
                 actionResult.Message = !check
                     ? "An unexpected error occurred, please try again."
@@ -68,8 +67,8 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                var unprotectedValue = await encryptionGatewayService.UnprotectAsync(idOrEmailAddress, true);
-                return Ok(await userService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
+                var unprotectedValue = await userSecurityService.UnprotectAsync(idOrEmailAddress);
+                return Ok(await userLookupService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
             }
             catch (Exception e)
             {
@@ -84,14 +83,14 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                var unprotectedValue = await encryptionGatewayService.UnprotectAsync(idOrEmailAddress, true);
+                var unprotectedValue = await userSecurityService.UnprotectAsync(idOrEmailAddress);
                 var checkEmail = await validationService.ValidateEmailAsync(unprotectedValue, true);
 
                 var user = checkEmail.isValid
-                    ? await userService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete)
-                    : await userService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete);
+                    ? await userLookupService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete)
+                    : await userLookupService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete);
 
-                if (user == null)
+                if (user is null)
                 {
                     return Ok(new UserModel
                     {
@@ -112,7 +111,7 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                return Ok(await userService.GetAllUsersAsync());
+                return Ok(await userLookupService.GetAllUsersAsync());
             }
             catch (Exception e)
             {
@@ -127,10 +126,10 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                var unprotectedUserId = await encryptionGatewayService.UnprotectAsync(userId, true);    
+                var unprotectedUserId = await userSecurityService.UnprotectAsync(userId);    
                 var token = HttpContext.ToTokenValue();
                 entity!.Id = Guid.Parse(unprotectedUserId);
-                return Ok(await userService.UpdateUserAsync(entity!, token));
+                return Ok(await userCommandService.UpdateUserAsync(entity!, token));
             }
             catch (Exception e)
             {
@@ -144,7 +143,7 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+                request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
 
                 return Ok(await validationService.VerifyUserEmailAddress(request.EmailAddress!));
             }
@@ -162,7 +161,7 @@ namespace WhoOwesWho.UserService.Controllers
 
             try
             {
-                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+                request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
 
                 if (string.IsNullOrWhiteSpace(request.Host))
                 {
@@ -178,7 +177,7 @@ namespace WhoOwesWho.UserService.Controllers
                     return Ok(actionResult);
                 }
 
-                var checkEmailDispatch = await forgotPasswordService.SendForgotPasswordEmailAsync(request);
+                var checkEmailDispatch = await passwordRecoveryService.SendPasswordRecoveryEmailAsync(request);
                 actionResult.Success = checkEmailDispatch;
                 actionResult.Message = !checkEmailDispatch
                     ? "An unexpected error occurred, please try again."
@@ -221,11 +220,11 @@ namespace WhoOwesWho.UserService.Controllers
             var actionResult = new ResetPasswordResponseModel();
             try
             {
-                var emailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
+                var emailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
 
-                var newPassword = await encryptionGatewayService.UnprotectAsync(request.NewPassword!, true);
+                var newPassword = await userSecurityService.UnprotectAsync(request.NewPassword!);
 
-                var newPasswordRepeat = await encryptionGatewayService.UnprotectAsync(request.NewPasswordRepeat!, true);
+                var newPasswordRepeat = await userSecurityService.UnprotectAsync(request.NewPasswordRepeat!);
 
                 if (newPassword != newPasswordRepeat)
                 {
@@ -233,14 +232,14 @@ namespace WhoOwesWho.UserService.Controllers
                     return Ok(actionResult);
                 }
 
-                var user = await userService.GetSingleUserByEmailAddressAsync(emailAddress, true);
-                if (user == null)
+                var user = await userLookupService.GetSingleUserByEmailAddressAsync(emailAddress, true);
+                if (user is null)
                 {
                     actionResult.Message = $"Could not find the account with e-mail address: {request.EmailAddress}";
                     return Ok(actionResult);
                 }
 
-                var unprotectedUserPassword = await encryptionGatewayService.UnprotectAsync(user.Password!, true);
+                var unprotectedUserPassword = await userSecurityService.UnprotectAsync(user.Password!);
 
                 if (unprotectedUserPassword == request.NewPassword)
                 {
@@ -282,10 +281,10 @@ namespace WhoOwesWho.UserService.Controllers
             var actionResult = new ResetPasswordResponseModel();
             try
             {
-                request.EmailAddress = await encryptionGatewayService.UnprotectAsync(request.EmailAddress!, true);
-                var password = await encryptionGatewayService.UnprotectAsync(request.Password!, true);
-                var newPassword1 = await encryptionGatewayService.UnprotectAsync(request.NewPassword1!, true);
-                var newPassword2 = await encryptionGatewayService.UnprotectAsync(request.NewPassword2!, true);
+                request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
+                var password = await userSecurityService.UnprotectAsync(request.Password!);
+                var newPassword1 = await userSecurityService.UnprotectAsync(request.NewPassword1!);
+                var newPassword2 = await userSecurityService.UnprotectAsync(request.NewPassword2!);
 
                 var emailCheck = await validationService.ValidateEmailAsync(request.EmailAddress!, true);
                 if (!emailCheck.isValid)

@@ -8,7 +8,7 @@ namespace WhoOwesWho.PaymentService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SettlementsController(IPaymentService paymentService, IPaymentDetailsService paymentDetailsService) : ControllerBase
+    public class SettlementsController(IPaymentLookupService paymentLookupService) : ControllerBase
     {
         [HttpGet]
         [Route("{eventId}/{active}")]
@@ -23,7 +23,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     Active = active,
                     Token = HttpContext.ToTokenValue()
                 };
-                return Ok(await paymentService.GetPaymentsPageDataAsync(request));
+                return Ok(await paymentLookupService.GetPaymentsPageDataAsync(request));
             }
             catch
             {
@@ -45,7 +45,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     PaymentId = paymentId,
                     Token = HttpContext.ToTokenValue()
                 };
-                return Ok(await paymentDetailsService.GetSettlementDetailsAsync(request));
+                return Ok(await paymentLookupService.GetSettlementDetailsAsync(request));
             }
             catch
             {

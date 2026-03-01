@@ -16,7 +16,7 @@ namespace WhoOwesWho.PaymentService.Services
         IPaymentQueryRepository paymentQueryRepository,
         IUserGatewayService userGatewayService,
         IEventGatewayService eventGatewayService,
-        IEncryptionGatewayService encryptionGatewayService
+        IPaymentSecurityService paymentSecurityService
 
 
         ) : ServiceBase(configuration), IUserBalanceService
@@ -26,7 +26,7 @@ namespace WhoOwesWho.PaymentService.Services
             try
             {
                 var thisEvent = await eventGatewayService.GetEventAsync(request.EventId!, request.Token!, true, active);
-                var protectedUserId = await encryptionGatewayService.ProtectAsync(request.UserId!);
+                var protectedUserId = await paymentSecurityService.ProtectAsync(request.UserId!);
                 var userCredits = (await paymentQueryRepository.GetUserPaymentsAsync(request, true)).ToList();
                 var userDebits = (await paymentQueryRepository.GetUserPaymentsAsync(request, false)).ToList();
                 

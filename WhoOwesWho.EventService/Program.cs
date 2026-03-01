@@ -19,7 +19,9 @@ builder.Services.AddDbContext<EventDbContext>(options =>
 builder.AddServiceDefaults();
 
 // Add services to the container.
-builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IEventLookupService, EventLookupService>();
+builder.Services.AddScoped<IEventCommandService, EventCommandService>();
+builder.Services.AddScoped<IEventSecurityService, EventSecurityService>();
 builder.Services.AddScoped<IEventMutationRepository, EventMutationRepository>();
 builder.Services.AddScoped<IEventQueryRepository, EventQueryRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();

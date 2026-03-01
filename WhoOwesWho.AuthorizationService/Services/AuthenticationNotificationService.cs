@@ -6,24 +6,24 @@ using WhoOwesWho.Models.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
-    public interface IAuthenticationService
+    public interface IAuthenticationNotificationService
     {
         Task<string> SendAuthenticationMessage(AuthenticationRequestModel model);
     }
-    public class AuthenticationService(
-        IConfiguration configuration, 
-        IUserGatewayService userGatewayService, 
-        IMessagingPublisher messagingPublisher 
-        ) : ServiceBase(configuration), IAuthenticationService
+
+    public class AuthenticationNotificationService(IConfiguration configuration,
+        IUserGatewayService userGatewayService,
+        IMessagingPublisher messagingPublisher
+        ) : ServiceBase(configuration), IAuthenticationNotificationService
     {
         public async Task<string> SendAuthenticationMessage(AuthenticationRequestModel request)
         {
             var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
-            if (user == null)
+            if (user is null)
             {
                 throw new ArgumentException($"User with e-mail address: {request.EmailAddress} was not found");
             }
-                        
+
             try
             {
                 var messagingRequest = new MessagingRequestModel
@@ -49,6 +49,6 @@ namespace WhoOwesWho.AuthorizationService.Services
         {
             var randomizer = new Random();
             return await Task.FromResult(randomizer.Next(100000, 990000).ToString("D5"));
-        } 
+        }
     }
 }

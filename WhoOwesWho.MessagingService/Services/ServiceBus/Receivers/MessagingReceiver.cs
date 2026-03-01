@@ -76,7 +76,7 @@ public sealed class MessagingReceiver
         var request = args.Message.Body
             .ToObjectFromJson<MessagingRequestModel>();
 
-        if (request == null)
+        if (request is null)
         {
             await args.DeadLetterMessageAsync(
                 args.Message,

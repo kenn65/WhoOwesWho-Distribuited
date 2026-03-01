@@ -35,7 +35,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
 
         public async Task<string> BuildEndpoint(string baseEndpoint, bool encode, IDictionary<string, dynamic>? parameters)
         {
-            if (parameters == null || !parameters.Any())
+            if (parameters is null || !parameters.Any())
             {
                 return baseEndpoint;
             }

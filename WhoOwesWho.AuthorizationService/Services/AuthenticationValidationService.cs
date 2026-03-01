@@ -4,15 +4,15 @@ using WhoOwesWho.AuthorizationService.Services.Gateways;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
-    public interface IValidationService
+    public interface IAuthenticationValidationService
     {
         Task<bool> ValidateUserCredentialsAsync(string emailAddress, string password);
     }
-    public class ValidationService(
+    public class AuthenticationValidationService(
         IConfiguration configuration,
-        IEncryptionGatewayService encryptionGatewayService,
+        IAuthorizationSecurityService authorizationSecurityService,
         IUserGatewayService userGatewayService 
-        ) : ServiceBase(configuration), IValidationService
+        ) : ServiceBase(configuration), IAuthenticationValidationService
     {
         public async Task<bool> ValidateUserCredentialsAsync([Required] string emailAddress, [Required] string password)
         {
@@ -22,7 +22,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             }
             var user = await userGatewayService.GetUserAsync(emailAddress, true);
 
-            if (user == null)
+            if (user is null)
             {
                 return await Task.FromResult(false);
             }
@@ -32,7 +32,7 @@ namespace WhoOwesWho.AuthorizationService.Services
                 return await Task.FromResult(false);
             }
 
-            var unprotectedUserPassword = await encryptionGatewayService.UnprotectAsync(user.Password!, true);
+            var unprotectedUserPassword = await authorizationSecurityService.UnprotectAsync(user.Password!);
 
             return await Task.FromResult(password == unprotectedUserPassword);
         }
