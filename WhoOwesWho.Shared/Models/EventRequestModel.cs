@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
+using WhoOwesWho.Shared.Models.Base.ServiceBus;
 
-namespace WhoOwesWho.EventService.Models
+namespace WhoOwesWho.Shared.Models
 {
-    public class EventRequestModel
+    public class EventRequestModel : RequestModelBase
     {
         [JsonProperty("id")]
         public Guid Id { get; set; }

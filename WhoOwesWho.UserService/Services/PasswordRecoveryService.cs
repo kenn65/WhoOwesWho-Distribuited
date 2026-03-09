@@ -1,4 +1,6 @@
-﻿using WhoOwesWho.UserService.Models;
+﻿using Mapster;
+using WhoOwesWho.Shared.Models;
+using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 
@@ -25,9 +27,10 @@ namespace WhoOwesWho.UserService.Services
                     return false; // User not found
                 }
 
+                var entity = user.Adapt<UserMessageRequestModel>();
                 var forgotPasswordToken = await userSecurityService.ProtectAsync(AppSettings.ForgotPasswordTokenSecret);
 
-                await userNotificationService.SendPasswordRecoveryMessage(user!, request.Host!, forgotPasswordToken);
+                await userNotificationService.SendPasswordRecoveryMessage(entity!, request.Host!, forgotPasswordToken);
                 return true;
             }
             catch (Exception)

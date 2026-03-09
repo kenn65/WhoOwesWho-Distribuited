@@ -1,7 +1,9 @@
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System.Text;
 using WhoOwesWho.EventService.EfCore.Context;
 using WhoOwesWho.EventService.EfCore.Extensions;
@@ -9,6 +11,7 @@ using WhoOwesWho.EventService.Middleware;
 using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Services.Gateways;
+using WhoOwesWho.EventService.Services.ServiceBus.Publishers;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,14 +22,37 @@ builder.Services.AddDbContext<EventDbContext>(options =>
 builder.AddServiceDefaults();
 
 // Add services to the container.
+builder.Services.AddSingleton(provider =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("sbemulatorns");
+    return new ServiceBusClient(connectionString);
+});
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("redis-cache");
+    return ConnectionMultiplexer.Connect(configuration!);
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var mux = sp.GetRequiredService<IConnectionMultiplexer>();
+    return mux.GetDatabase();
+});
+
+builder.Services.AddSingleton<IEventPublisher, EventPublisher>();
+
 builder.Services.AddScoped<IEventLookupService, EventLookupService>();
 builder.Services.AddScoped<IEventCommandService, EventCommandService>();
 builder.Services.AddScoped<IEventSecurityService, EventSecurityService>();
+builder.Services.AddScoped<IEventPublishingService, EventPublishingService>();
+builder.Services.AddScoped<IUserCacheService, UserCacheService>();
 builder.Services.AddScoped<IEventMutationRepository, EventMutationRepository>();
 builder.Services.AddScoped<IEventQueryRepository, EventQueryRepository>();
+builder.Services.AddScoped<IEventCacheRepository, EventCacheRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
-builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

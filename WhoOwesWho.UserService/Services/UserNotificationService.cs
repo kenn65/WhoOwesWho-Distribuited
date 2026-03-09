@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
@@ -9,8 +9,8 @@ namespace WhoOwesWho.UserService.Services
 {
     public interface IUserNotificationService
     {
-        Task SendAccountConfirmationMessage(UserModel entity, string host);
-        Task SendPasswordRecoveryMessage(UserModel entity, string host, string forgotPasswordToken);
+        Task SendAccountConfirmationMessage(UserMessageRequestModel entity, string host);
+        Task SendPasswordRecoveryMessage(UserMessageRequestModel entity, string host, string forgotPasswordToken);
     }
 
 
@@ -20,7 +20,7 @@ namespace WhoOwesWho.UserService.Services
          IMessagingPublisher messagingPublisher
          ) : ServiceBase(configuration), IUserNotificationService
     {
-        public async Task SendAccountConfirmationMessage(UserModel entity, string host)
+        public async Task SendAccountConfirmationMessage(UserMessageRequestModel entity, string host)
         {
             try
             {
@@ -41,7 +41,7 @@ namespace WhoOwesWho.UserService.Services
             }
         }
 
-        public async Task SendPasswordRecoveryMessage(UserModel entity, string host, string forgotPasswordToken)
+        public async Task SendPasswordRecoveryMessage(UserMessageRequestModel entity, string host, string forgotPasswordToken)
         {
             try
             {

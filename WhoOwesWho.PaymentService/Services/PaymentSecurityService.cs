@@ -7,6 +7,8 @@ namespace WhoOwesWho.PaymentService.Services
     {
         public Task<string> ProtectAsync(string value);
         public Task<string> UnprotectAsync(string value);
+
+        Task<bool> ValidateApiKey(string authorizationApiKey);
     }
 
     public class PaymentSecurityService(IConfiguration configuration, IEncryptionGatewayService encryptionGatewayService) : ServiceBase(configuration), IPaymentSecurityService
@@ -19,6 +21,16 @@ namespace WhoOwesWho.PaymentService.Services
         public async Task<string> UnprotectAsync(string value)
         {
             return await encryptionGatewayService.UnprotectAsync(value);
+        }
+
+        public async Task<bool> ValidateApiKey(string authorizationApiKey)
+        {
+            if (string.IsNullOrWhiteSpace(authorizationApiKey))
+            {
+                return false;
+            }
+            var apiKey = AppSettings.ApiKey;
+            return await Task.FromResult(apiKey == authorizationApiKey);
         }
     }
 }

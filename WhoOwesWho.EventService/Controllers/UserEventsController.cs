@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Services;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Controllers
 {
@@ -20,8 +21,7 @@ namespace WhoOwesWho.EventService.Controllers
 
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await eventLookupService.GetEventByUserAsync(userId, token, active));
+                return Ok(await eventLookupService.GetEventByUserAsync(userId, active));
             }
             catch (Exception e)
             {
@@ -36,13 +36,16 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                if (active) { 
-
+                try
+                {
+                    var id = await eventSecurityService.UnprotectAsync(userId);
+                    var allEvents = (await eventLookupService.GetEventsAsync(active)).ToList();
+                    return Ok(allEvents.Where(e => e.Settled && e.Users!.Any(u => u.Id == Guid.Parse(id))));
                 }
-                var token = HttpContext.ToTokenValue();
-                var id = await eventSecurityService.UnprotectAsync(userId);
-                var allEvents = (await eventLookupService.GetEventsAsync(token, active)).ToList();
-                return Ok(allEvents.Where(e => e.Settled && e.Users!.Any(u => u.Id == Guid.Parse(id))));
+                catch (Exception e)
+                {
+                    return BadRequest(e.StackTrace);
+                }
             }
             catch (Exception e)
             {

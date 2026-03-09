@@ -1,14 +1,15 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.EventService.Models
 {
-    public class EventAssignmentModel
+    public class EventAssignmentModel : ModelBase
     {
         [JsonProperty("eventId")]
         public Guid EventId { get; set; }
         
         [JsonProperty("user")]
-        public UserModel? User { get; set; }
+        public UserMessageResponseModel? User { get; set; }
     }
 }

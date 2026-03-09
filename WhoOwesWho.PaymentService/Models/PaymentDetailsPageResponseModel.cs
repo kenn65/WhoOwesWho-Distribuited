@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Models
 {

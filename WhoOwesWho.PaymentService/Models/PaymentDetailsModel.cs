@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models.Base;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Models
 {
@@ -22,9 +22,9 @@ namespace WhoOwesWho.PaymentService.Models
         public bool CreditorIncluded { get; set; }
 
         [JsonProperty("creditEventUser")]
-        public UserModel? CreditEventUser { get; set; }
+        public UserMessageResponseModel? CreditEventUser { get; set; }
 
         [JsonProperty("debitEventUsers")]
-        public IEnumerable<UserModel>? DebitEventUsers { get; set; }
+        public IEnumerable<UserMessageResponseModel>? DebitEventUsers { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace WhoOwesWho.Models.Models
+﻿namespace WhoOwesWho.Shared.Models
 {
     public class CurrenciesRequestModel 
     {

@@ -1,134 +1,122 @@
 ﻿using Azure.Messaging.ServiceBus;
 using WhoOwesWho.MessagingService.Services.ServiceBus.Handling;
-using WhoOwesWho.Models.Models;
-using WhoOwesWho.Models.Models.Base;
-using static WhoOwesWho.Models.Models.Base.ServiceBus.ObservabilityRecords;
+using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
+using static WhoOwesWho.Shared.Models.Base.ServiceBus.ObservabilityRecords;
 
-public sealed class MessagingReceiver
+namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
 {
-    private readonly ServiceBusClient _client;
-    private readonly IServiceScopeFactory _scopeFactory;
 
-    private ServiceBusProcessor? _requestProcessor;
-    private ServiceBusSender? _succeededSender;
-    private ServiceBusSender? _failedSender;
-
-    public MessagingReceiver(
-        ServiceBusClient client,
-        IServiceScopeFactory scopeFactory)
+    public sealed class MessagingReceiver(ServiceBusClient client, IServiceScopeFactory scopeFactory)
     {
-        _client = client;
-        _scopeFactory = scopeFactory;
-    }
+        private ServiceBusProcessor? _requestProcessor;
+        private ServiceBusSender? _succeededSender;
+        private ServiceBusSender? _failedSender;
 
-    // ----------------------------
-    // START / STOP
-    // ----------------------------
+        public async Task StartAsync(CancellationToken ct)
+        {
+            // Command consumer
+            _requestProcessor = client.CreateProcessor(
+                ServiceBusTopics.MessagingTopics.MessagingDispatchRequest,
+                "messaging",
+                new ServiceBusProcessorOptions
+                {
+                    AutoCompleteMessages = false,
+                    MaxConcurrentCalls = 1
+                });
 
-    public async Task StartAsync(CancellationToken ct)
-    {
-        // Command consumer
-        _requestProcessor = _client.CreateProcessor(
-            ServiceBusTopics.MessagingTopics.MessagingDispatchRequest,
-            "messaging",
-            new ServiceBusProcessorOptions
+            // Observability publishers
+            _succeededSender = client.CreateSender(
+                ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded);
+
+            _failedSender = client.CreateSender(
+                ServiceBusTopics.MessagingTopics.MessagingDispatchFailed);
+
+            _requestProcessor.ProcessMessageAsync += HandleRequestAsync;
+            _requestProcessor.ProcessErrorAsync += HandleErrorAsync;
+
+            await _requestProcessor.StartProcessingAsync(ct);
+
+            Console.WriteLine("[MESSAGING] Request receiver started");
+        }
+
+        public async Task StopAsync(CancellationToken ct)
+        {
+            if (_requestProcessor != null)
             {
-                AutoCompleteMessages = false,
-                MaxConcurrentCalls = 1
-            });
+                await _requestProcessor.StopProcessingAsync(ct);
+                await _requestProcessor.DisposeAsync();
+            }
 
-        // Observability publishers
-        _succeededSender = _client.CreateSender(
-            ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded);
+            if (_succeededSender != null)
+                await _succeededSender.DisposeAsync();
 
-        _failedSender = _client.CreateSender(
-            ServiceBusTopics.MessagingTopics.MessagingDispatchFailed);
-
-        _requestProcessor.ProcessMessageAsync += HandleRequestAsync;
-        _requestProcessor.ProcessErrorAsync += HandleErrorAsync;
-
-        await _requestProcessor.StartProcessingAsync(ct);
-
-        Console.WriteLine("[MESSAGING] Request receiver started");
-    }
-
-    public async Task StopAsync(CancellationToken ct)
-    {
-        if (_requestProcessor != null)
-        {
-            await _requestProcessor.StopProcessingAsync(ct);
-            await _requestProcessor.DisposeAsync();
+            if (_failedSender != null)
+                await _failedSender.DisposeAsync();
         }
 
-        if (_succeededSender != null)
-            await _succeededSender.DisposeAsync();
-
-        if (_failedSender != null)
-            await _failedSender.DisposeAsync();
-    }
-    
-    private async Task HandleRequestAsync(ProcessMessageEventArgs args)
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var resolver = scope.ServiceProvider.GetRequiredService<IMessageResolverService>();
-
-        var request = args.Message.Body
-            .ToObjectFromJson<MessagingRequestModel>();
-
-        if (request is null)
+        private async Task HandleRequestAsync(ProcessMessageEventArgs args)
         {
-            await args.DeadLetterMessageAsync(
-                args.Message,
-                "InvalidPayload",
-                "Could not deserialize MessagingRequestModel");
-            return;
+            using var scope = scopeFactory.CreateScope();
+            var resolver = scope.ServiceProvider.GetRequiredService<IMessageResolverService>();
+
+            var request = args.Message.Body
+                .ToObjectFromJson<MessagingRequestModel>();
+
+            if (request is null)
+            {
+                await args.DeadLetterMessageAsync(
+                    args.Message,
+                    "InvalidPayload",
+                    "Could not deserialize MessagingRequestModel");
+                return;
+            }
+
+            try
+            {
+                await resolver.SendEmailAsync(request);
+
+                // ---- publish succeeded event ----
+                var succeeded = new MessagingDispatchedEvent(
+                    request.Type,
+                    request?.User?.EmailAddress,
+                    DateTimeOffset.Now
+                    );
+
+                await _succeededSender!.SendMessageAsync(
+                    new ServiceBusMessage(BinaryData.FromObjectAsJson(succeeded)));
+
+                await args.CompleteMessageAsync(args.Message);
+
+                Console.WriteLine(
+                    $"[MESSAGING][SUCCESS] Type={request?.Type} User={request?.User?.EmailAddress}");
+            }
+            catch (Exception ex)
+            {
+                var failed = new MessagingDispatchFailedEvent(
+                    request.Type,
+                    request?.User?.EmailAddress,
+                    ex.Message,
+                    DateTimeOffset.Now);
+
+                await _failedSender!.SendMessageAsync(
+                    new ServiceBusMessage(BinaryData.FromObjectAsJson(failed)));
+
+                Console.WriteLine(
+                    $"[MESSAGING][FAILED] Type={request?.Type} User={request?.User?.EmailAddress} Reason={ex.Message}");
+                throw;
+            }
         }
 
-        try
+        private Task HandleErrorAsync(ProcessErrorEventArgs args)
         {
-            await resolver.SendEmailAsync(request);
-
-            // ---- publish succeeded event ----
-            var succeeded = new MessagingDispatchedEvent(
-                request.Type,
-                request?.User?.EmailAddress,
-                DateTimeOffset.Now
-                );
-
-            await _succeededSender!.SendMessageAsync(
-                new ServiceBusMessage(BinaryData.FromObjectAsJson(succeeded)));
-
-            await args.CompleteMessageAsync(args.Message);
-
             Console.WriteLine(
-                $"[MESSAGING][SUCCESS] Type={request?.Type} User={request?.User?.EmailAddress}");
+                $"[MESSAGING][ERROR] " +
+                $"Entity={args.EntityPath} " +
+                $"Source={args.ErrorSource} " +
+                $"Exception={args.Exception}");
+
+            return Task.CompletedTask;
         }
-        catch (Exception ex)
-        {
-            var failed = new MessagingDispatchFailedEvent(
-                request.Type,
-                request?.User?.EmailAddress,
-                ex.Message,
-                DateTimeOffset.Now);
-
-            await _failedSender!.SendMessageAsync(
-                new ServiceBusMessage(BinaryData.FromObjectAsJson(failed)));
-
-            Console.WriteLine(
-                $"[MESSAGING][FAILED] Type={request?.Type} User={request?.User?.EmailAddress} Reason={ex.Message}");
-            throw;
-        }
-    }
-      
-    private Task HandleErrorAsync(ProcessErrorEventArgs args)
-    {
-        Console.WriteLine(
-            $"[MESSAGING][ERROR] " +
-            $"Entity={args.EntityPath} " +
-            $"Source={args.ErrorSource} " +
-            $"Exception={args.Exception}");
-
-        return Task.CompletedTask;
     }
 }
-

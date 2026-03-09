@@ -1,7 +1,8 @@
-﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Models;
+﻿using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Services
 {
@@ -14,13 +15,13 @@ namespace WhoOwesWho.PaymentService.Services
         public class PaymentCalculationService(
             IConfiguration configuration,
             IUserBalanceService userBalanceService,
-            IEventGatewayService eventGatewayService,
+            IPaymentCacheRepository paymentCacheRepository,
             ICurrencyGatewayService currencyGatewayService
             ) : ServiceBase(configuration), IPaymentCalculationService
         {
             public async Task<CalculateAmountResponseModel> CalculateAmount(CreatePaymentRequestModel request)
             {
-                var activeEventResponse = await eventGatewayService.GetEventAsync(request.EventId!, request.Token!, true, true);
+                var activeEventResponse = await paymentCacheRepository.GetEventByIdAsync(request.EventId!, true);
                 var exchangeRateResponse = await currencyGatewayService.GetExchangeRateAsync(request.OriginalCurrency!,
                     activeEventResponse.Currency!, request.Token!);
 
@@ -42,8 +43,7 @@ namespace WhoOwesWho.PaymentService.Services
                     var userBalanceRequest = new UserBalanceRequestModel
                     {
                         UserId = user.Id.ToString(),
-                        EventId = request.EventId,
-                        Token = request.Token
+                        EventId = request.EventId
                     };
                     balances.Add(await userBalanceService.GetUserBalanceAsync(userBalanceRequest, request.Active));
                 }

@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services;
-using WhoOwesWho.AuthorizationService.Services.Gateways;
 
 namespace WhoOwesWho.AuthorizationService.Controllers
 {
@@ -10,8 +9,7 @@ namespace WhoOwesWho.AuthorizationService.Controllers
     public class AuthorizationController(
         IAuthorizationService authorizationService, 
         IAuthenticationNotificationService authenticationNotificationService, 
-        IAuthenticationValidationService authenticationValidationService, 
-        IEncryptionGatewayService encryptionGatewayService
+        IAuthenticationValidationService authenticationValidationService 
         ) : ControllerBase
     {
         [HttpPost]
@@ -22,8 +20,6 @@ namespace WhoOwesWho.AuthorizationService.Controllers
             
             try
             {
-                request.Password = await encryptionGatewayService.UnprotectAsync(request.Password!, false);
-
                 if (string.IsNullOrWhiteSpace(request.EmailAddress) || string.IsNullOrWhiteSpace(request.Password))
                 {
                     actionResult.Message = "E-mail address or password was not provided";

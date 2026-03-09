@@ -2,7 +2,7 @@
 using System.Globalization;
 using WhoOwesWho.CurrencyService.Models;
 using WhoOwesWho.CurrencyService.Services.Base;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.CurrencyService.Services
 {
@@ -30,16 +30,16 @@ namespace WhoOwesWho.CurrencyService.Services
 
         public async Task<IEnumerable<CurrencyResponseModel>?> GetCurrenciesAsync()
         {
-            if (!_cache!.Currencies.Any() || (DateTime.Now - _cache.LastUpdated).TotalDays >= 1)
+            if (_cache is null || !_cache!.Currencies.Any() || (DateTime.Now - _cache.LastUpdated).TotalDays >= 1)
             {
                 await InitializeCache();
             }
-            return await Task.FromResult(_cache.Currencies);
+            return await Task.FromResult(_cache!.Currencies);
         }
 
         public async Task<ExchangeRateResponseModel> GetExchangeRateAsync(string paymentCurrencyIso, string eventCurrencyIso)
         {
-            if (!_cache!.ExchangeRates!.Any() || (DateTime.Now - _cache.LastUpdated).TotalDays >= 1)
+            if (_cache is null || !_cache!.ExchangeRates!.Any() || (DateTime.Now - _cache.LastUpdated).TotalDays >= 1)
             {
                 await InitializeCache();
             }
@@ -54,7 +54,7 @@ namespace WhoOwesWho.CurrencyService.Services
                 return await Task.FromResult(response);
             }
 
-            response.ExchangeRate = _cache.ExchangeRates![eventCurrencyIso] / _cache.ExchangeRates[paymentCurrencyIso];
+            response.ExchangeRate = _cache!.ExchangeRates![eventCurrencyIso] / _cache.ExchangeRates[paymentCurrencyIso];
             return await Task.FromResult(response);
         }
 

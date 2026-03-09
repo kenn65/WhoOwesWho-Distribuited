@@ -20,8 +20,8 @@ namespace WhoOwesWho.PaymentService.Controllers
                 var request = new PaymentsRequestModel
                 {
                     EventId = eventId,
-                    Active = active,
-                    Token = HttpContext.ToTokenValue()
+                    Active = active
+                    
                 };
                 return Ok(await paymentLookupService.GetPaymentsPageDataAsync(request));
             }

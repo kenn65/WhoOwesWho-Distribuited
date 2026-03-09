@@ -37,7 +37,11 @@ var whooweswhoUsers = sql.AddDatabase("whooweswho-users");
 var whooweswhoEvents = sql.AddDatabase("whooweswho-events");
 var whooweswhoPayments = sql.AddDatabase("whooweswho-payments");
 
-
+var cache = builder.AddRedis("redis-cache")
+    .WithContainerName("wow-redis-cache")
+    .WithDataVolume()
+    .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes")
+    .WithLifetime(ContainerLifetime.Persistent);
 
 
 //// --- DATABASES RESTORE CONTAINER ----------------------------------------------------
@@ -118,31 +122,57 @@ serviceBus
     .AddServiceBusTopic("whooweswho-messaging-dispatch-failed")
     .AddServiceBusSubscription("messaging-observability-failed");
 
+serviceBus
+    .AddServiceBusTopic("whooweswho-authentication-user-dispatch-request")
+    .AddServiceBusSubscription("authentication");
 
+serviceBus
+    .AddServiceBusTopic("whooweswho-authentication-user-dispatch-succeeded")
+    .AddServiceBusSubscription("authentication-observability-succeeded");
+
+serviceBus
+    .AddServiceBusTopic("whooweswho-authentication-user-dispatch-failed")
+    .AddServiceBusSubscription("authentication-observability-failed");
+
+serviceBus
+    .AddServiceBusTopic("whooweswho-payment-event-dispatch-request")
+    .AddServiceBusSubscription("payment");
+
+serviceBus
+    .AddServiceBusTopic("whooweswho-payment-event-dispatch-succeeded")
+    .AddServiceBusSubscription("payment-observability-succeeded");
+
+serviceBus
+    .AddServiceBusTopic("whooweswho-payment-event-dispatch-failed")
+    .AddServiceBusSubscription("payment-observability-failed");
 
 // --- WHO OWES WHO MICROSERVICES ----------------------------------------------------
 
 var authorizationService = builder.AddProject<Projects.WhoOwesWho_AuthorizationService>("authorizationservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(cache)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
 var currencyService = builder.AddProject<Projects.WhoOwesWho_CurrencyService>("currencyservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(cache)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
 var encryptionService = builder.AddProject<Projects.WhoOwesWho_EncryptionService>("encryptionservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(cache)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
 var eventService = builder.AddProject<Projects.WhoOwesWho_EventService>("eventservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(cache)
      .WithReference(whooweswhoEvents)
      .WaitFor(serviceBus)
      .WaitFor(sql);
@@ -156,6 +186,7 @@ var messagingService = builder.AddProject<Projects.WhoOwesWho_MessagingService>(
 var paymentService = builder.AddProject<Projects.WhoOwesWho_PaymentService>("paymentservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(cache)
      .WithReference(whooweswhoPayments)
      .WaitFor(serviceBus)
      .WaitFor(sql);
@@ -163,6 +194,7 @@ var paymentService = builder.AddProject<Projects.WhoOwesWho_PaymentService>("pay
 var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservice")
      .WithReference(serviceBus)
      .WithReference(sql)
+     .WithReference(cache)
      .WithReference(whooweswhoUsers)
      .WaitFor(serviceBus)
      .WaitFor(sql);

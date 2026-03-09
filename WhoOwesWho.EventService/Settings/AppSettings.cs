@@ -14,5 +14,6 @@
         public string? CurrencyMicroServiceBaseAddress => configuration["CurrencyMicroService:BaseAddress"];
         public string? CurrencyMicroServiceApiKey => configuration["CurrencyMicroService:Security:ApiKey"];
 
+        public string PaymentMicroServiceApiKey => configuration["PaymentMicroService:Security:ApiKey"]!;
     }
 }

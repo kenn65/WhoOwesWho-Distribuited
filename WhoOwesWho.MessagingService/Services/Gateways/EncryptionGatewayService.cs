@@ -1,5 +1,5 @@
 ﻿using WhoOwesWho.MessagingService.Services.Base;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.MessagingService.Services.Gateways
 {

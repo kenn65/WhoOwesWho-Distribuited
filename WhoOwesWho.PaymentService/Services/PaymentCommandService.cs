@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.PaymentService.Models;
+﻿using Microsoft.Extensions.Configuration.UserSecrets;
+using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
 
@@ -40,17 +41,17 @@ namespace WhoOwesWho.PaymentService.Services
             {
                 await CreateUnsuccessfulPaymentResponseAsync();
             }
-
+            
             foreach (var userId in request.UserIds!.Where(u => u != request.CreditorId))
             {
-                timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
+                timeTicks = new DateTime(timeTicks).AddSeconds(1).Ticks;
                 var creditUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, true);
                 if (!creditUserAddition.Success)
                 {
                     return await CreateUnsuccessfulPaymentResponseAsync();
-                }
+                } 
 
-                timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
+                timeTicks = new DateTime(timeTicks).AddSeconds(1).Ticks;
                 request.DebitorId = userId;
                 var debitUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, false);
                 if (!debitUserAddition.Success)
@@ -58,9 +59,10 @@ namespace WhoOwesWho.PaymentService.Services
                     return await CreateUnsuccessfulPaymentResponseAsync();
                 }
             }
+        
             return new CreatePaymentResponseModel
             {
-                Message = "Payment added successfully.",
+            Message = "Payment added successfully.",
                 Success = true
             };
         }
@@ -99,14 +101,14 @@ namespace WhoOwesWho.PaymentService.Services
 
             foreach (var userId in request.UserIds!.Where(u => u != request.CreditorId))
             {
-                timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
+                timeTicks = new DateTime(timeTicks).AddSeconds(1).Ticks;
                 var creditUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, true);
                 if (!creditUserAddition.Success)
                 {
                     await CreateUnsuccessfulPaymentResponseAsync();
                 }
 
-                timeTicks = new DateTime(timeTicks).AddMicroseconds(100).Ticks;
+                timeTicks = new DateTime(timeTicks).AddSeconds(1).Ticks;
                 request.DebitorId = userId;
                 var debitUserAddition = await paymentMutationRepository.AddPaymentUserAsync(request, timeTicks, false);
                 if (!debitUserAddition.Success)
@@ -130,5 +132,7 @@ namespace WhoOwesWho.PaymentService.Services
                 Message = "An unexpected error occurred. Please, try again."
             };
         }
+
+
     }
 }

@@ -1,13 +1,13 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
 using WhoOwesWho.Shared.Extensions;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Models
 {
     public class EventModel
     {
         [JsonProperty("id")]
-        public Guid Id { get; set; }
+        public Guid? Id { get; set; }
 
         [JsonProperty("createdBy")]
         public string? CreatedBy { get; set; }

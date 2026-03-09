@@ -1,5 +1,5 @@
-﻿using WhoOwesWho.Models.Models;
-using WhoOwesWho.PaymentService.Services.Base;
+﻿using WhoOwesWho.PaymentService.Services.Base;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Services.Gateways
 {

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.CurrencyService.Models
 {

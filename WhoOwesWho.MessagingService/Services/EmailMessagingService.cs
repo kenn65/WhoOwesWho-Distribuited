@@ -3,7 +3,7 @@ using System.Net.Mail;
 using WhoOwesWho.MessagingService.Models;
 using WhoOwesWho.MessagingService.Services.Base;
 using WhoOwesWho.MessagingService.Services.Gateways;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.MessagingService.Services
 {
@@ -76,7 +76,7 @@ namespace WhoOwesWho.MessagingService.Services
             }
         }
 
-        private async Task<string> CreateBodyAsync(string path, UserModel entity, string host, string? code = null, string? forgotPasswordToken = null)
+        private async Task<string> CreateBodyAsync(string path, UserMessageRequestModel entity, string host, string? code = null, string? forgotPasswordToken = null)
         {
             var protectedEmailAddress = string.Empty;
             if (!string.Equals(path, AppSettings.AuthenticationTemplatePath, StringComparison.InvariantCultureIgnoreCase))

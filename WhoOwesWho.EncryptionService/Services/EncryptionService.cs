@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using WhoOwesWho.EncryptionService.Models;
 using WhoOwesWho.EncryptionService.Services.Base;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EncryptionService.Services
 {

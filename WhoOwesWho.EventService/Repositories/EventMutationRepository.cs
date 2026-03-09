@@ -4,6 +4,7 @@ using WhoOwesWho.EventService.EfCore.DataModels;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Services.Gateways;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Repositories
 {
@@ -20,22 +21,28 @@ namespace WhoOwesWho.EventService.Repositories
     public class EventMutationRepository(
         EventDbContext context, 
         IEventQueryRepository eventQueryRepository, 
-        IUserGatewayService userGatewayService, 
+        IEventCacheRepository eventCacheRepository,
         ICurrencyGatewayService currencyGatewayService, 
-        IEventSecurityService eventSecurityService) : IEventMutationRepository
+        IEventSecurityService eventSecurityService
+        ) : IEventMutationRepository
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
             try
             {
                 request.Id = Guid.NewGuid();
-                var creationUser = await userGatewayService.GetAuthorizedUserAsync(request.UserId!, request.Token!, true);
+                var userId = string.Empty;
+                if (!Guid.TryParse(request.UserId, out var _))
+                {
+                    userId = await eventSecurityService.UnprotectAsync(request.UserId!);
+                }
+                var creationUser = await eventCacheRepository.GetUserByIdAsync(userId);
                 request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
 
                 var entity = new Events
                 {
                     Id = request.Id,
-                    CreatedBy = creationUser.FullName,
+                    CreatedBy = creationUser!.FullName,
                     Name = request.Name,
                     Location = request.Location,
                     Currency = request.Currency,
@@ -46,20 +53,8 @@ namespace WhoOwesWho.EventService.Repositories
 
                 await context.AddAsync(entity);
                 await context.SaveChangesAsync();
-
-                if (request.AutoAssign)
-                {
-                    var protectedUserId = await eventSecurityService.ProtectAsync(creationUser.Id.ToString());
-                    await AssignToEventAsync(new AssignmentRequestModel
-                    {
-                        EventId = request.Id.ToString(),
-                        User = creationUser,
-                        Token = request.Token,
-                        UserId = protectedUserId
-                    });
-                }
-
-                var response = await eventQueryRepository.GetEventAsync(request.Id, request.Token!, true);
+                
+                var response = await eventQueryRepository.GetEventAsync(request.Id, true);
 
                 response!.Success = true;
                 return response;
@@ -129,8 +124,12 @@ namespace WhoOwesWho.EventService.Repositories
         {
             try
             {
-                var user = await userGatewayService.GetAuthorizedUserAsync(request.UserId!, request.Token!, false, true);
-                request.UserId = user.Id.ToString();
+                if (!Guid.TryParse(request.UserId, out var _))
+                {
+                    request.UserId = await eventSecurityService.UnprotectAsync(request.UserId!);
+                }
+                var user = await eventCacheRepository.GetUserByIdAsync(request.UserId!);
+                request.UserId = user?.Id.ToString();
                 var entity = new EventAssignments
                 {
                     EventId = Guid.Parse(request.EventId!),

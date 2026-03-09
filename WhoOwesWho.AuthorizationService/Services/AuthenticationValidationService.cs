@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
 
@@ -10,8 +11,8 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
     public class AuthenticationValidationService(
         IConfiguration configuration,
-        IAuthorizationSecurityService authorizationSecurityService,
-        IUserGatewayService userGatewayService 
+        IAuthorizationCacheRepository authorizationCacheRepository,
+        IAuthorizationSecurityService authorizationSecurityService
         ) : ServiceBase(configuration), IAuthenticationValidationService
     {
         public async Task<bool> ValidateUserCredentialsAsync([Required] string emailAddress, [Required] string password)
@@ -20,7 +21,8 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 throw new ArgumentException("Email or password argument was not provided");
             }
-            var user = await userGatewayService.GetUserAsync(emailAddress, true);
+            var unprotectedEmailAddress = await authorizationSecurityService.UnprotectAsync(emailAddress);
+            var user = await authorizationCacheRepository.GetUserAsync(unprotectedEmailAddress);
 
             if (user is null)
             {
@@ -31,10 +33,8 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 return await Task.FromResult(false);
             }
-
-            var unprotectedUserPassword = await authorizationSecurityService.UnprotectAsync(user.Password!);
-
-            return await Task.FromResult(password == unprotectedUserPassword);
+            
+            return await Task.FromResult(password == user.Password);
         }
     }
 }

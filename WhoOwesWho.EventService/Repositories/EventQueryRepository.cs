@@ -1,34 +1,37 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WhoOwesWho.EventService.EfCore.Context;
 using WhoOwesWho.EventService.Models;
-using WhoOwesWho.EventService.Services.Gateways;
-using WhoOwesWho.Models.Models;
 using Mapster;
 using WhoOwesWho.EventService.Services;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Repositories
 {
     public interface IEventQueryRepository
     {
-        Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true);
-        Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true);
-        Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true);
-        Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active);
-        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true);
+        Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true);
+        Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true);
+        Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active);
+        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true);
     }
 
-    public class EventQueryRepository(EventDbContext context, IEventSecurityService eventSecurityService, IUserGatewayService userGatewayService) : IEventQueryRepository
+    public class EventQueryRepository(
+        EventDbContext context, 
+        IEventSecurityService eventSecurityService, 
+        IUserCacheService userCacheService
+        ) : IEventQueryRepository
     {
-        public async Task<EventResponseModel?> GetEventAsync(Guid id, string token, bool active = true)
+        public async Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true)
         {
             var entity = await context.Events.Where(e => e.Id == id && e.Settled == !active)
                 .ProjectToType<EventResponseModel>().FirstOrDefaultAsync();
             var userIds = await context.EventAssingments.Where(ea => ea.EventId == entity!.Id).Select(ea => ea.UserId).ToListAsync();
-            entity!.Users = await GetEventAssignmentUsersAsync(userIds, token);
+            entity!.Users = await GetEventAssignmentUsersAsync(userIds);
             return entity;
         }
 
-        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, string token, bool active = true)
+        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true)
         {
             var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
                 var entityAssignments = await context.EventAssingments.Where(ea => ea.UserId.ToString() == unprotectedUserId).FirstOrDefaultAsync();
@@ -39,22 +42,22 @@ namespace WhoOwesWho.EventService.Repositories
             var userIds = await context.EventAssingments.Where(ea => ea.EventId == entityAssignments!.EventId).Select(ea => ea.UserId).ToListAsync();
             var entity = await context.Events.Where(e => e.Id == entityAssignments!.EventId && e.Settled == !active)
               .ProjectToType<EventResponseModel>().FirstOrDefaultAsync();
-            entity!.Users = await GetEventAssignmentUsersAsync(userIds, token);
+            entity!.Users = await GetEventAssignmentUsersAsync(userIds);
             return entity;
         }
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string token, bool active = true)
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true)
         {
             var entities = await context.Events.Where(e => e.Settled == !active).ProjectToType<EventResponseModel>().ToListAsync();
             foreach (var entity in entities)
             {
                 var userIds = await context.EventAssingments.Where(ea => ea.EventId == entity.Id).Select(ea => ea.UserId).ToListAsync();
-                entity.Users = await GetEventAssignmentUsersAsync(userIds, token);
+                entity.Users = await GetEventAssignmentUsersAsync(userIds);
             }
             return [.. entities];
         }
 
-        public async Task<IEnumerable<UserModel>> GetEventUsersAsync(string eventId, string token, bool active)
+        public async Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active)
         {
             try
             {
@@ -62,7 +65,7 @@ namespace WhoOwesWho.EventService.Repositories
 
                 var thisEvent = await context.Events.FirstOrDefaultAsync(e => e.Id == eventGuid && e.Settled == !active);
                 var userIds = await context.EventAssingments.Where(ea => ea.EventId == thisEvent!.Id).Select(ea => ea.UserId).ToListAsync();
-                var users = await GetEventAssignmentUsersAsync(userIds, token);
+                var users = await GetEventAssignmentUsersAsync(userIds);
                 return [.. users];
             }
             catch (Exception ex)
@@ -70,7 +73,7 @@ namespace WhoOwesWho.EventService.Repositories
                 throw new Exception(ex.Message, ex);
             }
         }
-        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, string token, bool active = true)
+        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true)
         {
             var userId = await eventSecurityService.UnprotectAsync(protectedUserId);
             var assignment = await context.EventAssingments.Where(ea => ea.UserId.ToString() == userId).FirstOrDefaultAsync();
@@ -79,21 +82,24 @@ namespace WhoOwesWho.EventService.Repositories
                 return new EventAssignmentModel();
             }
             var entity = await context.Events.Where(e => e.Id == assignment!.EventId && e.Settled == !active).FirstOrDefaultAsync();
+            if (entity is null)
+            {
+                return new EventAssignmentModel();
+            }
             return new EventAssignmentModel
             {
                 EventId = entity!.Id,
-                User = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true, false)
+                User = await userCacheService.GetUserAsync(userId)
             };
         }
 
-        private async Task<IEnumerable<UserModel>> GetEventAssignmentUsersAsync(IEnumerable<Guid> userIds, string token)
+        private async Task<IEnumerable<UserMessageResponseModel>> GetEventAssignmentUsersAsync(IEnumerable<Guid> userIds)
         {
             var users = await Task.WhenAll(userIds.Select(async userId =>
             {
-                var protectedUserId = await eventSecurityService.ProtectAsync(userId.ToString());
-                return await userGatewayService.GetAuthorizedUserAsync(protectedUserId, token, true, false);
+                return await userCacheService.GetUserAsync(userId.ToString());
             }));
-            return [.. users];
+            return [.. users!];
         }
     }
 }

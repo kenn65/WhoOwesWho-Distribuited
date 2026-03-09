@@ -1,7 +1,6 @@
-﻿using Azure.Messaging.ServiceBus.Administration;
-using Mapster;
+﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.EfCore.Context;
 using WhoOwesWho.UserService.Models;
 

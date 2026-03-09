@@ -1,7 +1,10 @@
-﻿using WhoOwesWho.EventService.Models;
+﻿using Mapster;
+using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services.Base;
 using WhoOwesWho.EventService.Services.Gateways;
+using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Services
 {
@@ -18,8 +21,10 @@ namespace WhoOwesWho.EventService.Services
 
     public class EventCommandService(IConfiguration configuration,
         IEventLookupService eventLookupService,
+        IEventSecurityService eventSecurityService,
         IEventMutationRepository eventMutationRepository,
-        IUserGatewayService userGatewayService
+        IEventCacheRepository eventCacheRepository,
+        IEventPublishingService eventPublishingService
         ) : ServiceBase(configuration), IEventCommandService
     {
 
@@ -28,6 +33,16 @@ namespace WhoOwesWho.EventService.Services
             var result = await eventMutationRepository.CreateEventAsync(request);
             if (result!.Success)
             {
+                if (request.AutoAssign)
+                {
+                    var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId!);
+                    await AssignAsync(new AssignmentRequestModel
+                    {
+                        EventId = result.Id.ToString(),
+                        UserId = request.UserId,
+                        User = creationUser
+                    });
+                }
                 result.Message = "Event created successfully.";
                 return result;
             }
@@ -67,18 +82,22 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<AssignmentResponseModel> AssignAsync(AssignmentRequestModel request)
         {
-            var you = await userGatewayService.GetAuthorizedUserAsync(request.UserId!, request.Token!, true, false);
-
-            var users = (await eventLookupService.GetEventUsersAsync(request.EventId!, request.Token!)).ToList();
-            if (users.Any(u => u.Admin) && you.Admin)
+            var userId = string.Empty;
+            if (!Guid.TryParse(request.UserId, out var _))
+            {
+                userId = await eventSecurityService.UnprotectAsync(request.UserId!);
+            }
+            var you = await eventCacheRepository.GetUserByIdAsync(userId);
+            var users = (await eventLookupService.GetEventUsersAsync(request.EventId!)).ToList();
+            if (users.Any(u => u.Admin) && you!.Admin)
             {
                 return await Task.FromResult(new AssignmentResponseModel
                 {
                     Message = "You cannot assign to this event as an administrator, because an event administrator already exists."
                 });
             }
-
-            var result = await eventMutationRepository.AssignToEventAsync(request);
+            
+            var result = await AssignToEventAsync(request);
             if (result.Success)
             {
                 result.Message = "Successfully assigned your user to event.";
@@ -95,6 +114,10 @@ namespace WhoOwesWho.EventService.Services
             var result = await eventMutationRepository.AssignToEventAsync(request);
             if (result.Success)
             {
+                var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
+                var publishingItems = evt.Adapt<EventMessageRequestModel>();
+                publishingItems.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+                await eventPublishingService.SendEventAsync(publishingItems);
                 result.Message = "Successfully assigned user to event.";
                 return result;
             }
@@ -109,6 +132,10 @@ namespace WhoOwesWho.EventService.Services
             var result = await eventMutationRepository.UnassignFromEventAsync(request);
             if (result.Success)
             {
+                var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
+                var publishingItem = evt.Adapt<EventMessageRequestModel>();
+                publishingItem.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+                await eventPublishingService.SendEventAsync(publishingItem);
                 result.Message = "Successfully unassigned user from event.";
                 return result;
             }
@@ -120,9 +147,11 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request)
         {
+            request.EventId = await eventSecurityService.UnprotectAsync(request.EventId!);
             var result = await eventMutationRepository.SettleEventAsync(request);
             if (result.Success)
-            {
+            {   
+                await eventCacheRepository.DeleteActiveEventAsync(request.EventId!);
                 result.Message = "The event was successfully settled.";
                 return result;
             }

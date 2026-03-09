@@ -1,9 +1,8 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
-using WhoOwesWho.Models.Models.Base;
 using WhoOwesWho.Shared.Extensions;
+using WhoOwesWho.Shared.Models.Base;
 
-namespace WhoOwesWho.EventService.Models
+namespace WhoOwesWho.Shared.Models
 {
         public class EventResponseModel : ModelBase
         {
@@ -38,6 +37,6 @@ namespace WhoOwesWho.EventService.Models
             public bool Settled { get; set; }
 
             [JsonProperty("users")]
-            public IEnumerable<UserModel>? Users { get; set; }
+            public IEnumerable<UserMessageResponseModel>? Users { get; set; }
         }
 }

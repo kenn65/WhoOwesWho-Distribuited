@@ -1,20 +1,11 @@
 ﻿using Azure.Messaging.ServiceBus;
-using WhoOwesWho.Models.Models.Base;
+using WhoOwesWho.Shared.Models.Base;
 
-namespace WhoOwesWho.MessagingService.Services.ServiceBus
+namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
 {
-    public sealed class MessagingStartupService : BackgroundService
+    public sealed class MessagingStartupService(ServiceBusClient client,MessagingReceiver receiver) : BackgroundService
     {
-        private readonly ServiceBusClient _client;
-        private readonly MessagingReceiver _receiver;
-
-        public MessagingStartupService(
-            ServiceBusClient client,
-            MessagingReceiver receiver)
-        {
-            _client = client;
-            _receiver = receiver;
-        }
+      
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -28,7 +19,7 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus
                 "messaging-observability-failed",
                 stoppingToken);
 
-            await _receiver.StartAsync(stoppingToken);
+            await receiver.StartAsync(stoppingToken);
 
             Console.WriteLine("[MESSAGING] Receivers started");
 
@@ -37,7 +28,7 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            await _receiver.StopAsync(cancellationToken);
+            await receiver.StopAsync(cancellationToken);
         }
 
       private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
@@ -47,7 +38,7 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus
                 try
                 {
                     await using var receiver =
-                        _client.CreateReceiver(topic, subscription);
+                        client.CreateReceiver(topic, subscription);
 
                     await receiver.PeekMessageAsync(cancellationToken: ct);
 

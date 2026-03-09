@@ -1,4 +1,4 @@
-﻿namespace WhoOwesWho.Models.Models.Base.ServiceBus
+﻿namespace WhoOwesWho.Shared.Models.Base.ServiceBus
 {
     public class RequestModelBase
     {

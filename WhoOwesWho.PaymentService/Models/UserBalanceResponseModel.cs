@@ -1,14 +1,14 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
-using WhoOwesWho.Models.Models.Base;
 using WhoOwesWho.Shared.Extensions;
+using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Models
 {
-    public class UserBalanceResponseModel : ModelBase
+    public class    UserBalanceResponseModel : ModelBase
     {
         [JsonProperty("user")]
-        public UserModel? User { get; set; }
+        public UserMessageResponseModel? User { get; set; }
         
         [JsonProperty("balance")]
         public decimal Balance { get; set; }

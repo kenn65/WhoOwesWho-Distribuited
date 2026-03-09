@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Controllers
 {
@@ -33,8 +34,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await eventLookupService.GetEventsAsync(token, active));
+                return Ok(await eventLookupService.GetEventsAsync(active));
             }
             catch (Exception e)
             {
@@ -49,8 +49,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await eventLookupService.GetEventAsync(Guid.Parse(eventId), token, active));
+                return Ok(await eventLookupService.GetEventAsync(Guid.Parse(eventId), active));
             }
             catch (Exception e)
             {
@@ -90,17 +89,13 @@ namespace WhoOwesWho.EventService.Controllers
             }
         }
 
-
-        [Route("{eventId}/settle")]
+        [HttpPost]
+        [Route("settle")]
         [Authorize]
-        public async Task<IActionResult> SettleEventAsync(string eventId)
+        public async Task<IActionResult> SettleEventAsync([FromBody] SettleEventRequestModel request)
         {
             try
             {
-                var request = new SettleEventRequestModel
-                {
-                    EventId = eventId
-                };
                 var response = await eventCommanddService.SettleEventAsync(request);
                 return Ok(response);
             }
