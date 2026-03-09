@@ -3,8 +3,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using WhoOwesWho.AuthorizationService.Models;
+using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.AuthorizationService.Services.Gateways;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -14,17 +14,18 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
     public class AuthorizationService(
         IConfiguration configuration,
-        IAuthorizationSecurityService authorizationSecurityService,
-        IUserGatewayService userGatewayService
+        IAuthorizationCacheRepository authorizationCacheRepository,
+        IAuthorizationSecurityService authorizationSecurityService
         ) : ServiceBase(configuration), IAuthorizationService
     {
         public async Task<AuthorizationResponseModel?> Authorize(AuthorizationRequestModel request)
         {
-            var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
+            request.EmailAddress = await authorizationSecurityService.UnprotectAsync(request.EmailAddress!);
+            var user = await authorizationCacheRepository.GetUserAsync(request.EmailAddress!);
 
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Sub, user!.Id.ToString()),
                 new(JwtRegisteredClaimNames.Email, user.EmailAddress!),
                 new(JwtRegisteredClaimNames.Name, user.FullName ?? ""),
                 new("admin", user.Admin.ToString())

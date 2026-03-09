@@ -23,7 +23,7 @@ namespace WhoOwesWho.PaymentService.EfCore.Context
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<PaymentUsers>()
-               .HasKey(p => new { p.PaymentId, p.UserId });
+               .HasKey(p => new { p.PaymentId, p.Created});
         }
     }
 }

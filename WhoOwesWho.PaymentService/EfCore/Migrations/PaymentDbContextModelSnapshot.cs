@@ -27,16 +27,16 @@ namespace WhoOwesWho.PaymentService.EfCore.Migrations
                     b.Property<Guid>("PaymentId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<long>("Created")
                         .HasColumnType("bigint");
 
                     b.Property<bool>("IsCreditor")
                         .HasColumnType("bit");
 
-                    b.HasKey("PaymentId", "UserId");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PaymentId", "Created");
 
                     b.ToTable("PaymentUsers");
                 });

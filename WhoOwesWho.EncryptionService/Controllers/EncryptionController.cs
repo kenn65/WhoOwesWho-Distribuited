@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using WhoOwesWho.EncryptionService.Services;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EncryptionService.Controllers
 {

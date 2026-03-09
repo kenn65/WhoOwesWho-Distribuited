@@ -1,11 +1,9 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
-using WhoOwesWho.EventService.Services.Gateways;
-using WhoOwesWho.Models.Models;
 using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.PaymentService.EfCore.Context;
 using WhoOwesWho.PaymentService.Models;
-using WhoOwesWho.PaymentService.Services;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Repositories
 {
@@ -16,7 +14,7 @@ namespace WhoOwesWho.PaymentService.Repositories
         Task<PaymentDetailsModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request);
     }
 
-    public class PaymentQueryRepository(PaymentDbContext context, IPaymentSecurityService paymentSecurityService, IUserGatewayService userGatewayService) : IPaymentQueryRepository
+    public class PaymentQueryRepository(PaymentDbContext context, IPaymentCacheRepository redisDatabaseRepository) : IPaymentQueryRepository
     {
 
         public async Task<IEnumerable<UserPaymentResponseModel>> GetUserPaymentsAsync(UserBalanceRequestModel request, bool isCreditor)
@@ -67,8 +65,7 @@ namespace WhoOwesWho.PaymentService.Repositories
 
             foreach (var row in rows)
             {
-                var protectedUserId = await paymentSecurityService.ProtectAsync(row.UserId.ToString());
-                var authorizedUser = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!, true, false);
+                var authorizedUser = await redisDatabaseRepository.GetUserByIdAsync(row.UserId.ToString());
 
                 if (row.IsCreditor)
                 {
@@ -82,7 +79,7 @@ namespace WhoOwesWho.PaymentService.Repositories
                         OriginalCurrency = row.OriginalCurrency,
                         Description = row.Description,
                         Created = new DateTime(row.Created).ToDisplayDateTimeFormat(),
-                        CreditEventUser = authorizedUser
+                        CreditEventUser = authorizedUser.Adapt<UserModel>()
                     });
                 }
                 else
@@ -91,7 +88,7 @@ namespace WhoOwesWho.PaymentService.Repositories
 
                     if (existing != null)
                     {
-                        existing.DebitEventUser = authorizedUser;
+                        existing.DebitEventUser = authorizedUser.Adapt<UserModel>();
                     }
                 }
             }
@@ -131,8 +128,8 @@ namespace WhoOwesWho.PaymentService.Repositories
             var userResults = await Task.WhenAll(
                 rows.Select(async row =>
                 {
-                    var protectedUserId = await paymentSecurityService.ProtectAsync(row.UserId.ToString());
-                    var user = await userGatewayService.GetAuthorizedUserAsync(protectedUserId, request.Token!, true, false);
+                    
+                    var user = await redisDatabaseRepository.GetUserByIdAsync(row.UserId.ToString());
 
                     return new
                     {
@@ -142,7 +139,7 @@ namespace WhoOwesWho.PaymentService.Repositories
                 }));
 
             var response = new PaymentDetailsModel();
-            var debitUsers = new List<UserModel>();
+            var debitUsers = new List<UserMessageResponseModel>();
 
             foreach (var result in userResults)
             {
@@ -160,11 +157,11 @@ namespace WhoOwesWho.PaymentService.Repositories
                     response.Description = row.Description;
                     response.Created = new DateTime(row.Created).ToDisplayDateTimeFormat();
                     response.CreditorIncluded = row.CreditorIncluded;
-                    response.CreditEventUser = user;
+                    response.CreditEventUser = user!;
                 }
                 else
                 {
-                    debitUsers.Add(user);
+                    debitUsers.Add(user!);
                 }
             }
             response.DebitEventUsers = debitUsers;

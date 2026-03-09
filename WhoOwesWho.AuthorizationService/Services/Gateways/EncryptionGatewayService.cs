@@ -1,6 +1,6 @@
 ﻿using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services.Gateways
 {
@@ -8,7 +8,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Gateways
     {
         Task<string> ProtectAsync(string text, bool encode);
         Task<string> UnprotectAsync(string text, bool encode);
-        Task<AuthorizationResponseModel> ProtectCookiesAsync(UserModel user, string token, bool encode);
+        Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode);
         Task<string> UnprotectCookiesAsync(string cookies);
     }
 
@@ -34,7 +34,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Gateways
             )).UnprotectedValue!;
         }
 
-        public async Task<AuthorizationResponseModel> ProtectCookiesAsync(UserModel user, string token, bool encode)
+        public async Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode)
         {
             var response = await Post<AuthorizationResponseModel, CookiesRequestModel>(
                 $"{AppSettings.EncryptionMicroServiceBaseAddress}/cookies/protect",

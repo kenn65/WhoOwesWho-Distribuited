@@ -1,15 +1,18 @@
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System.Text;
-using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.PaymentService.EfCore.Context;
 using WhoOwesWho.PaymentService.EfCore.Extensions;
 using WhoOwesWho.PaymentService.Middleware;
 using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.PaymentService.Services.Gateways;
+using WhoOwesWho.PaymentService.Services.ServiceBus.Receivers;
+using WhoOwesWho.PaymentService.Services.ServiceBus.Resolvers;
 using static WhoOwesWho.PaymentService.Services.IPaymentCalculationService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +22,29 @@ builder.Services.AddDbContext<PaymentDbContext>(options =>
 
 builder.AddServiceDefaults();
 
+builder.Services.AddSingleton(provider =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("sbemulatorns");
+    return new ServiceBusClient(connectionString);
+});
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("redis-cache");
+    return ConnectionMultiplexer.Connect(configuration!);
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var mux = sp.GetRequiredService<IConnectionMultiplexer>();
+    return mux.GetDatabase();
+});
+
 // Add services to the container.
+builder.Services.AddSingleton<EventReceiver>();
+builder.Services.AddHostedService<EventStartupService>();
+builder.Services.AddScoped<IEventResolverService, EventResolverService>();
+
 builder.Services.AddScoped<IUserBalanceService, UserBalanceService>();
 builder.Services.AddScoped<IPaymentLookupService, PaymentLookupService>();
 builder.Services.AddScoped<IPaymentCommandService, PaymentCommandService>();
@@ -27,10 +52,9 @@ builder.Services.AddScoped<IPaymentSecurityService, PaymentSecurityService>();
 builder.Services.AddScoped<IPaymentCalculationService, PaymentCalculationService>();
 builder.Services.AddScoped<IPaymentQueryRepository, PaymentQueryRepository>();
 builder.Services.AddScoped<IPaymentMutationRepository , PaymentMutationRepository>();
-builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
+builder.Services.AddScoped<IPaymentCacheRepository, PaymentCacheRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
-builder.Services.AddTransient<IEventGatewayService, EventGatewayService>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

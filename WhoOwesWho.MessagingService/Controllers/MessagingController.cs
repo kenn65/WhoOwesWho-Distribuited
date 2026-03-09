@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.MessagingService.Services;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 
 namespace WhoOwesWho.MessagingService.Controllers

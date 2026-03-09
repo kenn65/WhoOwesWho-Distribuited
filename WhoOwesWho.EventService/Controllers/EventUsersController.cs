@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services;
 
@@ -17,8 +16,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await eventLookupService.GetEventUsersAsync(eventId, token, active));
+                return Ok(await eventLookupService.GetEventUsersAsync(eventId, active));
             }
             catch (Exception e)
             {
@@ -30,12 +28,11 @@ namespace WhoOwesWho.EventService.Controllers
         [HttpGet]
         [Route("{userId}")]
         [Authorize]
-        public async Task<IActionResult> CheckUserAssignmentAsync(string userId)
+        public async Task<IActionResult> GetUserAssignmentAsync(string userId)
         {
             try
             {
-                var token = HttpContext.ToTokenValue();
-                return Ok(await eventLookupService.GetAssignmentAsync(userId!, token, true));
+                return Ok(await eventLookupService.GetAssignmentAsync(userId!, true));
             }
             catch (Exception e)
             {
@@ -50,7 +47,6 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                request.Token = HttpContext.ToTokenValue();
                 return Ok(await eventCommandService.AssignAsync(request));
             }
             catch (Exception e)

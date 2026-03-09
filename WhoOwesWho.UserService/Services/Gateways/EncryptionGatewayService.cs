@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Services.Base;
 
 namespace WhoOwesWho.UserService.Services.Gateways

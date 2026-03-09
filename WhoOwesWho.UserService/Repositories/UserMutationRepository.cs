@@ -1,6 +1,6 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.EfCore.Context;
 using WhoOwesWho.UserService.EfCore.DataModels;
 using WhoOwesWho.UserService.Models;

@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 

@@ -5,8 +5,8 @@ using Microsoft.OpenApi.Models;
 using WhoOwesWho.MessagingService.Middleware;
 using WhoOwesWho.MessagingService.Services;
 using WhoOwesWho.MessagingService.Services.Gateways;
-using WhoOwesWho.MessagingService.Services.ServiceBus;
 using WhoOwesWho.MessagingService.Services.ServiceBus.Handling;
+using WhoOwesWho.MessagingService.Services.ServiceBus.Receivers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +23,7 @@ builder.Services.AddSingleton<MessagingReceiver>();
 builder.Services.AddHostedService<MessagingStartupService>();
 
 builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
-builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IMessagingSecurityService, MessagingSecurityService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddScoped<IMessageResolverService, MessageResolverService>();
 

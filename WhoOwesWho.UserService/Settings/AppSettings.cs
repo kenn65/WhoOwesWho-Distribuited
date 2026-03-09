@@ -14,6 +14,7 @@
         public string EncryptionMicroServiceApiKey => configuration["EncryptionMicroService:Security:ApiKey"]!;
         public string MessagingMicroServiceBaseAddress => configuration["MessagingMicroService:BaseAddress"]!;
         public string MessagingMicroServiceApiKey => configuration["MessagingMicroService:Security:ApiKey"]!;
+        public string AuthorizationMicroServiceApiKey => configuration["AuthorizationMicroService:Security:ApiKey"]!;
         public string? EventMicroServiceEventsBaseAddress => configuration["EventMicroService:EventsBaseAddress"]!;
         public string? EventMicroServiceEventUsersBaseAddress = configuration["EventMicroService:EventUsersBaseAddress"]!;
         public string? EventMicroServiceUserEventsBaseAddress = configuration["EventMicroService:UserEventsBaseAddress"]!;

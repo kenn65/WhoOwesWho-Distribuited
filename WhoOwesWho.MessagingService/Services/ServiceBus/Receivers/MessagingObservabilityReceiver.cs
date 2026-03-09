@@ -1,73 +1,78 @@
 ﻿using Azure.Messaging.ServiceBus;
-using WhoOwesWho.Models.Models.Base;
-using static WhoOwesWho.Models.Models.Base.ServiceBus.ObservabilityRecords;
+using WhoOwesWho.Shared.Models.Base;
+using static WhoOwesWho.Shared.Models.Base.ServiceBus.ObservabilityRecords;
 
-public sealed class MessagingObservabilityReceiver : BackgroundService
+
+namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
 {
-    private readonly ServiceBusProcessor _successProcessor;
-    private readonly ServiceBusProcessor _failedProcessor;
 
-    public MessagingObservabilityReceiver(ServiceBusClient client)
+    public sealed class MessagingObservabilityReceiver : BackgroundService
     {
-        _successProcessor = client.CreateProcessor(
-            topicName: ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
-            subscriptionName: "messaging-observability");
+        private readonly ServiceBusProcessor _successProcessor;
+        private readonly ServiceBusProcessor _failedProcessor;
 
-        _failedProcessor = client.CreateProcessor(
-            topicName: ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
-            subscriptionName: "messaging-observability");
-    }
+        public MessagingObservabilityReceiver(ServiceBusClient client)
+        {
+            _successProcessor = client.CreateProcessor(
+                topicName: ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
+                subscriptionName: "messaging-observability");
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        // SUCCESS processor
-        _successProcessor.ProcessMessageAsync += HandleSuccessAsync;
-        _successProcessor.ProcessErrorAsync += HandleErrorAsync;
+            _failedProcessor = client.CreateProcessor(
+                topicName: ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
+                subscriptionName: "messaging-observability");
+        }
 
-        // FAILED processor
-        _failedProcessor.ProcessMessageAsync += HandleFailedAsync;
-        _failedProcessor.ProcessErrorAsync += HandleErrorAsync;
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            // SUCCESS processor
+            _successProcessor.ProcessMessageAsync += HandleSuccessAsync;
+            _successProcessor.ProcessErrorAsync += HandleErrorAsync;
 
-        await _successProcessor.StartProcessingAsync(stoppingToken);
-        await _failedProcessor.StartProcessingAsync(stoppingToken);
-    }
+            // FAILED processor
+            _failedProcessor.ProcessMessageAsync += HandleFailedAsync;
+            _failedProcessor.ProcessErrorAsync += HandleErrorAsync;
 
-    private async Task HandleSuccessAsync(ProcessMessageEventArgs args)
-    {
-        var evt = args.Message.Body.ToObjectFromJson<MessagingDispatchedEvent>();
+            await _successProcessor.StartProcessingAsync(stoppingToken);
+            await _failedProcessor.StartProcessingAsync(stoppingToken);
+        }
 
-        Console.WriteLine(
-            $"[AUTH] Messaging dispatched OK | Type={evt?.Type} | User={evt?.UserEmail}");
+        private async Task HandleSuccessAsync(ProcessMessageEventArgs args)
+        {
+            var evt = args.Message.Body.ToObjectFromJson<MessagingDispatchedEvent>();
 
-        await args.CompleteMessageAsync(args.Message);
-    }
+            Console.WriteLine(
+                $"[AUTH] Messaging dispatched OK | Type={evt?.Type} | User={evt?.UserEmail}");
 
-    private async Task HandleFailedAsync(ProcessMessageEventArgs args)
-    {
-        var evt = args.Message.Body.ToObjectFromJson<MessagingDispatchFailedEvent>();
+            await args.CompleteMessageAsync(args.Message);
+        }
 
-        Console.WriteLine(
-            $"[AUTH] Messaging FAILED | Type={evt?.Type} | User={evt?.UserEmail} | Reason={evt?.Reason}");
+        private async Task HandleFailedAsync(ProcessMessageEventArgs args)
+        {
+            var evt = args.Message.Body.ToObjectFromJson<MessagingDispatchFailedEvent>();
 
-        await args.CompleteMessageAsync(args.Message);
-    }
+            Console.WriteLine(
+                $"[AUTH] Messaging FAILED | Type={evt?.Type} | User={evt?.UserEmail} | Reason={evt?.Reason}");
 
-    private Task HandleErrorAsync(ProcessErrorEventArgs args)
-    {
-        Console.WriteLine(
-            $"[AUTH] ServiceBus error | Entity={args.EntityPath} | Error={args.Exception}");
+            await args.CompleteMessageAsync(args.Message);
+        }
 
-        return Task.CompletedTask;
-    }
+        private Task HandleErrorAsync(ProcessErrorEventArgs args)
+        {
+            Console.WriteLine(
+                $"[AUTH] ServiceBus error | Entity={args.EntityPath} | Error={args.Exception}");
 
-    public override async Task StopAsync(CancellationToken cancellationToken)
-    {
-        await _successProcessor.StopProcessingAsync(cancellationToken);
-        await _failedProcessor.StopProcessingAsync(cancellationToken);
+            return Task.CompletedTask;
+        }
 
-        await _successProcessor.DisposeAsync();
-        await _failedProcessor.DisposeAsync();
+        public override async Task StopAsync(CancellationToken cancellationToken)
+        {
+            await _successProcessor.StopProcessingAsync(cancellationToken);
+            await _failedProcessor.StopProcessingAsync(cancellationToken);
 
-        await base.StopAsync(cancellationToken);
+            await _successProcessor.DisposeAsync();
+            await _failedProcessor.DisposeAsync();
+
+            await base.StopAsync(cancellationToken);
+        }
     }
 }

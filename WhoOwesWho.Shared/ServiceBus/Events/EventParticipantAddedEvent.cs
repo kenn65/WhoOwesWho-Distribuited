@@ -1,4 +1,4 @@
-﻿namespace WhoOwesWho.Models.ServiceBus.Events
+﻿namespace WhoOwesWho.Shared.ServiceBus.Events
 {
     public record EventUsersAddedEvent(
         Guid EventId,

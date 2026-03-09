@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.UserService.Models
 {

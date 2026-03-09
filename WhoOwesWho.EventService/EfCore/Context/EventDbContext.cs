@@ -1,5 +1,4 @@
-﻿using Microsoft.Azure.Amqp;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WhoOwesWho.EventService.EfCore.DataModels;
 
 namespace WhoOwesWho.EventService.EfCore.Context

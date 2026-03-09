@@ -1,16 +1,18 @@
 using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System.Text;
+using WhoOwesWho.UserService.EfCore.Context;
+using WhoOwesWho.UserService.EfCore.Extensions;
 using WhoOwesWho.UserService.Middleware;
+using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using WhoOwesWho.UserService.Services.Gateways;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
-using Microsoft.EntityFrameworkCore;
-using WhoOwesWho.UserService.EfCore.Extensions;
-using WhoOwesWho.UserService.EfCore.Context;
-using WhoOwesWho.UserService.Repositories;
+using static WhoOwesWho.UserService.Repositories.IUserCacheRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,11 +28,27 @@ builder.Services.AddSingleton(provider =>
     return new ServiceBusClient(connectionString);
 });
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("redis-cache");
+    return ConnectionMultiplexer.Connect(configuration!);
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var mux = sp.GetRequiredService<IConnectionMultiplexer>();
+    return mux.GetDatabase();
+});
+
 builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
+builder.Services.AddSingleton<IUserPublisher, UserPublisher>();
+
+builder.Services.AddScoped<IUserPublishingServicee, UserPublishingService>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
 builder.Services.AddScoped<IUserLookupService, UserLookupService>();
 builder.Services.AddScoped<IUserQueryRepository, UserQueryRepository>();
 builder.Services.AddScoped<IUserMutationRepository, UserMutationRepository>();
+builder.Services.AddScoped<IUserCacheRepository, UserCacheRepository>();
 builder.Services.AddScoped<IUserValidationService, UserValidationService>();
 builder.Services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
 builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();

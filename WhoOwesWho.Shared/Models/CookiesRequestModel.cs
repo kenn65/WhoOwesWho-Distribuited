@@ -1,7 +1,7 @@
-﻿namespace WhoOwesWho.Models.Models
+﻿namespace WhoOwesWho.Shared.Models
 {
     public class CookiesRequestModel 
     {
-        public UserModel? User { get; set; }
+        public UserMessageResponseModel? User { get; set; }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models.Base;
+using WhoOwesWho.Shared.Models.Base;
 
-namespace WhoOwesWho.Models.Models
+namespace WhoOwesWho.Shared.Models
 {
     public class UserModel : ModelBase
     {

@@ -1,7 +1,7 @@
 ﻿using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -10,7 +10,9 @@ namespace WhoOwesWho.AuthorizationService.Services
         public Task<string> ProtectAsync(string value);
         public Task<string> UnprotectAsync(string value);
 
-        Task<AuthorizationResponseModel> ProtectCookiesAsync(UserModel user, string token, bool encode);
+        Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode);
+
+        Task<bool> ValidateApiKey(string userApiKey);
     }
 
     public class AuthorizationSecurityService(IConfiguration configuration, IEncryptionGatewayService encryptionGatewayService) : ServiceBase(configuration), IAuthorizationSecurityService
@@ -25,12 +27,19 @@ namespace WhoOwesWho.AuthorizationService.Services
             return await encryptionGatewayService.UnprotectAsync(value, true);
         }
 
-        public async Task<AuthorizationResponseModel> ProtectCookiesAsync(UserModel user, string token, bool encode)
+        public async Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode)
         {
             return await encryptionGatewayService.ProtectCookiesAsync(user, token, encode);
         }
 
-
-
+        public async Task<bool> ValidateApiKey(string authorizationApiKey)
+        {
+            if (string.IsNullOrWhiteSpace(authorizationApiKey))
+            {
+                return false;
+            }
+            var apiKey = AppSettings.ApiKey;
+            return await Task.FromResult(apiKey == authorizationApiKey);
+        }
     }
 }

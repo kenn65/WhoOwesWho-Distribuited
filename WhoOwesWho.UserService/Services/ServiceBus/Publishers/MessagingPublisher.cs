@@ -1,6 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
-using WhoOwesWho.Models.Models;
-using WhoOwesWho.Models.Models.Base;
+using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.UserService.Services.ServiceBus.Publishers
 {
@@ -9,14 +9,9 @@ namespace WhoOwesWho.UserService.Services.ServiceBus.Publishers
         Task DispatchAsync(MessagingRequestModel model);
     }
 
-    public class MessagingPublisher : IMessagingPublisher
+    public class MessagingPublisher(ServiceBusClient client) : IMessagingPublisher
     {
-        private readonly ServiceBusSender _sender;
-
-        public MessagingPublisher(ServiceBusClient client)
-        {
-            _sender = client.CreateSender(ServiceBusTopics.MessagingTopics.MessagingDispatchRequest);
-        }
+        private readonly ServiceBusSender _sender = client.CreateSender(ServiceBusTopics.MessagingTopics.MessagingDispatchRequest);
 
         public async Task DispatchAsync(MessagingRequestModel model)
         {

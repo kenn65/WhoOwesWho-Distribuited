@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
@@ -15,14 +15,14 @@ namespace WhoOwesWho.UserService.Services
         Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encrypted = false);
         Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = false);
         Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
-        Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token);
+        Task<UpdateUserVerificationModel> VerifyUpdate(UserUpdateRequestModel request);
     }
     public class UserValidationService(
         IConfiguration configuration,
         IUserQueryRepository userQueryRepository,
         IUserMutationRepository userMutationRepository,
         IUserSecurityService userSecurityService,
-        IEventGatewayService eventGatewayService
+        IUserCacheRepository userCacheRepository
         ) : ServiceBase(configuration), IUserValidationService
     {
         public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encypted = false)
@@ -106,18 +106,23 @@ namespace WhoOwesWho.UserService.Services
             return await userMutationRepository.UpdateUserAsync(user);
         }
 
-        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserModel request, string token)
+        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserUpdateRequestModel request)
         {
             try
             {
-                var thisEvent = await eventGatewayService.GetUserEventAsync(request.ProtectedId!, token, true, true);
-                if (thisEvent.Name is null)
+                if (request.EventId is null)
                 {
                     return await CreateResponse(true);
                 }
-                var eventUsers =
-                    (await eventGatewayService.GetEventUsersAsync(thisEvent.Id.ToString(), token, true, true))
-                    .ToList();
+                request.EventId = await userSecurityService.UnprotectAsync(request.EventId);
+                var evt = await userCacheRepository.GetActiveEventByIdAsync(request.EventId);
+                
+                if (evt!.Name is null)
+                {
+                    return await CreateResponse(true);
+                }
+                var eventUsers = await GetEventUsersAsync(evt);
+                
                 var id = await userSecurityService.UnprotectAsync(request.ProtectedId!);
 
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
@@ -125,13 +130,15 @@ namespace WhoOwesWho.UserService.Services
                 {
                     return await CreateResponse(true);
                 }
-
                 if (existingAdmin.Id == Guid.Parse(id))
                 {
                     return await CreateResponse(true, true);
                 }
-                
-                return await CreateResponse(false);
+                if (request.Admin)
+                {
+                    return await CreateResponse(false);
+                }
+                return await CreateResponse(true);
             }
             catch
             {
@@ -148,6 +155,17 @@ namespace WhoOwesWho.UserService.Services
             }
             return (false, string.Empty);
         }
+
+        private async Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(EventMessageResponseModel evt)
+        {
+            return (await Task.WhenAll(
+                   evt.UserIds!.Select(async id =>
+                   await userCacheRepository.GetUserByIdAsync(id.ToString())
+                   ?? new UserMessageResponseModel()
+                   ))).ToList();
+        }
+
+
 
         private static async Task<UpdateUserVerificationModel> CreateResponse(bool success, bool noAdmin = false)
         {

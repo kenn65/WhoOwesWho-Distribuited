@@ -36,13 +36,13 @@ namespace WhoOwesWho.PaymentService.EfCore.Migrations
                 columns: table => new
                 {
                     PaymentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Created = table.Column<long>(type: "bigint", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IsCreditor = table.Column<bool>(type: "bit", nullable: false),
-                    Created = table.Column<long>(type: "bigint", nullable: false)
+                    IsCreditor = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PaymentUsers", x => new { x.PaymentId, x.UserId });
+                    table.PrimaryKey("PK_PaymentUsers", x => new { x.PaymentId, x.Created });
                 });
         }
 

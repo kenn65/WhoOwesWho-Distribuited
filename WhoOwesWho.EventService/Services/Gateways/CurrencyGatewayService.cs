@@ -1,6 +1,5 @@
-﻿using WhoOwesWho.EventService.Models;
-using WhoOwesWho.EventService.Services.Base;
-using WhoOwesWho.Models.Models;
+﻿using WhoOwesWho.EventService.Services.Base;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Services.Gateways
 {

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
 using WhoOwesWho.PaymentService.Models.Base;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.PaymentService.Models
 {

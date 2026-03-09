@@ -1,8 +1,9 @@
-﻿using WhoOwesWho.AuthorizationService.Models;
+﻿using Mapster;
+using WhoOwesWho.AuthorizationService.Models;
+using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -12,26 +13,30 @@ namespace WhoOwesWho.AuthorizationService.Services
     }
 
     public class AuthenticationNotificationService(IConfiguration configuration,
-        IUserGatewayService userGatewayService,
-        IMessagingPublisher messagingPublisher
+        IAuthorizationCacheRepository authorizationCacheRepository,
+        IMessagingPublisher messagingPublisher,
+        IAuthorizationSecurityService authorizationSecurityService
         ) : ServiceBase(configuration), IAuthenticationNotificationService
     {
         public async Task<string> SendAuthenticationMessage(AuthenticationRequestModel request)
         {
-            var user = await userGatewayService.GetUserAsync(request.EmailAddress!, false);
-            if (user is null)
-            {
-                throw new ArgumentException($"User with e-mail address: {request.EmailAddress} was not found");
-            }
-
             try
             {
+                request.EmailAddress = await authorizationSecurityService.UnprotectAsync(request.EmailAddress!);
+                var user = await authorizationCacheRepository.GetUserAsync(request.EmailAddress!);
+                if (user is null)
+                {
+                    throw new ArgumentException($"User with e-mail address: {request.EmailAddress} was not found");
+                }
+
+                var entity = user.Adapt<UserMessageRequestModel>();
+
                 var messagingRequest = new MessagingRequestModel
                 {
                     ApiKey = AppSettings.MessagingMicroServiceApiKey,
                     Host = request.Host,
                     Type = "Authentication",
-                    User = user,
+                    User = entity,
                     Code = await CreateRandomAuthenticationCode()
                 };
 

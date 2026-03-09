@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.Models.Models.Base;
+﻿using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.AuthorizationService.Models
 {

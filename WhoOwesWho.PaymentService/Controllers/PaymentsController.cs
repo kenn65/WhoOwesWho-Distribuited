@@ -43,17 +43,16 @@ namespace WhoOwesWho.PaymentService.Controllers
 
 
         [HttpGet]
-        [Route("{userId}/{active}")]
+        [Route("{eventId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetPaymentsAsync(string userId, bool active)
+        public async Task<IActionResult> GetPaymentsAsync(string eventId, bool active)
         {
             try
             {
                 var request = new PaymentsRequestModel
                 {
-                    UserId = userId,
-                    Active = active,
-                    Token = HttpContext.ToTokenValue()
+                    EventId = eventId,
+                    Active = active
                 };
                 return Ok(await paymentLookupService.GetPaymentsPageDataAsync(request));
             }

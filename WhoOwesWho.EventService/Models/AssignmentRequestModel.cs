@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using WhoOwesWho.Models.Models;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Models
 {
@@ -12,11 +12,6 @@ namespace WhoOwesWho.EventService.Models
         public string? UserId { get; set; }
         
         [JsonProperty("user")]
-        public UserModel? User { get; set; }
-
-        [JsonProperty("token")]
-        public string? Token { get; set; }
-
-        
+        public UserMessageResponseModel? User { get; set; }
     }
 }

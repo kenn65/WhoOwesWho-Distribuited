@@ -1,9 +1,14 @@
 using Azure.Messaging.ServiceBus;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using WhoOwesWho.AuthorizationService.Middleware;
+using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
+using WhoOwesWho.AuthorizationService.Services.ServiveBus.Receivers;
+using WhoOwesWho.AuthorizationService.Services.ServiveBus.Resolvers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,13 +21,30 @@ builder.Services.AddSingleton(provider =>
     return new ServiceBusClient(connectionString);
 });
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("redis-cache");
+    return ConnectionMultiplexer.Connect(configuration!);
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var mux = sp.GetRequiredService<IConnectionMultiplexer>();
+    return mux.GetDatabase();
+});
+
+builder.Services.AddSingleton<UserReceiver>();
+builder.Services.AddHostedService<UserStartupService>();
 builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
+
+builder.Services.AddScoped<IUserResolverService, UserResolverService>();
+builder.Services.AddScoped<IAuthorizationCacheRepository, AuthorizationCacheRepository>();
+
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IAuthorizationSecurityService, AuthorizationSecurityService>();
 builder.Services.AddScoped<IAuthenticationNotificationService, AuthenticationNotificationService>();
 builder.Services.AddScoped<IAuthenticationValidationService, AuthenticationValidationService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
-builder.Services.AddScoped<IUserGatewayService, UserGatewayService>();
 
 builder.Services.AddControllers();
 
