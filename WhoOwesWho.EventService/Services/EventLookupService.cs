@@ -39,11 +39,11 @@ namespace WhoOwesWho.EventService.Services
         public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true)
         {
             var userId = await eventSecurityService.UnprotectAsync(protectedUserId);
-            var result = await eventQueryRepository.GetAssignmentAsync(protectedUserId, active);
-            if (!result.Success) {
-                result.Message = "No active events are available.";
+            var response = await eventQueryRepository.GetAssignmentAsync(protectedUserId, active);
+            if (!response.Success) {
+                response.Message = "No active events are available.";
             }
-            return result;
+            return response;
         }
 
         public async Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active = true)

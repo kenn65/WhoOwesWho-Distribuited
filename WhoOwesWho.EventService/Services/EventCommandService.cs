@@ -30,21 +30,21 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
-            var result = await eventMutationRepository.CreateEventAsync(request);
-            if (result!.Success)
+            var response = await eventMutationRepository.CreateEventAsync(request);
+            if (response!.Success)
             {
                 if (request.AutoAssign)
                 {
                     var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId!);
                     await AssignAsync(new AssignmentRequestModel
                     {
-                        EventId = result.Id.ToString(),
+                        EventId = response.Id.ToString(),
                         UserId = request.UserId,
                         User = creationUser
                     });
                 }
-                result.Message = "Event created successfully.";
-                return result;
+                response.Message = "Event created successfully.";
+                return response;
             }
             return new EventResponseModel
             {
@@ -54,11 +54,11 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<UpdateResponseModel> UpdateEventAsync(EventRequestModel request)
         {
-            var result = await eventMutationRepository.UpdateEventAsync(request);
-            if (result.Success)
+            var response = await eventMutationRepository.UpdateEventAsync(request);
+            if (response.Success)
             {
-                result.Message = "Event updated successfully.";
-                return result;
+                response.Message = "Event updated successfully.";
+                return response;
             }
             return new UpdateResponseModel
             {
@@ -68,11 +68,11 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<DeleteEventResponseModel> DeleteEventAsync(Guid id)
         {
-            var result = await eventMutationRepository.DeleteEventAsync(id);
-            if (result.Success)
+            var response = await eventMutationRepository.DeleteEventAsync(id);
+            if (response.Success)
             {
-                result.Message = "Event deleted successfully.";
-                return result;
+                response.Message = "Event deleted successfully.";
+                return response;
             }
             return new DeleteEventResponseModel
             {
@@ -97,11 +97,11 @@ namespace WhoOwesWho.EventService.Services
                 });
             }
             
-            var result = await AssignToEventAsync(request);
-            if (result.Success)
+            var response = await AssignToEventAsync(request);
+            if (response.Success)
             {
-                result.Message = "Successfully assigned your user to event.";
-                return result;
+                response.Message = "Successfully assigned your user to event.";
+                return response;
             }
             return new AssignmentResponseModel
             {
@@ -111,15 +111,15 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request)
         {
-            var result = await eventMutationRepository.AssignToEventAsync(request);
-            if (result.Success)
+            var response = await eventMutationRepository.AssignToEventAsync(request);
+            if (response.Success)
             {
                 var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
                 var publishingItems = evt.Adapt<EventMessageRequestModel>();
                 publishingItems.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItems);
-                result.Message = "Successfully assigned user to event.";
-                return result;
+                response.Message = "Successfully assigned user to event.";
+                return response;
             }
             return new AssignmentResponseModel
             {
@@ -129,15 +129,15 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request)
         {
-            var result = await eventMutationRepository.UnassignFromEventAsync(request);
-            if (result.Success)
+            var response = await eventMutationRepository.UnassignFromEventAsync(request);
+            if (response.Success)
             {
                 var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
                 var publishingItem = evt.Adapt<EventMessageRequestModel>();
                 publishingItem.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItem);
-                result.Message = "Successfully unassigned user from event.";
-                return result;
+                response.Message = "Successfully unassigned user from event.";
+                return response;
             }
             return new UnassignmentResponseModel
             {
@@ -148,12 +148,12 @@ namespace WhoOwesWho.EventService.Services
         public async Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request)
         {
             request.EventId = await eventSecurityService.UnprotectAsync(request.EventId!);
-            var result = await eventMutationRepository.SettleEventAsync(request);
-            if (result.Success)
+            var response = await eventMutationRepository.SettleEventAsync(request);
+            if (response.Success)
             {   
                 await eventCacheRepository.DeleteActiveEventAsync(request.EventId!);
-                result.Message = "The event was successfully settled.";
-                return result;
+                response.Message = "The event was successfully settled.";
+                return response;
             }
             return new SettleEventResponseModel
             {

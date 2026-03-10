@@ -56,19 +56,19 @@ namespace WhoOwesWho.MessagingService.Services
         {
             if (string.Equals(EmailType.SignUp.ToString(), type, StringComparison.InvariantCultureIgnoreCase))
             {
-                var result = (AppSettings.SignUpTemplatePath, AppSettings.SignUpTemplateSubject);
-                return (await Task.FromResult(result))!;
+                var response = (AppSettings.SignUpTemplatePath, AppSettings.SignUpTemplateSubject);
+                return (await Task.FromResult(response))!;
 
             }
             else if (string.Equals(EmailType.ResetPassword.ToString(), type, StringComparison.InvariantCultureIgnoreCase))
             {
-                var result = (AppSettings.ResetPasswordTemplatePath, AppSettings.ResetPasswordTemplateSubject);
-                return (await Task.FromResult(result))!;
+                var response = (AppSettings.ResetPasswordTemplatePath, AppSettings.ResetPasswordTemplateSubject);
+                return (await Task.FromResult(response))!;
             }
             else if (string.Equals(EmailType.Authentication.ToString(), type, StringComparison.InvariantCultureIgnoreCase))
             {
-                var result = (AppSettings.AuthenticationTemplatePath, AppSettings.AuthenticationTemplateSubject);
-                return (await Task.FromResult(result))!;
+                var response = (AppSettings.AuthenticationTemplatePath, AppSettings.AuthenticationTemplateSubject);
+                return (await Task.FromResult(response))!;
             }
             else
             {

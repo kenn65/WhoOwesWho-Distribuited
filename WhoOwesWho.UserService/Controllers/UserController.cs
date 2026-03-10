@@ -146,13 +146,13 @@ namespace WhoOwesWho.UserService.Controllers
             try
             {
                 request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-                var result = await userValidationService.VerifyUserEmailAddress(request.EmailAddress!);
-                if (result!.Success)
+                var response = await userValidationService.VerifyUserEmailAddress(request.EmailAddress!);
+                if (response!.Success)
                 {
-                    var entity = result.Adapt<UserMessageRequestModel>();
+                    var entity = response.Adapt<UserMessageRequestModel>();
                      await userPublishingService.SendUserAsync(entity);
                 }
-                return Ok(result);
+                return Ok(response);
                 
             }
             catch (Exception e)
@@ -270,13 +270,13 @@ namespace WhoOwesWho.UserService.Controllers
                 }
 
                 request.EmailAddress = emailAddress;
-                var result = await resetPasswordService.ResetPasswordAsync(request);
+                var response = await resetPasswordService.ResetPasswordAsync(request);
 
-                actionResult.Success = result!.Success;
-                actionResult.Message = result.Message;
-                if (result.Success) 
+                actionResult.Success = response!.Success;
+                actionResult.Message = response.Message;
+                if (response.Success) 
                 {
-                    var entity = result.Adapt<UserMessageRequestModel>();
+                    var entity = response.Adapt<UserMessageRequestModel>();
                     await userPublishingService.SendUserAsync(entity);
                 }
                 return Ok(actionResult);
