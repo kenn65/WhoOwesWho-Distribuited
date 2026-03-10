@@ -1,6 +1,7 @@
 ﻿using Flurl.Http;
 using System.Globalization;
 using WhoOwesWho.CurrencyService.Models;
+using WhoOwesWho.CurrencyService.Repositories;
 using WhoOwesWho.CurrencyService.Services.Base;
 using WhoOwesWho.Shared.Models;
 
@@ -13,15 +14,8 @@ namespace WhoOwesWho.CurrencyService.Services
         Task<ExchangeRateResponseModel> GetExchangeRateAsync(string paymentCurrencyIso, string eventCurrencyIso);
     }
 
-    public class CurrencyService(IConfiguration configuration) : ServiceBase(configuration), ICurrencyService
+    public class CurrencyService(IConfiguration configuration, ICurrencyCacheRepository currencyCacheRepository) : ServiceBase(configuration), ICurrencyService
     {
-        private static CurrencyCachingModel? _cache = new()
-        {
-            LastUpdated = default,
-            Currencies = new List<CurrencyResponseModel>(),
-            ExchangeRates = new Dictionary<string, decimal>()
-        };
-
         public async Task<CurrencyResponseModel> GetCurrencyAsync(string iso)
         {
             var currencies = await GetCurrenciesAsync();
@@ -30,36 +24,12 @@ namespace WhoOwesWho.CurrencyService.Services
 
         public async Task<IEnumerable<CurrencyResponseModel>?> GetCurrenciesAsync()
         {
-            if (_cache is null || !_cache!.Currencies.Any() || (DateTime.Now - _cache.LastUpdated).TotalDays >= 1)
+            var cachedCurrencies = await currencyCacheRepository.GetAllCurrenciesAsync();
+            if (cachedCurrencies != null && cachedCurrencies.Any())
             {
-                await InitializeCache();
-            }
-            return await Task.FromResult(_cache!.Currencies);
-        }
-
-        public async Task<ExchangeRateResponseModel> GetExchangeRateAsync(string paymentCurrencyIso, string eventCurrencyIso)
-        {
-            if (_cache is null || !_cache!.ExchangeRates!.Any() || (DateTime.Now - _cache.LastUpdated).TotalDays >= 1)
-            {
-                await InitializeCache();
+                return cachedCurrencies;
             }
 
-            var response = new ExchangeRateResponseModel
-            {
-                ExchangeRate = 1
-            };
-
-            if (paymentCurrencyIso == eventCurrencyIso)
-            {
-                return await Task.FromResult(response);
-            }
-
-            response.ExchangeRate = _cache!.ExchangeRates![eventCurrencyIso] / _cache.ExchangeRates[paymentCurrencyIso];
-            return await Task.FromResult(response);
-        }
-
-        private async Task<IEnumerable<CurrencyResponseModel>> CacheCurrencies()
-        {
             var currencies = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
                 .Select(c => c.Name).Distinct()
                 .Select(c => new RegionInfo(c))
@@ -74,35 +44,37 @@ namespace WhoOwesWho.CurrencyService.Services
 
             var endpoint = $"{AppSettings.FreeCurrencyHost}/currencies?apikey={AppSettings.FreeCurrencyApiKey}";
             using var client = GetClient(endpoint);
-            var response = await client.Request().GetJsonAsync<CurrencyModel?>();
-            var isoCurrencySymbols = response!.Data?.Values.Select(item => item.Code).ToList();
-            return currencies.Where(c => isoCurrencySymbols!.Contains(c.ISOCurrencySymbol)).Select(c => new CurrencyResponseModel
+            var currencyModel = await client.Request().GetJsonAsync<CurrencyModel?>();
+            var isoCurrencySymbols = currencyModel!.Data?.Values.Select(item => item.Code).ToList();
+            var response = currencies.Where(c => isoCurrencySymbols!.Contains(c.ISOCurrencySymbol)).Select(c => new CurrencyResponseModel
             {
                 Iso = c.ISOCurrencySymbol,
                 Name = c.CurrencyEnglishName,
                 Symbol = c.CurrencySymbol
             }).OrderBy(currency => currency.Iso).ToList();
+            //Cache the currencies in Redis for 12 hours
+            await currencyCacheRepository.SaveCurrenciesAsync(response);
+            return response;
         }
 
-        private async Task<IDictionary<string, decimal>?> CacheExchangeRates()
+        public async Task<ExchangeRateResponseModel> GetExchangeRateAsync(string paymentCurrencyIso, string eventCurrencyIso)
         {
-            var endpoint = $"{AppSettings.FreeCurrencyHost}/latest?apikey={AppSettings.FreeCurrencyApiKey}";
-            using var client = GetClient(endpoint);
-            var result = await client.Request().GetJsonAsync<ExchangeRateResultModel>();
-            return result?.Data;
-        }
-
-        public async Task InitializeCache()
-        {
-            _cache = null;
-            _cache = new CurrencyCachingModel
+            var response = new ExchangeRateResponseModel
             {
-                LastUpdated = DateTime.Now,
-                Currencies = await CacheCurrencies(),
-                ExchangeRates = await CacheExchangeRates()
+                ExchangeRate = 1
             };
+            if (paymentCurrencyIso == eventCurrencyIso)
+            {
+                return response;
+            }
+            
+            decimal rate = 1;
+            var endpoint = $"{AppSettings.FreeCurrencyHost}/latest?apikey={AppSettings.FreeCurrencyApiKey}&base_currency={paymentCurrencyIso}&currencies={eventCurrencyIso}";
+            using IFlurlClient client = new FlurlClient(endpoint);
+            var exchangeRateResultModel = await client.Request().GetJsonAsync<ExchangeRateResultModel>();
+            rate = exchangeRateResultModel.Data!.Values.First();
+            response.ExchangeRate = rate;
+            return response;
         }
-
-       
     }
 }

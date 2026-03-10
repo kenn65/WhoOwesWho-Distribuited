@@ -25,16 +25,16 @@ namespace WhoOwesWho.UserService.Repositories
             public async Task<EventMessageResponseModel?> GetActiveEventByIdAsync(string id)
             {
                 var value = await db.StringGetAsync($"activeevent:{id}");
-                var result = value.HasValue
+                var response = value.HasValue
                     ? JsonSerializer.Deserialize<EventMessageResponseModel>(value!)
                     : null;
-                if (result is null)
+                if (response is null)
                 {
                     return null;
                 }
-                if (!result!.Settled)
+                if (!response!.Settled)
                 {
-                    return result;
+                    return response;
                 }
                 return null;
             }

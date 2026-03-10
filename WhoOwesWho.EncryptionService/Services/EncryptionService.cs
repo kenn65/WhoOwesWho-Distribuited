@@ -63,10 +63,10 @@ namespace WhoOwesWho.EncryptionService.Services
             using var memoryStream = new MemoryStream(buffer);
             await using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
             using var streamReader = new StreamReader(cryptoStream);
-            var result = await streamReader.ReadToEndAsync();
+            var response = await streamReader.ReadToEndAsync();
             return await Task.FromResult(new ProtectionResponseModel
             {
-                UnprotectedValue = result
+                UnprotectedValue = response
             });
         }
 
