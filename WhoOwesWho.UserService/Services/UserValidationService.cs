@@ -1,19 +1,18 @@
-﻿using Microsoft.Data.SqlClient;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
+using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Auxiliaries;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {
     public interface IUserValidationService
     {
-        Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encrypted = false);
-        Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = false);
+        Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password);
+        Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool shouldExist);
         Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
         Task<UpdateUserVerificationModel> VerifyUpdate(UserUpdateRequestModel request);
     }
@@ -25,34 +24,25 @@ namespace WhoOwesWho.UserService.Services
         IUserCacheRepository userCacheRepository
         ) : ServiceBase(configuration), IUserValidationService
     {
-        public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password, bool encypted = false)
+        public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password)
         {
-            if (encypted)
-            {
-                password = await userSecurityService.UnprotectAsync(password!);
-            }
+            password = await userSecurityService.UnprotectAsync(password!);
             var errorMessage = string.Empty;
-            var check = password!.Length >= int.Parse(AppSettings.PasswordLengthRequired)
-                        && password.Count(char.IsUpper) >= int.Parse(AppSettings.PasswordUppercaseRequired)
-                        && password.Count(char.IsDigit) >= int.Parse(AppSettings.PasswordDigitsRequired);
-
-            if (!check)
+            var isValidPassword = password.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
+            if (!isValidPassword)
             {
                 errorMessage = string.Format(CultureInfo.InvariantCulture,
                     Constants.CredentialsErrorMessages.PasswordRequirements, AppSettings.PasswordLengthRequired,
                     AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
             }
-
-            return (check, errorMessage);
+            return (isValidPassword, errorMessage);
         }
 
-        public async Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool? shouldExist = null)
+        public async Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool shouldExist)
         {
             try
             {
-                const string pattern = @"^(?!\.)(""([^""\r\\]|\\[""\r\\])*""|" + @"([-a-z0-9!#$%&'*+/=?^_`{|}~]|(?<!\.)\.)*)(?<!\.)" + @"@[a-z0-9][\w\.-]*[a-z0-9]\.[a-z][a-z\.]*[a-z]$";
-                var regex = new Regex(pattern, RegexOptions.IgnoreCase);
-                if (!regex.IsMatch(emailAddress))
+                if (emailAddress.IsValid())
                 {
                     return (false, Constants.CredentialsErrorMessages.EmailAddressNotValid);
                 }
@@ -89,20 +79,12 @@ namespace WhoOwesWho.UserService.Services
 
         public async Task<UserModel?> VerifyUserEmailAddress(string emailAddress)
         {
-            if (string.IsNullOrWhiteSpace(emailAddress))
-            {
-                throw new ArgumentException("Email address argument was not provided.");
-            }
-
             var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
             if (user is null)
             {
                 return null;
             }
-
             user.EmailAddressVerified = true;
-
-
             return await userMutationRepository.UpdateUserAsync(user);
         }
 
@@ -116,15 +98,8 @@ namespace WhoOwesWho.UserService.Services
                 }
                 request.EventId = await userSecurityService.UnprotectAsync(request.EventId);
                 var evt = await userCacheRepository.GetActiveEventByIdAsync(request.EventId);
-                
-                if (evt!.Name is null)
-                {
-                    return await CreateResponse(true);
-                }
-                var eventUsers = await GetEventUsersAsync(evt);
-                
+                var eventUsers = await GetEventUsersAsync(evt!);
                 var id = await userSecurityService.UnprotectAsync(request.ProtectedId!);
-
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
                 if (existingAdmin is null)
                 {

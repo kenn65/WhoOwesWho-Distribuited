@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.UserService.Services.Base;
+﻿using WhoOwesWho.Shared.Extensions;
+using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
@@ -12,13 +13,21 @@ namespace WhoOwesWho.UserService.Services
 
     public class UserSecurityService(IConfiguration configuration, IEncryptionGatewayService encryptionGatewayService) : ServiceBase(configuration), IUserSecurityService
     {
+         
         public async Task<string> ProtectAsync(string value)
         {
+            if (!value.IsValid() || !value.IsGuid()) {
+                return value;
+            }
             return await encryptionGatewayService.ProtectAsync(value, true);
         }
 
         public async Task<string> UnprotectAsync(string value)
         {
+            if (value.IsValid() || value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.UnprotectAsync(value, true);
         }
     }

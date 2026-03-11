@@ -5,7 +5,6 @@ using WhoOwesWho.UserService.Services;
 using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.Shared.Models;
 using Mapster;
-using WhoOwesWho.UserService.Settings;
 
 namespace WhoOwesWho.UserService.Controllers
 {
@@ -37,14 +36,14 @@ namespace WhoOwesWho.UserService.Controllers
                     return Ok(actionResult);
                 }
 
-                var emailCheck = await userValidationService.ValidateEmailAsync(request.Entity.EmailAddress!);
+                var emailCheck = await userValidationService.ValidateEmailAsync(request.Entity.EmailAddress!, false);
                 if (!emailCheck.isValid)
                 {
                     actionResult.Message = emailCheck.errorMessage;
                     return Ok(actionResult);
                 }
 
-                var passwordCheck = await userValidationService.ValidatePasswordAsync(request.Entity.Password!, true);
+                var passwordCheck = await userValidationService.ValidatePasswordAsync(request.Entity.Password!);
                 if (!passwordCheck.isValid)
                 {
                     actionResult.Message = passwordCheck.errorMessage;
@@ -150,10 +149,10 @@ namespace WhoOwesWho.UserService.Controllers
                 if (response!.Success)
                 {
                     var entity = response.Adapt<UserMessageRequestModel>();
-                     await userPublishingService.SendUserAsync(entity);
+                    await userPublishingService.SendUserAsync(entity);
                 }
                 return Ok(response);
-                
+
             }
             catch (Exception e)
             {
@@ -170,7 +169,12 @@ namespace WhoOwesWho.UserService.Controllers
             try
             {
                 request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-
+                if (!request.EmailAddress.IsValid())
+                {
+                    actionResult.Success = false;
+                    actionResult.Message = "Invalid eMail address provided.";
+                    return Ok(actionResult);
+                }
                 if (string.IsNullOrWhiteSpace(request.Host))
                 {
                     actionResult.Message = "Host is not provided.";
@@ -210,7 +214,6 @@ namespace WhoOwesWho.UserService.Controllers
                 }
                 return Ok(await Task.FromResult(new ResetPasswordResponseModel
                 {
-                    Message = "",
                     Success = true
                 }));
             }
@@ -229,11 +232,9 @@ namespace WhoOwesWho.UserService.Controllers
             try
             {
                 var emailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-
                 var newPassword = await userSecurityService.UnprotectAsync(request.NewPassword!);
-
                 var newPasswordRepeat = await userSecurityService.UnprotectAsync(request.NewPasswordRepeat!);
-
+                                               
                 if (newPassword != newPasswordRepeat)
                 {
                     actionResult.Message = "The passwords does not match!";
@@ -249,7 +250,7 @@ namespace WhoOwesWho.UserService.Controllers
 
                 var unprotectedUserPassword = await userSecurityService.UnprotectAsync(user.Password!);
 
-                if (unprotectedUserPassword == request.NewPassword)
+                if (unprotectedUserPassword == user.Password)
                 {
                     actionResult.Message = "The new password cannot be the same as the existing password.";
                     return Ok(actionResult);
@@ -274,7 +275,7 @@ namespace WhoOwesWho.UserService.Controllers
 
                 actionResult.Success = response!.Success;
                 actionResult.Message = response.Message;
-                if (response.Success) 
+                if (response.Success)
                 {
                     var entity = response.Adapt<UserMessageRequestModel>();
                     await userPublishingService.SendUserAsync(entity);

@@ -1,5 +1,6 @@
 ﻿using WhoOwesWho.EventService.Services.Base;
 using WhoOwesWho.EventService.Services.Gateways;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.EventService.Services
 {
@@ -16,11 +17,19 @@ namespace WhoOwesWho.EventService.Services
     {
         public async Task<string> ProtectAsync(string value)
         {
+            if (!value.IsValid() || !value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.ProtectAsync(value);
         }
 
         public async Task<string> UnprotectAsync(string value)
         {
+            if (value.IsValid() || value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.UnprotectAsync(value);
         }
     }
