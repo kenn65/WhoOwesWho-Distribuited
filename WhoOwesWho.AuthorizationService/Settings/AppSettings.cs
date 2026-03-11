@@ -13,6 +13,9 @@
         public string MessagingMicroServiceApiKey => configuration["MessagingMicroService:Security:ApiKey"]!;
         public string UserMicroServiceBaseAddress => configuration["UserMicroService:BaseAddress"]!;
         public string UserMicroServiceApiKey => configuration["UserMicroService:Security:ApiKey"]!;
+        public string PasswordLengthRequired => configuration["Password:Format:LenghtRequired"]!;
+        public string PasswordUppercaseRequired => configuration["Password:Format:UppercaseRequired"]!;
+        public string PasswordDigitsRequired => configuration["Password:Format:DigitsRequired"]!;
 
     }
 }

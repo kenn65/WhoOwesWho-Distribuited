@@ -1,5 +1,6 @@
 ﻿using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.PaymentService.Services
 {
@@ -15,11 +16,19 @@ namespace WhoOwesWho.PaymentService.Services
     {
         public async Task<string> ProtectAsync(string value)
         {
+            if (!value.IsValid() || !value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.ProtectAsync(value);
         }
 
         public async Task<string> UnprotectAsync(string value)
         {
+            if (value.IsValid() || value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.UnprotectAsync(value);
         }
 

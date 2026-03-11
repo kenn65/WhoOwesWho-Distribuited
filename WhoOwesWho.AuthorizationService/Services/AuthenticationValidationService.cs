@@ -2,6 +2,7 @@
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -19,21 +20,30 @@ namespace WhoOwesWho.AuthorizationService.Services
         {
             if (string.IsNullOrWhiteSpace(emailAddress) || string.IsNullOrWhiteSpace(password))
             {
-                throw new ArgumentException("Email or password argument was not provided");
+                throw new ArgumentException("Email and/or password was not provided");
             }
-            var unprotectedEmailAddress = await authorizationSecurityService.UnprotectAsync(emailAddress);
-            var user = await authorizationCacheRepository.GetUserAsync(unprotectedEmailAddress);
+            emailAddress = await authorizationSecurityService.UnprotectAsync(emailAddress);
+            if (!emailAddress.IsValid())
+            {
+                return false;
+            }
+
+            if (!password.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired))
+            {
+                return false;
+            }
+            var user = await authorizationCacheRepository.GetUserAsync(emailAddress);
 
             if (user is null)
             {
-                return await Task.FromResult(false);
+                return false;
             }
 
             if (!user.EmailAddressVerified)
             {
-                return await Task.FromResult(false);
+                return false;
             }
-            
+
             return await Task.FromResult(password == user.Password);
         }
     }

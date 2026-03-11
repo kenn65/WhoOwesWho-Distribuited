@@ -28,7 +28,7 @@ namespace WhoOwesWho.AuthorizationService.Controllers
 
                 if (!await authenticationValidationService.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
                 {
-                    actionResult.Message = "Invalid combination of e-mail and password entered.";
+                    actionResult.Message = "Invalid e-mail and/or password entered.";
                     return Ok(actionResult);
                 }
 

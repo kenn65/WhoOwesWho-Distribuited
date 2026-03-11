@@ -1,6 +1,7 @@
 ﻿using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
+using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
@@ -19,11 +20,19 @@ namespace WhoOwesWho.AuthorizationService.Services
     {
         public async Task<string> ProtectAsync(string value)
         {
+            if (!value.IsValid() || !value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.ProtectAsync(value, true);
         }
-                
+
         public async Task<string> UnprotectAsync(string value)
         {
+            if (value.IsValid() || value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.UnprotectAsync(value, true);
         }
 
