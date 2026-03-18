@@ -26,9 +26,8 @@ namespace WhoOwesWho.UserService.Services
     {
         public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password)
         {
-            password = await userSecurityService.UnprotectAsync(password!);
             var errorMessage = string.Empty;
-            var isValidPassword = password.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
+            var isValidPassword = password!.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
             if (!isValidPassword)
             {
                 errorMessage = string.Format(CultureInfo.InvariantCulture,
@@ -42,7 +41,7 @@ namespace WhoOwesWho.UserService.Services
         {
             try
             {
-                if (emailAddress.IsValid())
+                if (!emailAddress.IsValid())
                 {
                     return (false, Constants.CredentialsErrorMessages.EmailAddressNotValid);
                 }
@@ -101,17 +100,17 @@ namespace WhoOwesWho.UserService.Services
                 var eventUsers = await GetEventUsersAsync(evt!);
                 var id = await userSecurityService.UnprotectAsync(request.ProtectedId!);
                 var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
-                if (existingAdmin is null)
+                if (existingAdmin is null && request.Admin)
                 {
                     return await CreateResponse(true);
                 }
-                if (existingAdmin.Id == Guid.Parse(id))
-                {
-                    return await CreateResponse(true, true);
-                }
-                if (request.Admin)
+                if (request.Admin && existingAdmin is not null && existingAdmin.Id != Guid.Parse(id))
                 {
                     return await CreateResponse(false);
+                }
+                if (existingAdmin is null && !request.Admin)
+                {
+                    return await CreateResponse(true, true);
                 }
                 return await CreateResponse(true);
             }
@@ -139,8 +138,6 @@ namespace WhoOwesWho.UserService.Services
                    ?? new UserMessageResponseModel()
                    ))).ToList();
         }
-
-
 
         private static async Task<UpdateUserVerificationModel> CreateResponse(bool success, bool noAdmin = false)
         {

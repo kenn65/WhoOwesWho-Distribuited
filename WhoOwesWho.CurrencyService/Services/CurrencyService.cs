@@ -19,7 +19,7 @@ namespace WhoOwesWho.CurrencyService.Services
         public async Task<CurrencyResponseModel> GetCurrencyAsync(string iso)
         {
             var currencies = await GetCurrenciesAsync();
-            return await Task.FromResult(currencies!.First(c => c.Iso == iso));
+            return currencies!.First(c => c.Iso == iso);
         }
 
         public async Task<IEnumerable<CurrencyResponseModel>?> GetCurrenciesAsync()

@@ -21,5 +21,11 @@ namespace WhoOwesWho.Shared.Models
 
         [JsonProperty("eventId")]
         public string? EventId { get; set; }
+
+        [JsonProperty("password")]
+        public string? Password { get; set; }
+
+        [JsonProperty("isPasswordUpdating")]
+        public bool IsPasswordUpdating { get; set; }
     }
 }

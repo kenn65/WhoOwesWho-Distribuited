@@ -91,10 +91,10 @@ namespace WhoOwesWho.EventService.Services
             var users = (await eventLookupService.GetEventUsersAsync(request.EventId!)).ToList();
             if (users.Any(u => u.Admin) && you!.Admin)
             {
-                return await Task.FromResult(new AssignmentResponseModel
+                return new AssignmentResponseModel
                 {
                     Message = "You cannot assign to this event as an administrator, because an event administrator already exists."
-                });
+                };
             }
             
             var response = await AssignToEventAsync(request);

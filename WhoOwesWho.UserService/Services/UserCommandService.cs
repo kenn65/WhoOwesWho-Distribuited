@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 
@@ -27,11 +28,11 @@ namespace WhoOwesWho.UserService.Services
             var user = await userMutationRepository.CreateUserAsync(request);
             if (user is null)
             {
-                return await Task.FromResult(new UserModel()
+                return new UserModel()
                 {
                     Success = false,
                     Message = "An error occurred while creating the user. Please, try again."
-                });
+                };
             }
 
             var entity = user.Adapt<UserMessageRequestModel>();
@@ -41,24 +42,34 @@ namespace WhoOwesWho.UserService.Services
 
         public async Task<UserModel?> UpdateUserAsync(UserUpdateRequestModel? request)
         {
-            var validationResult = await userValidationService.VerifyUpdate(request!);
+            var validationResult = request!.IsPasswordUpdating 
+                ? new UpdateUserVerificationModel
+                {
+                    Success = true,
+                    NoAdmin = true
+                }
+                : await userValidationService.VerifyUpdate(request!);
+
             if (validationResult is { Success: false, NoAdmin: false })
             {
-                return await Task.FromResult(new UserModel()
+                return new UserModel()
                 {
                     Success = false,
                     Message = "The event you have assigned to already has an administrator."
-                });
+                };
             }
-
-           
+                       
             request!.Id = Guid.Parse(await userSecurityService.UnprotectAsync(request!.ProtectedId!));
             var userEntity = await userQueryRepository.GetSingleUserByIdAsync(request!.Id, true);
             userEntity!.FullName = request.FullName;
             userEntity.MobilePhoneNumber = request.MobilePhoneNumber;
             userEntity.Admin = request.Admin;
+            if (request.IsPasswordUpdating)
+            {
+                userEntity.Password = request.Password;
+            }
 
-            var response = await Task.FromResult(await userMutationRepository.UpdateUserAsync(userEntity));
+            var response = await userMutationRepository.UpdateUserAsync(userEntity);
             if (validationResult is { Success: true, NoAdmin: true })
             {
                 var user = response.Adapt<UserMessageRequestModel>();

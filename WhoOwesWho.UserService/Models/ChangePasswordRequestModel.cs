@@ -16,7 +16,4 @@ namespace WhoOwesWho.UserService.Models
         [JsonProperty("newPassword2")]
         public string? NewPassword2 { get; set; }
     }
-    
-        
-    
 }

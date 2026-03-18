@@ -16,10 +16,10 @@ namespace WhoOwesWho.UserService.EfCore.Context
             modelBuilder.Entity<Users>()
                 .HasIndex(u => u.EmailAddress);
 
-            modelBuilder.Entity<ForgotPassword>()
-              .HasOne<Users>()          
-              .WithMany()               
-              .HasForeignKey(ea => ea.UserId);
+            //modelBuilder.Entity<ForgotPassword>()
+            //  .HasOne<Users>()          
+            //  .WithMany()               
+            //  .HasForeignKey(ea => ea.UserId);
             }
 
     }

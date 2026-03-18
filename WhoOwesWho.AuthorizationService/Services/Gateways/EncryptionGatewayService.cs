@@ -47,7 +47,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Gateways
 
             response.TokenValue = token;
             response.Success = true;
-            return await Task.FromResult(response);
+            return response;
         }
 
         public Task<string> UnprotectCookiesAsync(string cookies)

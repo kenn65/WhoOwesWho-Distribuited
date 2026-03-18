@@ -3,11 +3,11 @@ using WhoOwesWho.EncryptionService.Settings;
 
 namespace WhoOwesWho.EncryptionService.Services
 {
-    public interface ISecurityService
+    public interface IEncryptionSecurityService
     {
         Task<bool> ValidateApiKey(string userApiKey);
     }
-    public class SecurityService(IConfiguration configuration) : ServiceBase(configuration), ISecurityService
+    public class EncryptionSecurityService(IConfiguration configuration) : ServiceBase(configuration), IEncryptionSecurityService
     {
         public async Task<bool> ValidateApiKey(string userApiKey)
         {
@@ -16,7 +16,7 @@ namespace WhoOwesWho.EncryptionService.Services
                 return false;
             }
             var apiKey = AppSettings.ApiKey;
-            return await Task.FromResult(apiKey == userApiKey);
+            return apiKey == userApiKey;
         }
     }
 }

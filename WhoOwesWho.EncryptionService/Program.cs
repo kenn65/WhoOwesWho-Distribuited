@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
-builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IEncryptionSecurityService, EncryptionSecurityService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

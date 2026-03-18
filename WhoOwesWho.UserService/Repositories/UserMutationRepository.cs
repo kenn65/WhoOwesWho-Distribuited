@@ -18,19 +18,19 @@ namespace WhoOwesWho.UserService.Repositories
 
     public class UserMutationRepository(UserDbContext context) : IUserMutationRepository
     {
-        async Task<bool> IUserMutationRepository.CreateForgotPasswordTokenAsync(ForgotPasswordTokenModel model)
+        public async Task<bool> CreateForgotPasswordTokenAsync(ForgotPasswordTokenModel model)
         {
             try
             {
                 var entity = model.Adapt<ForgotPassword>();
                 await context.AddAsync(entity);
                 await context.SaveChangesAsync();
-                return await Task.FromResult(true);
+                return true;
             }
             catch (Exception e)
             {
                 Console.WriteLine($"An error occurred while creating the forgot password token: {e.Message}");
-                return await Task.FromResult(false);
+                return false;
             }
         }
 
@@ -60,7 +60,7 @@ namespace WhoOwesWho.UserService.Repositories
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
-                return await Task.FromResult(true);
+                return true;
             }
             catch (Exception e)
             {

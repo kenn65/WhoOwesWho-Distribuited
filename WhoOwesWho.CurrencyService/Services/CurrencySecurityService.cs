@@ -2,11 +2,11 @@
 
 namespace WhoOwesWho.CurrencyService.Services
 {
-    public interface ISecurityService
+    public interface ICurrencySecurityService
     {
         Task<bool> ValidateApiKey(string userApiKey);
     }
-    public class SecurityService(IConfiguration configuration) : ServiceBase(configuration), ISecurityService
+    public class CurrencySecurityService(IConfiguration configuration) : ServiceBase(configuration), ICurrencySecurityService
     {
         public async Task<bool> ValidateApiKey(string userApiKey)
         {
@@ -15,7 +15,7 @@ namespace WhoOwesWho.CurrencyService.Services
                 return false;
             }
             var apiKey = AppSettings.ApiKey;
-            return await Task.FromResult(apiKey == userApiKey);
+            return apiKey == userApiKey;
         }
     }
 }

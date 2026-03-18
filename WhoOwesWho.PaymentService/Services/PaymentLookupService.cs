@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
@@ -10,6 +11,7 @@ namespace WhoOwesWho.PaymentService.Services
     public interface IPaymentLookupService
     {
         Task<PaymentPageResponseModel> GetPaymentsPageDataAsync(PaymentsRequestModel request);
+        Task<UserPaymentResponseModel> GetUserPaymentsAsync(UserPaymentsRequestModel request);
         Task<PaymentDetailsPageResponseModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request);
         Task<PaymentDetailsPageResponseModel> GetSettlementDetailsAsync(SettlementDetailsRequestModel request);
     }
@@ -84,7 +86,8 @@ namespace WhoOwesWho.PaymentService.Services
                     Event = eventModel,
                     Payments = payments,
                     Balances = balances,
-                    WhoOwesWho = whoOwesWho
+                    WhoOwesWho = whoOwesWho,
+                    Success = true
                 };
                 return response;
             }
@@ -142,5 +145,18 @@ namespace WhoOwesWho.PaymentService.Services
             
         }
 
+        public async Task<UserPaymentResponseModel> GetUserPaymentsAsync(UserPaymentsRequestModel request)
+        {
+            var response = new UserPaymentResponseModel();
+            var paymentsRequestModel = request.Adapt<PaymentsRequestModel>();
+            var userId = Guid.Parse(await paymentSecurityService.UnprotectAsync(request.UserId!));
+            var payments = await GetPaymentsPageDataAsync(paymentsRequestModel);
+            var hasPayments = payments.Payments?.Any(p => p?.CreditEventUser?.Id == userId ||
+                p?.DebitEventUser?.Id == userId);
+            var success = hasPayments.HasValue && hasPayments.Value
+                ? response.Success = true
+                : response.Success = false;
+            return response;
+        }
     }
 }

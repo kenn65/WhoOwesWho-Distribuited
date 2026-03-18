@@ -9,8 +9,7 @@ namespace WhoOwesWho.PaymentService.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class BalanceController(
-        IUserBalanceService userBalanceService, 
-        IPaymentSecurityService paymentSecurityService
+        IUserBalanceService userBalanceService 
         ) : ControllerBase
     {
         [HttpGet]
@@ -20,16 +19,14 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var unprotectedUserId = await paymentSecurityService.UnprotectAsync(userId);
-                
-                var request = new UserBalanceRequestModel
+                var requestModel = new UserBalanceRequestModel
                 {
-                    UserId = unprotectedUserId,
+                    UserId = userId,
                     EventId = eventId,
                     Token = HttpContext.ToTokenValue()
                 };
 
-                var response = await userBalanceService.GetUserBalanceAsync(request, true);
+                var response = await userBalanceService.GetUserBalanceAsync(requestModel, true);
                 return Ok(response);
             }
             catch

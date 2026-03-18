@@ -49,6 +49,7 @@ builder.Services.AddScoped<IUserLookupService, UserLookupService>();
 builder.Services.AddScoped<IUserQueryRepository, UserQueryRepository>();
 builder.Services.AddScoped<IUserMutationRepository, UserMutationRepository>();
 builder.Services.AddScoped<IUserCacheRepository, UserCacheRepository>();
+builder.Services.AddScoped<IUserCreationService, UserCreationService>();
 builder.Services.AddScoped<IUserValidationService, UserValidationService>();
 builder.Services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
 builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();

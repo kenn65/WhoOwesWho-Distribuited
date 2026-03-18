@@ -20,7 +20,7 @@ namespace WhoOwesWho.MessagingService.Services.Base
             var response = await client.Request().PostJsonAsync(request);
             if (typeof(T) == typeof(IFlurlResponse))
             {
-                return await Task.FromResult((T)response);
+                return (T)response;
             }
             return await response.GetJsonAsync<T>();
         }
@@ -44,7 +44,7 @@ namespace WhoOwesWho.MessagingService.Services.Base
             }
             var defaultValue = endpointBuilder.ToString();
             var bytes = Encoding.Default.GetBytes(defaultValue);
-            return await Task.FromResult(Encoding.UTF8.GetString(bytes));
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 }

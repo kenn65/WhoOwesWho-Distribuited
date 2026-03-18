@@ -43,10 +43,10 @@ namespace WhoOwesWho.EncryptionService.Services
                 }
             }
            
-            return await Task.FromResult(new ProtectionResponseModel
+            return new ProtectionResponseModel
             {
                 ProtectedValue = WebEncoders.Base64UrlEncode(array)
-            });
+            };
         }
 
         public async Task<ProtectionResponseModel> Decrypt(string cipherText)
@@ -64,10 +64,10 @@ namespace WhoOwesWho.EncryptionService.Services
             await using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
             using var streamReader = new StreamReader(cryptoStream);
             var response = await streamReader.ReadToEndAsync();
-            return await Task.FromResult(new ProtectionResponseModel
+            return new ProtectionResponseModel
             {
                 UnprotectedValue = response
-            });
+            };
         }
 
         public async Task<EncryptedCookiesResponseModel> EncryptCookies(CookiesRequestModel request)
@@ -86,12 +86,12 @@ namespace WhoOwesWho.EncryptionService.Services
 
         public async Task<DecryptedCookiesModel> DecryptCookies(string userId, string userEmailAddress, string admin)
         {
-            return await Task.FromResult(new DecryptedCookiesModel
+            return new DecryptedCookiesModel
             {
                 UserIdValue = Guid.Parse((await Decrypt(userId)).UnprotectedValue!),
                 UserEmailAddressValue = (await Decrypt(userEmailAddress)).UnprotectedValue,
                 AdminValue = bool.Parse((await Decrypt(admin)).UnprotectedValue!)
-            });
+            };
         }
     }
 }

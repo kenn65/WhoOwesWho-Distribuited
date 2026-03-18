@@ -1,6 +1,7 @@
 ﻿using WhoOwesWho.MessagingService.Services.Base;
 using WhoOwesWho.MessagingService.Services.Gateways;
 using WhoOwesWho.MessagingService.Settings;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.MessagingService.Services
 {
@@ -20,16 +21,24 @@ namespace WhoOwesWho.MessagingService.Services
                 return false;
             }
             var apiKey = AppSettings.ApiKey;
-            return await Task.FromResult(apiKey == userApiKey);
+            return apiKey == userApiKey;
         }
 
         public async Task<string> ProtectAsync(string value)
         {
+            if (value.IsValid() || value.IsGuid())
+            {
+                return value;
+            }
             return await encryptionGatewayService.ProtectAsync(value);
         }
 
         public async Task<string> UnprotectAsync(string value)
         {
+            if (!value.IsValid() && !value.IsGuid()) 
+            {
+                return value;
+            }
             return await encryptionGatewayService.UnprotectAsync(value);
         }
     }
