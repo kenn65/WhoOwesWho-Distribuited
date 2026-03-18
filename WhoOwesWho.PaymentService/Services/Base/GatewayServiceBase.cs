@@ -20,7 +20,7 @@ namespace WhoOwesWho.PaymentService.Services.Base
             var response = await client.Request().PostJsonAsync(request);
             if (typeof(T) == typeof(IFlurlResponse))
             {
-                return await Task.FromResult((T)response);
+                return (T)response;
             }
             return await response.GetJsonAsync<T>();
         }
@@ -49,8 +49,7 @@ namespace WhoOwesWho.PaymentService.Services.Base
                         : parameter.Value);
                 }
             }
-            var defaultValue = endpointBuilder.ToString();
-            return await Task.FromResult(defaultValue);
+            return endpointBuilder.ToString();
         }
     }
 }

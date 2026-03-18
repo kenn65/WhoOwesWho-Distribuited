@@ -44,7 +44,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             var token = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
             var response = await authorizationSecurityService.ProtectCookiesAsync(user, token, true);
-            return await Task.FromResult(response);
+            return response;
         }
     }
 }

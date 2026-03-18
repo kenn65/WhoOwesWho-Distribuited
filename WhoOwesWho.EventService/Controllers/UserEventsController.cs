@@ -40,7 +40,7 @@ namespace WhoOwesWho.EventService.Controllers
                 {
                     var id = await eventSecurityService.UnprotectAsync(userId);
                     var allEvents = (await eventLookupService.GetEventsAsync(active)).ToList();
-                    return Ok(allEvents.Where(e => e.Settled && e.Users!.Any(u => u.Id == Guid.Parse(id))));
+                    return Ok(allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == Guid.Parse(id))));
                 }
                 catch (Exception e)
                 {

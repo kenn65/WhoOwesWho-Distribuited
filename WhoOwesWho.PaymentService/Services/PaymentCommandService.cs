@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Configuration.UserSecrets;
-using WhoOwesWho.PaymentService.Models;
+﻿using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
+using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Services
 {
@@ -14,12 +14,24 @@ namespace WhoOwesWho.PaymentService.Services
 
     public class PaymentCommandService(
         IConfiguration configuration,
+        IPaymentSecurityService paymentSecurityService,
         IPaymentCalculationService paymentCalculationService,
         IPaymentMutationRepository paymentMutationRepository
         ) : ServiceBase(configuration), IPaymentCommandService
     {
         public async Task<CreatePaymentResponseModel> CreatePaymentAsync(CreatePaymentRequestModel request)
         {
+            request.CreditorId = await paymentSecurityService.UnprotectAsync(request.CreditorId!);
+
+            var userIdList = request.UserIds!.ToList();
+            var unprotectedUserIds = new List<string>();
+            for (var i = userIdList.Count - 1; i > -1; i--)
+            {
+                var userId = await paymentSecurityService.UnprotectAsync(userIdList[i]);
+                unprotectedUserIds.Add(userId);
+            }
+            request.UserIds = unprotectedUserIds;
+
             var timeTicks = DateTime.Now.Ticks;
             var amountCalculation = await paymentCalculationService.CalculateAmount(request);
             request.Amount = amountCalculation.Amount;
@@ -30,10 +42,10 @@ namespace WhoOwesWho.PaymentService.Services
 
             if (request.CreditorIncluded && request.UserIds!.Count() == 1)
             {
-                return await Task.FromResult(new CreatePaymentResponseModel
+                return new CreatePaymentResponseModel
                 {
                     Message = "Payment invalid as the only debtor is yourself, which does not make sense."
-                });
+                };
             }
 
             var paymentAddition = await paymentMutationRepository.AddPaymentAsync(request, timeTicks);
@@ -74,6 +86,17 @@ namespace WhoOwesWho.PaymentService.Services
 
         public async Task<UpdatePaymentResponseModel> UpdatePaymentDetailsAsync(UpdatePaymentRequestModel request)
         {
+            request.CreditorId = await paymentSecurityService.UnprotectAsync(request.CreditorId!);
+
+            var userIdList = request.UserIds!.ToList();
+            var unprotectedUserIds = new List<string>();
+            for (var i = userIdList.Count - 1; i > -1; i--)
+            {
+                var userId = await paymentSecurityService.UnprotectAsync(userIdList[i]);
+                unprotectedUserIds.Add(userId);
+            }
+            request.UserIds = unprotectedUserIds;
+
             var timeTicks = DateTime.Now.Ticks;
             var amountCalculation = await paymentCalculationService.CalculateAmount(request);
             request.Amount = amountCalculation.Amount;
@@ -117,11 +140,11 @@ namespace WhoOwesWho.PaymentService.Services
                 }
             }
 
-            return await Task.FromResult(new UpdatePaymentResponseModel()
+            return new UpdatePaymentResponseModel()
             {
                 Message = "Payment updated successfully.",
                 Success = true
-            });
+            };
         }
 
         private static async Task<CreatePaymentResponseModel> CreateUnsuccessfulPaymentResponseAsync()

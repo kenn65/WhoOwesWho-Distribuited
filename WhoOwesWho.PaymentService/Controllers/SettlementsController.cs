@@ -17,13 +17,13 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var request = new PaymentsRequestModel
+                var requestModel = new PaymentsRequestModel
                 {
                     EventId = eventId,
                     Active = active
                     
                 };
-                return Ok(await paymentLookupService.GetPaymentsPageDataAsync(request));
+                return Ok(await paymentLookupService.GetPaymentsPageDataAsync(requestModel));
             }
             catch
             {
@@ -40,12 +40,12 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var request = new SettlementDetailsRequestModel
+                var requestModel = new SettlementDetailsRequestModel
                 {
                     PaymentId = paymentId,
                     Token = HttpContext.ToTokenValue()
                 };
-                return Ok(await paymentLookupService.GetSettlementDetailsAsync(request));
+                return Ok(await paymentLookupService.GetSettlementDetailsAsync(requestModel));
             }
             catch
             {

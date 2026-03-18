@@ -13,9 +13,9 @@ namespace WhoOwesWho.UserService.Services
         Task SendPasswordRecoveryMessage(UserMessageRequestModel entity, string host, string forgotPasswordToken);
     }
 
-
     public class UserNotificationService(
          IConfiguration configuration,
+         IUserSecurityService userSecurityService,
          IUserMutationRepository userMutationRepository,
          IMessagingPublisher messagingPublisher
          ) : ServiceBase(configuration), IUserNotificationService
@@ -54,14 +54,13 @@ namespace WhoOwesWho.UserService.Services
                     ForgotPasswordToken = forgotPasswordToken
                 };
 
-
                 await userMutationRepository.DeleteForgotPasswordTokenAsync(entity.Id);
+                request.ForgotPasswordToken = await userSecurityService.ProtectAsync(request.ForgotPasswordToken, true);
                 if (!await userMutationRepository.CreateForgotPasswordTokenAsync(new ForgotPasswordTokenModel
                 {
                     UserId = request.User.Id,
                     ForgotPasswordToken = request.ForgotPasswordToken,
-                    ExpirationTime = DateTime.Now
-                            .AddMinutes(int.Parse(AppSettings.ForgotPasswordExpirationTimeInMinutes)).Ticks
+                    ExpirationTime = DateTime.Now.AddMinutes(int.Parse(AppSettings.ForgotPasswordExpirationTimeInMinutes)).Ticks
                 }))
                 {
                     throw new Exception("Failed to create forgot password token in the database.");
@@ -71,8 +70,7 @@ namespace WhoOwesWho.UserService.Services
             }
             catch (Exception e)
             {
-                throw new Exception($"An error occurred while sending forgot password message: {e.Message}",
-                    e);
+                throw new Exception($"An error occurred while sending forgot password message: {e.Message}", e);
             }
         }
     }

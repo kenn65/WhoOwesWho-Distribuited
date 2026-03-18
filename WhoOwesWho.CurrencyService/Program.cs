@@ -23,7 +23,7 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
-builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<ICurrencySecurityService, CurrencySecurityService>();
 builder.Services.AddScoped<ICurrencyCacheRepository, CurrencyCacheRepository>();
 
 builder.Services.AddControllers();

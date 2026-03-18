@@ -1,4 +1,6 @@
-﻿using WhoOwesWho.UserService.Models;
+﻿using Mapster;
+using WhoOwesWho.Shared.Models;
+using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
 
@@ -10,51 +12,82 @@ namespace WhoOwesWho.UserService.Services
     }
     public class ChangePasswordService(
         IConfiguration configuration,
+        IUserSecurityService userSecurityService,
+        IUserValidationService userValidationService,
         IUserQueryRepository userQueryRepository,
-        IUserMutationRepository userMutationRepository
+        IUserCommandService userCommandService
         ) : ServiceBase(configuration), IChangePasswordService
     {
         public async Task<ChangePasswordResponseModel?> ChangePasswordAsync(ChangePasswordRequestModel request)
         {
-              var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
+            var response = new ChangePasswordResponseModel();
+
+            request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
+            var password = await userSecurityService.UnprotectAsync(request.Password!);
+            var newPassword1 = await userSecurityService.UnprotectAsync(request.NewPassword1!);
+            var newPassword2 = await userSecurityService.UnprotectAsync(request.NewPassword2!);
+
+            var emailCheck = await userValidationService.ValidateEmailAsync(request.EmailAddress!, true);
+            if (!emailCheck.isValid)
+            {
+                response.Message = emailCheck.errorMessage;
+                return response;
+            }
+
+            var passwordCheck = await userValidationService.ValidatePasswordAsync(password);
+            if (!passwordCheck.isValid)
+            {
+                response.Message = $"<strong>For existing password:</strong><br />{passwordCheck.errorMessage}";
+                return response;
+            }
+
+            passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword1);
+            if (!passwordCheck.isValid)
+            {
+                response.Message = $"<strong>For new password:</strong><br /> {passwordCheck.errorMessage}";
+                return response;
+            }
+
+            passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword2!);
+            if (!passwordCheck.isValid)
+            {
+                response.Message = $"<strong>For new password repeated:</strong><br /> {passwordCheck.errorMessage}";
+                return response;
+            }
+
+            if (newPassword1 != newPassword2)
+            {
+                response.Message = "The passwords does not match!";
+                return response;
+            }
+            
+            var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
             if (user is null)
             {
-                return await Task.FromResult(new ChangePasswordResponseModel
-                {
-                    Message = "User not found with the provided email address.",
-                    Success = false
-                });
+                response.Message = "User not found with the provided email address. Please try again";
+                return response;
             }
 
            if (user.Password != request.Password)
             {
-                return await Task.FromResult(new ChangePasswordResponseModel
-                {
-                    Message = "The existing password is incorrect.",
-                    Success = false
-                });
+                response.Message = "The existing password is incorrect.";
+                return response;
             }
 
             user.Password = request.NewPassword1;
-            //user.Password = await encryptionGatewayService.ProtectAsync(request.NewPassword1!, true);
-
-            var entity = await userMutationRepository.UpdateUserAsync(user);
+            var requestModel = user.Adapt<UserUpdateRequestModel>();
+            requestModel.ProtectedId = await userSecurityService.ProtectAsync(user.Id.ToString());
+            requestModel.IsPasswordUpdating = true;
+            var entity = await userCommandService.UpdateUserAsync(requestModel);
             if (entity != null)
             {
-                return await Task.FromResult(new ChangePasswordResponseModel
-                {
-                    Message = "Password changed successfully.",
-                    Success = true
-                });
+                response.Success = true;
+                response.Message = "Your password was successfully changed.";
+                return response;
             }
 
-            return await Task.FromResult(new ChangePasswordResponseModel
-            {
-                Message = "An error occurred while updating the user password.",
-                Success = false
-            });
-
-
+            response.Message = "An error occurred while updating the user password. Please try again";
+            return response;
         }
     }
 }

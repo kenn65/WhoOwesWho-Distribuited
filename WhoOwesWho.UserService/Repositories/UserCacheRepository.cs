@@ -13,7 +13,6 @@ namespace WhoOwesWho.UserService.Repositories
         
         public class UserCacheRepository(IDatabase db) : IUserCacheRepository
         {
-
             public async Task<UserMessageResponseModel?> GetUserByIdAsync(string id)
             {
                 var value = await db.StringGetAsync($"user:{id}");

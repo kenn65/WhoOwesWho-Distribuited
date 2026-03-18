@@ -1,9 +1,10 @@
 ﻿using Newtonsoft.Json;
 using WhoOwesWho.Shared.Extensions;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Models.Base
 {
-    public class PaymentModelBase 
+    public class PaymentModelBase : ModelBase
     {
         [JsonProperty("amount")]
         public decimal Amount { get; set; }

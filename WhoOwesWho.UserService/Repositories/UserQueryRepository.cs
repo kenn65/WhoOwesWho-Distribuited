@@ -20,8 +20,8 @@ namespace WhoOwesWho.UserService.Repositories
         public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
         {
             var model = await context.Users
-                .ProjectToType<IEnumerable<UserModel>>().ToListAsync();
-            return (IEnumerable<UserModel>)model;
+                .ProjectToType<UserModel>().ToListAsync();
+            return model;
         }
 
         public async Task<ForgotPasswordTokenModel> GetForgotPasswordTokenAsync(Guid userId)

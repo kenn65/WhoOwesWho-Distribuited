@@ -11,6 +11,7 @@ namespace WhoOwesWho.PaymentService.Services
 
     public class UserBalanceService(
         IConfiguration configuration,
+        IPaymentSecurityService paymentSecurityService,
         IPaymentQueryRepository paymentQueryRepository,
         IPaymentCacheRepository paymentCacheRepository
         ) : ServiceBase(configuration), IUserBalanceService
@@ -19,20 +20,21 @@ namespace WhoOwesWho.PaymentService.Services
         {
             try
             {
+                request.UserId = await paymentSecurityService.UnprotectAsync(request.UserId!);
+
                 var thisEvent = await paymentCacheRepository.GetEventByIdAsync(request.EventId!, active); 
                 var userCredits = (await paymentQueryRepository.GetUserPaymentsAsync(request, true)).ToList();
                 var userDebits = (await paymentQueryRepository.GetUserPaymentsAsync(request, false)).ToList();
                 
                 var creditUserAmountSum = userCredits.Any() ? userCredits.Sum(c => c.Amount) : 0;
                 var debitUserAmountSum = userDebits.Any() ? userDebits.Sum(d => d.Amount) : 0;
-
-                return await Task.FromResult(new UserBalanceResponseModel
+                
+                return new UserBalanceResponseModel
                 {
                     User = await paymentCacheRepository.GetUserByIdAsync(request.UserId!),
-                       
                     Balance = decimal.Round(creditUserAmountSum - debitUserAmountSum, 2, MidpointRounding.AwayFromZero),
                     CurrencySymbol = thisEvent!.CurrencySymbol
-                });
+                };
             }
             catch (Exception e)
             {

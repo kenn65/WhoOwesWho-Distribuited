@@ -13,7 +13,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
                 var endpoint = await BuildEndpoint(baseEndpoint, encode, parameters);
                 using var client = GetClient(endpoint, apiKey, token);
                 var response = await client.Request().GetJsonAsync<T>();
-                return await Task.FromResult(response);
+                return response;
             }
             catch (Exception e)
             {
@@ -28,7 +28,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
             var response = await client.Request().PostJsonAsync(request);
             if (typeof(T) == typeof(IFlurlResponse))
             {
-                return await Task.FromResult((T)response);
+                return (T)response;
             }
             return await response.GetJsonAsync<T>();
         }
@@ -57,8 +57,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
                         : parameter.Value);
                 }
             }
-            var defaultValue = endpointBuilder.ToString();
-            return await Task.FromResult(defaultValue);
+            return endpointBuilder.ToString();
         }
     }
 }

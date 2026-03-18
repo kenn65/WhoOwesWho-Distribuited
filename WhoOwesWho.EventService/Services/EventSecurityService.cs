@@ -17,20 +17,20 @@ namespace WhoOwesWho.EventService.Services
     {
         public async Task<string> ProtectAsync(string value)
         {
-            if (!value.IsValid() || !value.IsGuid())
+            if (value.IsValid() || value.IsGuid())
             {
-                return value;
+                return await encryptionGatewayService.ProtectAsync(value);
             }
-            return await encryptionGatewayService.ProtectAsync(value);
+            return value;
         }
 
         public async Task<string> UnprotectAsync(string value)
         {
-            if (value.IsValid() || value.IsGuid())
+            if (!value.IsValid() && !value.IsGuid())
             {
-                return value;
+                return await encryptionGatewayService.UnprotectAsync(value);
             }
-            return await encryptionGatewayService.UnprotectAsync(value);
+            return value;
         }
     }
 }

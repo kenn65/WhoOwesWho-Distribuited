@@ -27,12 +27,12 @@ namespace WhoOwesWho.PaymentService.Services
 
                 var usersCount = request.UserIds!.Count();
                 var totalAmount = request.OriginalAmount * exchangeRateResponse.ExchangeRate;
-                return await Task.FromResult(new CalculateAmountResponseModel
+                return new CalculateAmountResponseModel
                 {
                     TotalAmount = totalAmount,
                     Amount = totalAmount / usersCount,
                     Currency = activeEventResponse.Currency
-                });
+                };
             }
 
             public async Task<IEnumerable<UserBalanceResponseModel>> CalculateUserBalances(PaymentsRequestModel request, IEnumerable<UserModel> eventUsers)
@@ -48,7 +48,7 @@ namespace WhoOwesWho.PaymentService.Services
                     balances.Add(await userBalanceService.GetUserBalanceAsync(userBalanceRequest, request.Active));
                 }
 
-                return await Task.FromResult(balances);
+                return balances;
             }
 
             public async Task<IEnumerable<WhoOwesWhoModel>> CalculateWhoOwesWho(IEnumerable<UserBalanceResponseModel> balances)

@@ -44,7 +44,7 @@ namespace WhoOwesWho.AuthorizationService.Services
                 return false;
             }
 
-            return await Task.FromResult(password == user.Password);
+            return password == user.Password;
         }
     }
 }

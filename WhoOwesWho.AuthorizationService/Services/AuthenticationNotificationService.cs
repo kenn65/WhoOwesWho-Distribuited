@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
@@ -9,24 +10,39 @@ namespace WhoOwesWho.AuthorizationService.Services
 {
     public interface IAuthenticationNotificationService
     {
-        Task<string> SendAuthenticationMessage(AuthenticationRequestModel model);
+        Task<AuthenticationResponseModel> SendAuthenticationMessage(AuthenticationRequestModel model);
     }
 
     public class AuthenticationNotificationService(IConfiguration configuration,
         IAuthorizationCacheRepository authorizationCacheRepository,
         IMessagingPublisher messagingPublisher,
-        IAuthorizationSecurityService authorizationSecurityService
+        IAuthorizationSecurityService authorizationSecurityService,
+        IAuthenticationValidationService authenticationValidationService
         ) : ServiceBase(configuration), IAuthenticationNotificationService
     {
-        public async Task<string> SendAuthenticationMessage(AuthenticationRequestModel request)
+        public async Task<AuthenticationResponseModel> SendAuthenticationMessage(AuthenticationRequestModel request)
         {
+            var response = new AuthenticationResponseModel();
             try
             {
+                if (string.IsNullOrWhiteSpace(request.EmailAddress) || string.IsNullOrWhiteSpace(request.Password))
+                {
+                    response.Message = "E-mail address or password was not provided";
+                    return response;
+                }
+
+                if (!await authenticationValidationService.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
+                {
+                    response.Message = "Invalid e-mail and/or password entered.";
+                    return response;
+                }
+
                 request.EmailAddress = await authorizationSecurityService.UnprotectAsync(request.EmailAddress!);
                 var user = await authorizationCacheRepository.GetUserAsync(request.EmailAddress!);
                 if (user is null)
                 {
-                    throw new ArgumentException($"User with e-mail address: {request.EmailAddress} was not found");
+                    response.Message =$"User with e-mail address: {request.EmailAddress} was not found";
+                    return response;
                 }
 
                 var entity = user.Adapt<UserMessageRequestModel>();
@@ -41,7 +57,10 @@ namespace WhoOwesWho.AuthorizationService.Services
                 };
 
                 await messagingPublisher.DispatchAsync(messagingRequest);
-                return await Task.FromResult(messagingRequest.Code);
+                response.Code = messagingRequest.Code;
+                response.Success = true;
+                response.Message = "An authentication code was sent to your e-mail address";
+                return response;
             }
             catch (Exception e)
             {
@@ -53,7 +72,7 @@ namespace WhoOwesWho.AuthorizationService.Services
         private static async Task<string> CreateRandomAuthenticationCode()
         {
             var randomizer = new Random();
-            return await Task.FromResult(randomizer.Next(100000, 990000).ToString("D5"));
+            return randomizer.Next(100000, 990000).ToString("D5");
         }
     }
 }

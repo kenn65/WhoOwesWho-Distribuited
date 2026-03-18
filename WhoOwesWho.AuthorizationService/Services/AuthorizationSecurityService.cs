@@ -20,20 +20,20 @@ namespace WhoOwesWho.AuthorizationService.Services
     {
         public async Task<string> ProtectAsync(string value)
         {
-            if (!value.IsValid() || !value.IsGuid())
+            if (value.IsValid() || value.IsGuid())
             {
-                return value;
+                return await encryptionGatewayService.ProtectAsync(value, true);
             }
-            return await encryptionGatewayService.ProtectAsync(value, true);
+            return value;
         }
 
         public async Task<string> UnprotectAsync(string value)
         {
-            if (value.IsValid() || value.IsGuid())
+            if (!value.IsValid() && !value.IsGuid())
             {
-                return value;
+                return await encryptionGatewayService.UnprotectAsync(value, true);
             }
-            return await encryptionGatewayService.UnprotectAsync(value, true);
+            return value;
         }
 
         public async Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode)
@@ -48,7 +48,7 @@ namespace WhoOwesWho.AuthorizationService.Services
                 return false;
             }
             var apiKey = AppSettings.ApiKey;
-            return await Task.FromResult(apiKey == authorizationApiKey);
+            return apiKey == authorizationApiKey;
         }
     }
 }

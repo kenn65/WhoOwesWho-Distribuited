@@ -31,7 +31,7 @@ namespace WhoOwesWho.MessagingService.Middleware
                 return false;
             }
             var apiKey = AppSettings.ApiKey;
-            return await Task.FromResult(apiKey == userApiKey);
+            return apiKey == userApiKey;
         }
 
     }

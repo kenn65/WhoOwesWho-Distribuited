@@ -3,16 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
-using WhoOwesWho.PaymentService.Services.Gateways;
 
 namespace WhoOwesWho.PaymentService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class PaymentsController(
-        IPaymentLookupService paymentLookupService, 
-        IPaymentCommandService paymentCommandService,
-        IEncryptionGatewayService encryptionGatewayService
+        IPaymentLookupService paymentLookupService,
+        IPaymentCommandService paymentCommandService
         ) : ControllerBase
     {
         [HttpPut]
@@ -22,18 +20,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                request.CreditorId = await encryptionGatewayService.UnprotectAsync(request.CreditorId!);
-                                
-                var userIdList = request.UserIds!.ToList();
-                var unprotectedUserIds = new List<string>();
-                for (var i = userIdList.Count - 1; i > -1; i--)
-                {
-                    var userId = await encryptionGatewayService.UnprotectAsync(userIdList[i]);
-                    unprotectedUserIds.Add(userId);
-                }
-                request.UserIds = unprotectedUserIds;
-                var response = await paymentCommandService.CreatePaymentAsync(request);
-                return Ok(response);
+                return Ok(await paymentCommandService.CreatePaymentAsync(request));
             }
             catch
             {
@@ -49,12 +36,34 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var request = new PaymentsRequestModel
+                var requestModel = new PaymentsRequestModel
                 {
                     EventId = eventId,
                     Active = active
                 };
-                return Ok(await paymentLookupService.GetPaymentsPageDataAsync(request));
+                return Ok(await paymentLookupService.GetPaymentsPageDataAsync(requestModel));
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "An error occurred while processing your request.");
+            }
+        }
+
+        [HttpGet]
+        [Route("{eventId}/{userId}/{active}")]
+        [Authorize]
+        public async Task<IActionResult> GetUserPaymentsAsync(string eventId, string userId, bool active)
+        {
+            try
+            {
+                var requestModel = new UserPaymentsRequestModel
+                {
+                    EventId = eventId,
+                    UserId = userId,
+                    Active = active
+                };
+                return Ok(await paymentLookupService.GetUserPaymentsAsync(requestModel));
             }
             catch
             {
@@ -71,12 +80,12 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                var request = new PaymentDetailsPageRequestModel
+                var requestModel = new PaymentDetailsPageRequestModel
                 {
                     PaymentId = paymentId,
                     Token = HttpContext.ToTokenValue()
                 };
-                return Ok(await paymentLookupService.GetPaymentDetailsAsync(request));
+                return Ok(await paymentLookupService.GetPaymentDetailsAsync(requestModel));
             }
             catch
             {
@@ -84,7 +93,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                     "An error occurred while processing your request.");
             }
         }
-        
+
         [HttpPatch]
         [Route("update")]
         [Authorize]
@@ -92,16 +101,6 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
-                request.CreditorId = await encryptionGatewayService.UnprotectAsync(request.CreditorId!);
-                
-                var userIdList = request.UserIds!.ToList();
-                var unprotectedUserIds = new List<string>();
-                for (var i = userIdList.Count - 1; i > -1; i--)
-                {
-                    var userId = await encryptionGatewayService.UnprotectAsync(userIdList[i]);
-                    unprotectedUserIds.Add(userId);
-                }
-                request.UserIds = unprotectedUserIds;
                 var response = await paymentCommandService.UpdatePaymentDetailsAsync(request);
                 return Ok(response);
             }

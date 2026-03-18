@@ -32,6 +32,7 @@ namespace WhoOwesWho.PaymentService.Repositories
                     x.pu.UserId == userId &&
                     x.pu.IsCreditor == isCreditor)
                 .Select(x => x.p).ProjectToType<UserPaymentResponseModel>()
+                .OrderByDescending(x => x.Created)
                 .ToListAsync();
             return [.. payments];
         }
@@ -59,7 +60,8 @@ namespace WhoOwesWho.PaymentService.Repositories
                     x.p.Created,
                     x.pu.UserId,
                     x.pu.IsCreditor
-                }).ToListAsync();
+                }).OrderByDescending(x => x.Created)
+                .ToListAsync();
 
             var userPayments = new List<UserPaymentResponseModel>();
 

@@ -2,15 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services;
-using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.Shared.Models;
 using Mapster;
+using System.ComponentModel.DataAnnotations;
 
 namespace WhoOwesWho.UserService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UserController(
+        IUserCreationService userCreationService,
         IUserValidationService userValidationService,
         IPasswordRecoveryService passwordRecoveryService,
         IResetPasswordService resetPasswordService,
@@ -25,37 +26,9 @@ namespace WhoOwesWho.UserService.Controllers
         [Route("signup")]
         public async Task<IActionResult?> CreateUserAsync([FromBody] SignUpRequestModel request)
         {
-            var actionResult = new SignUpResponseModel();
             try
             {
-                request.Entity!.EmailAddress = await userSecurityService.UnprotectAsync(request.Entity.EmailAddress!);
-
-                if (string.IsNullOrWhiteSpace(request.Entity?.FullName))
-                {
-                    actionResult.Message = "Full name is required.";
-                    return Ok(actionResult);
-                }
-
-                var emailCheck = await userValidationService.ValidateEmailAsync(request.Entity.EmailAddress!, false);
-                if (!emailCheck.isValid)
-                {
-                    actionResult.Message = emailCheck.errorMessage;
-                    return Ok(actionResult);
-                }
-
-                var passwordCheck = await userValidationService.ValidatePasswordAsync(request.Entity.Password!);
-                if (!passwordCheck.isValid)
-                {
-                    actionResult.Message = passwordCheck.errorMessage;
-                    return Ok(actionResult);
-                }
-
-                var check = await userCommandService.CreateUserAsync(request.Entity, request.Host!) is not null;
-                actionResult.Success = check;
-                actionResult.Message = !check
-                    ? "An unexpected error occurred, please try again."
-                    : "<p><strong>Sign up successful!</strong><br /> An e-mail has been sent to you for your account verification.</p>";
-                return Ok(actionResult);
+                return Ok(await userCreationService.CreateUserAsync(request));
             }
             catch (Exception e)
             {
@@ -63,14 +36,15 @@ namespace WhoOwesWho.UserService.Controllers
             }
         }
 
+
         [HttpGet]
-        [Route("{idOrEmailAddress}")]
-        public async Task<IActionResult> GetUnautorizedUserByEmailAddressAsync(string idOrEmailAddress, [FromQuery] bool complete)
+        [Route("{emailAddress}")]
+        public async Task<IActionResult> GetUnautorizedUserByEmailAddressAsync(string emailAddress, [FromQuery] bool complete)
         {
             try
             {
-                var unprotectedValue = await userSecurityService.UnprotectAsync(idOrEmailAddress);
-                return Ok(await userLookupService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete));
+                emailAddress = await userSecurityService.UnprotectAsync(emailAddress);
+                return Ok(await userLookupService.GetSingleUserByEmailAddressAsync(emailAddress, complete));
             }
             catch (Exception e)
             {
@@ -80,17 +54,13 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpGet]
         [Authorize]
-        [Route("{idOrEmailAddress}/{complete}")]
-        public async Task<IActionResult> GetAuthorizedUserByIdOrEmailAddressAsync(string idOrEmailAddress, bool complete)
+        [Route("{id}/{complete}")]
+        public async Task<IActionResult> GetAuthorizedUserByIdAddressAsync(string id, bool complete)
         {
             try
             {
-                var unprotectedValue = await userSecurityService.UnprotectAsync(idOrEmailAddress);
-                var checkEmail = await userValidationService.ValidateEmailAsync(unprotectedValue, true);
-
-                var user = checkEmail.isValid
-                    ? await userLookupService.GetSingleUserByEmailAddressAsync(unprotectedValue, complete)
-                    : await userLookupService.GetSingleUserByIdAsync(Guid.Parse(unprotectedValue), complete);
+                id = await userSecurityService.UnprotectAsync(id);
+                var user = await userLookupService.GetSingleUserByIdAsync(Guid.Parse(id), complete);
 
                 if (user is null)
                 {
@@ -128,8 +98,8 @@ namespace WhoOwesWho.UserService.Controllers
         {
             try
             {
-                var unprotectedUserId = await userSecurityService.UnprotectAsync(userId);
-                entity!.Id = Guid.Parse(unprotectedUserId);
+                userId = await userSecurityService.UnprotectAsync(userId);
+                entity!.Id = Guid.Parse(userId);
                 return Ok(await userCommandService.UpdateUserAsync(entity!));
             }
             catch (Exception e)
@@ -164,37 +134,10 @@ namespace WhoOwesWho.UserService.Controllers
         [Route("password/forgot")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel request)
         {
-            var actionResult = new ForgotPasswordResponseModel();
-
             try
             {
                 request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-                if (!request.EmailAddress.IsValid())
-                {
-                    actionResult.Success = false;
-                    actionResult.Message = "Invalid eMail address provided.";
-                    return Ok(actionResult);
-                }
-                if (string.IsNullOrWhiteSpace(request.Host))
-                {
-                    actionResult.Message = "Host is not provided.";
-                    return Ok(actionResult);
-                }
-
-                var checkEmailAddress = await userValidationService.ValidateEmailAsync(request.EmailAddress!, true);
-
-                if (!checkEmailAddress.isValid)
-                {
-                    actionResult.Message = checkEmailAddress.errorMessage;
-                    return Ok(actionResult);
-                }
-
-                var checkEmailDispatch = await passwordRecoveryService.SendPasswordRecoveryEmailAsync(request);
-                actionResult.Success = checkEmailDispatch;
-                actionResult.Message = !checkEmailDispatch
-                    ? "An unexpected error occurred, please try again."
-                    : "A password reset link sent to your e-mail address.";
-                return Ok(actionResult);
+                return Ok(await passwordRecoveryService.SendPasswordRecoveryEmailAsync(request));
             }
             catch (Exception e)
             {
@@ -204,18 +147,19 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpGet]
         [Route("password/reset/verify/{emailAddress}/{forgotPasswordToken}")]
-        public async Task<IActionResult> VerifyResetPassword(string emailAddress, string forgotPasswordToken)
+        public async Task<IActionResult> VerifyResetPassword([Required] string emailAddress, [Required] string forgotPasswordToken)
         {
             try
             {
-                if (emailAddress != "undefined" && forgotPasswordToken != "undefined")
+                if (string.IsNullOrWhiteSpace(emailAddress) || string.IsNullOrWhiteSpace(forgotPasswordToken))
                 {
-                    return Ok(await resetPasswordService.VerifyResetPassword(emailAddress, forgotPasswordToken));
+                    return Ok(new ResetPasswordResponseModel
+                    {
+                        Success = false,
+                        Message = "emailAddress or forgotPasswordToken was not provided. Please, try again."
+                    });
                 }
-                return Ok(await Task.FromResult(new ResetPasswordResponseModel
-                {
-                    Success = true
-                }));
+                return Ok(await resetPasswordService.VerifyResetPassword(emailAddress!, forgotPasswordToken!));
             }
             catch (Exception e)
             {
@@ -228,59 +172,9 @@ namespace WhoOwesWho.UserService.Controllers
         [Route("password/reset")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel request)
         {
-            var actionResult = new ResetPasswordResponseModel();
             try
             {
-                var emailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-                var newPassword = await userSecurityService.UnprotectAsync(request.NewPassword!);
-                var newPasswordRepeat = await userSecurityService.UnprotectAsync(request.NewPasswordRepeat!);
-                                               
-                if (newPassword != newPasswordRepeat)
-                {
-                    actionResult.Message = "The passwords does not match!";
-                    return Ok(actionResult);
-                }
-
-                var user = await userLookupService.GetSingleUserByEmailAddressAsync(emailAddress, true);
-                if (user is null)
-                {
-                    actionResult.Message = $"Could not find the account with e-mail address: {request.EmailAddress}";
-                    return Ok(actionResult);
-                }
-
-                var unprotectedUserPassword = await userSecurityService.UnprotectAsync(user.Password!);
-
-                if (unprotectedUserPassword == user.Password)
-                {
-                    actionResult.Message = "The new password cannot be the same as the existing password.";
-                    return Ok(actionResult);
-                }
-
-                var passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword);
-                if (!passwordCheck.isValid)
-                {
-                    actionResult.Message = $"<strong>For new password:</strong><br /> {passwordCheck.errorMessage}";
-                    return Ok(actionResult);
-                }
-
-                passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword);
-                if (!passwordCheck.isValid)
-                {
-                    actionResult.Message = $"<strong>For new password repeated:</strong><br /> {passwordCheck.errorMessage}";
-                    return Ok(actionResult);
-                }
-
-                request.EmailAddress = emailAddress;
-                var response = await resetPasswordService.ResetPasswordAsync(request);
-
-                actionResult.Success = response!.Success;
-                actionResult.Message = response.Message;
-                if (response.Success)
-                {
-                    var entity = response.Adapt<UserMessageRequestModel>();
-                    await userPublishingService.SendUserAsync(entity);
-                }
-                return Ok(actionResult);
+                return Ok(await resetPasswordService.ResetPasswordAsync(request));
             }
             catch (Exception e)
             {
@@ -293,59 +187,16 @@ namespace WhoOwesWho.UserService.Controllers
         [Route("password/change")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestModel request)
         {
-            var actionResult = new ResetPasswordResponseModel();
             try
             {
-                request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-                var password = await userSecurityService.UnprotectAsync(request.Password!);
-                var newPassword1 = await userSecurityService.UnprotectAsync(request.NewPassword1!);
-                var newPassword2 = await userSecurityService.UnprotectAsync(request.NewPassword2!);
-
-                var emailCheck = await userValidationService.ValidateEmailAsync(request.EmailAddress!, true);
-                if (!emailCheck.isValid)
-                {
-                    actionResult.Message = emailCheck.errorMessage;
-                    return Ok(actionResult);
-                }
-
-                var passwordCheck = await userValidationService.ValidatePasswordAsync(password);
-                if (!passwordCheck.isValid)
-                {
-                    actionResult.Message = $"<strong>For existing password:</strong><br />{passwordCheck.errorMessage}";
-                    return Ok(actionResult);
-                }
-                if (newPassword1 != newPassword2)
-                {
-                    actionResult.Message = "The passwords does not match!";
-                    return Ok(actionResult);
-                }
-
-                passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword1);
-                if (!passwordCheck.isValid)
-                {
-                    actionResult.Message = $"<strong>For new password:</strong><br /> {passwordCheck.errorMessage}";
-                    return Ok(actionResult);
-                }
-
-                passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword2!);
-                if (!passwordCheck.isValid)
-                {
-                    actionResult.Message = $"<strong>For new password repeated:</strong><br /> {passwordCheck.errorMessage}";
-                    return Ok(actionResult);
-                }
-
                 var response = await changePasswordService.ChangePasswordAsync(request);
-                actionResult.Success = response!.Success;
-                actionResult.Message = !response.Success
-                    ? response.Message
-                    : "Your password change completed successfully.";
-                if (response.Success)
+                if (response!.Success)
                 {
                     var user = await userLookupService.GetSingleUserByEmailAddressAsync(request.EmailAddress!, true);
                     var entity = user.Adapt<UserMessageRequestModel>();
                     await userPublishingService.SendUserAsync(entity);
                 }
-                return Ok(actionResult);
+                return Ok(response);
             }
             catch (Exception e)
             {

@@ -44,7 +44,7 @@ namespace WhoOwesWho.MessagingService.Services
                     message.To.Add(request.User!.EmailAddress!);
                     smtpClient.Send(message);
                 }
-                return await Task.FromResult(true);
+                return true;
             }
             catch (Exception e)
             {
@@ -57,18 +57,18 @@ namespace WhoOwesWho.MessagingService.Services
             if (string.Equals(EmailType.SignUp.ToString(), type, StringComparison.InvariantCultureIgnoreCase))
             {
                 var response = (AppSettings.SignUpTemplatePath, AppSettings.SignUpTemplateSubject);
-                return (await Task.FromResult(response))!;
+                return response!;
 
             }
             else if (string.Equals(EmailType.ResetPassword.ToString(), type, StringComparison.InvariantCultureIgnoreCase))
             {
                 var response = (AppSettings.ResetPasswordTemplatePath, AppSettings.ResetPasswordTemplateSubject);
-                return (await Task.FromResult(response))!;
+                return response!;
             }
             else if (string.Equals(EmailType.Authentication.ToString(), type, StringComparison.InvariantCultureIgnoreCase))
             {
                 var response = (AppSettings.AuthenticationTemplatePath, AppSettings.AuthenticationTemplateSubject);
-                return (await Task.FromResult(response))!;
+                return response!;
             }
             else
             {
