@@ -1,13 +1,12 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Moq;
+using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
-using WhoOwesWho.UserService.Settings;
 using WhoOwesWho.UserServiceTests;
 using Xunit;
 

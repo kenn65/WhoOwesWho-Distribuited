@@ -1,22 +1,20 @@
 ﻿using Azure.Messaging.ServiceBus;
 using WhoOwesWho.Shared.Models.Base;
 
-namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
+namespace WhoOwesWho.PaymentService.Services.ServiceBus.Receivers
 {
-    public sealed class MessagingStartupService(ServiceBusClient client,MessagingReceiver receiver) : BackgroundService
+    public class EventReceiverStartupService(ServiceBusClient client, EventReceiver receiver) : BackgroundService
     {
-      
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await WaitForSubscriptionAsync(
-                ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
-                "messaging-observability-succeeded",
+                ServiceBusTopics.MessagingTopics.PaymentEventDispatchSucceeded,
+                "payment-observability-succeeded",
                 stoppingToken);
 
             await WaitForSubscriptionAsync(
-                ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
-                "messaging-observability-failed",
+                ServiceBusTopics.MessagingTopics.PaymentEventDispatchFailed,
+                "payment-observability-failed",
                 stoppingToken);
 
             await receiver.StartAsync(stoppingToken);
@@ -31,7 +29,7 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
             await receiver.StopAsync(cancellationToken);
         }
 
-      private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
+        private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
         {
             for (var i = 0; i < 20; i++)
             {

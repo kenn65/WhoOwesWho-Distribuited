@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Services;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;

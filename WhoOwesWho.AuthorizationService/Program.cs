@@ -34,7 +34,7 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton<UserReceiver>();
-builder.Services.AddHostedService<UserStartupService>();
+builder.Services.AddHostedService<UserReceiverStartupService>();
 builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
 
 builder.Services.AddScoped<IUserResolverService, UserResolverService>();

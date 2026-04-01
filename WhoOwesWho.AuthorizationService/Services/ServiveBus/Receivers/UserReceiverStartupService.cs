@@ -1,20 +1,20 @@
 ﻿using Azure.Messaging.ServiceBus;
 using WhoOwesWho.Shared.Models.Base;
 
-namespace WhoOwesWho.PaymentService.Services.ServiceBus.Receivers
+namespace WhoOwesWho.AuthorizationService.Services.ServiveBus.Receivers
 {
-    public class EventStartupService(ServiceBusClient client, EventReceiver receiver) : BackgroundService
+    public class UserReceiverStartupService(ServiceBusClient client, UserReceiver receiver) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await WaitForSubscriptionAsync(
-                ServiceBusTopics.MessagingTopics.PaymentEventDispatchSucceeded,
-                "payment-observability-succeeded",
+                ServiceBusTopics.MessagingTopics.AuthenticationDispatchSucceeded,
+                "authentication-observability-succeeded",
                 stoppingToken);
 
             await WaitForSubscriptionAsync(
-                ServiceBusTopics.MessagingTopics.PaymentEventDispatchFailed,
-                "payment-observability-failed",
+                ServiceBusTopics.MessagingTopics.AuthenticationDispatchFailed,
+                "authentication-observability-failed",
                 stoppingToken);
 
             await receiver.StartAsync(stoppingToken);

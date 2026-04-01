@@ -2,6 +2,7 @@
 using Moq;
 using StackExchange.Redis;
 using System.Text.Json;
+using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Repositories;
 using Xunit;
