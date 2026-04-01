@@ -1,6 +1,7 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
 using Moq;
+using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;

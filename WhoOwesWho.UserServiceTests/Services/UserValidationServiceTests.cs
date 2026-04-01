@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;

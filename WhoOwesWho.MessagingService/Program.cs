@@ -20,7 +20,7 @@ builder.Services.AddSingleton(provider =>
 });
 
 builder.Services.AddSingleton<MessagingReceiver>();
-builder.Services.AddHostedService<MessagingStartupService>();
+builder.Services.AddHostedService<MessagingReceiverStartupService>();
 
 builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
 builder.Services.AddScoped<IMessagingSecurityService, MessagingSecurityService>();

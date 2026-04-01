@@ -1,20 +1,22 @@
 ﻿using Azure.Messaging.ServiceBus;
 using WhoOwesWho.Shared.Models.Base;
 
-namespace WhoOwesWho.AuthorizationService.Services.ServiveBus.Receivers
+namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
 {
-    public class UserStartupService(ServiceBusClient client, UserReceiver receiver) : BackgroundService
+    public sealed class MessagingReceiverStartupService(ServiceBusClient client,MessagingReceiver receiver) : BackgroundService
     {
+      
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await WaitForSubscriptionAsync(
-                ServiceBusTopics.MessagingTopics.AuthenticationDispatchSucceeded,
-                "authentication-observability-succeeded",
+                ServiceBusTopics.MessagingTopics.MessagingDispatchSucceeded,
+                "messaging-observability-succeeded",
                 stoppingToken);
 
             await WaitForSubscriptionAsync(
-                ServiceBusTopics.MessagingTopics.AuthenticationDispatchFailed,
-                "authentication-observability-failed",
+                ServiceBusTopics.MessagingTopics.MessagingDispatchFailed,
+                "messaging-observability-failed",
                 stoppingToken);
 
             await receiver.StartAsync(stoppingToken);
@@ -29,7 +31,7 @@ namespace WhoOwesWho.AuthorizationService.Services.ServiveBus.Receivers
             await receiver.StopAsync(cancellationToken);
         }
 
-        private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
+      private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
         {
             for (var i = 0; i < 20; i++)
             {

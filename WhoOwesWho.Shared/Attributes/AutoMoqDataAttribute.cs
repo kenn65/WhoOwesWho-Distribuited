@@ -2,7 +2,7 @@
 using AutoFixture.AutoMoq;
 using AutoFixture.Xunit2;
 
-namespace WhoOwesWho.UserServiceTests
+namespace WhoOwesWho.Shared.Attributes
 {
     public class AutoMoqDataAttribute : AutoDataAttribute
     {

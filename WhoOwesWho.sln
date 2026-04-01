@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoOwesWho.Shared", "WhoOwe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoOwesWho.UserServiceTests", "WhoOwesWho.UserServiceTests\WhoOwesWho.UserServiceTests.csproj", "{2264582E-CC8F-4050-9C3B-020EB5A4BA50}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhoOwesWho.AuthorizationServiceTests", "WhoOwesWho.AuthorizationServiceTests\WhoOwesWho.AuthorizationServiceTests.csproj", "{83E1ABBA-5FD4-43D9-9EEE-5A54FEB87F99}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,10 @@ Global
 		{2264582E-CC8F-4050-9C3B-020EB5A4BA50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2264582E-CC8F-4050-9C3B-020EB5A4BA50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2264582E-CC8F-4050-9C3B-020EB5A4BA50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83E1ABBA-5FD4-43D9-9EEE-5A54FEB87F99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83E1ABBA-5FD4-43D9-9EEE-5A54FEB87F99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83E1ABBA-5FD4-43D9-9EEE-5A54FEB87F99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83E1ABBA-5FD4-43D9-9EEE-5A54FEB87F99}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

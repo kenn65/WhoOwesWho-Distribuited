@@ -1,6 +1,7 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
 using Moq;
+using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.UserService.Services;
 using WhoOwesWho.UserService.Services.Gateways;
 using Xunit;

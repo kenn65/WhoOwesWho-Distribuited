@@ -42,7 +42,7 @@ builder.Services.AddSingleton(sp =>
 
 // Add services to the container.
 builder.Services.AddSingleton<EventReceiver>();
-builder.Services.AddHostedService<EventStartupService>();
+builder.Services.AddHostedService<EventReceiverStartupService>();
 builder.Services.AddScoped<IEventResolverService, EventResolverService>();
 
 builder.Services.AddScoped<IUserBalanceService, UserBalanceService>();

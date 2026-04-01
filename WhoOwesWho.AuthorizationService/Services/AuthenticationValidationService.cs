@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
-using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.AuthorizationService.Services
