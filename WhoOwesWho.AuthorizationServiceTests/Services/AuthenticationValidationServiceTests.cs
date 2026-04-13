@@ -240,15 +240,19 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             user.Password = password;
 
             authorizationSecurityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>()))
+                .Setup(x => x.UnprotectAsync(email))
                 .ReturnsAsync(email);
+
+            authorizationSecurityService
+                .Setup(x => x.UnprotectAsync(password))
+                .ReturnsAsync(password);
 
             authorizationCacheRepository
                 .Setup(x => x.GetUserAsync(email))
                 .ReturnsAsync(user);
 
             // Act
-            var result = await sut.ValidateUserCredentialsAsync("encrypted", password);
+            var result = await sut.ValidateUserCredentialsAsync(email, password);
 
             // Assert
             result.Should().BeTrue();

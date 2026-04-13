@@ -1,7 +1,6 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
 using Moq;
-using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;

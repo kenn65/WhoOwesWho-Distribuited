@@ -1,5 +1,4 @@
-﻿using WhoOwesWho.AuthorizationService.Models;
-using WhoOwesWho.AuthorizationService.Services.Base;
+﻿using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.Shared.Models;

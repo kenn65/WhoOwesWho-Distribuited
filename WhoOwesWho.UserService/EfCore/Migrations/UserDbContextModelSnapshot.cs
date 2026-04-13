@@ -25,6 +25,7 @@ namespace WhoOwesWho.UserService.EfCore.Migrations
             modelBuilder.Entity("WhoOwesWho.UserService.EfCore.DataModels.ForgotPassword", b =>
                 {
                     b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<long>("ExpirationTime")
@@ -77,15 +78,6 @@ namespace WhoOwesWho.UserService.EfCore.Migrations
                     b.HasIndex("EmailAddress");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("WhoOwesWho.UserService.EfCore.DataModels.ForgotPassword", b =>
-                {
-                    b.HasOne("WhoOwesWho.UserService.EfCore.DataModels.Users", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

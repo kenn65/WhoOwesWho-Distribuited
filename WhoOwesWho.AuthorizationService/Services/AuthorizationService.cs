@@ -2,9 +2,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {

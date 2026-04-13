@@ -2,7 +2,6 @@
 using FluentAssertions;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
-using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.Shared.Attributes;

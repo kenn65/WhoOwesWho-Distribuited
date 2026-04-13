@@ -1,0 +1,23 @@
+﻿<!-- Components/Swal/Swal.razor -->
+@inject IJSRuntime JS
+
+@code {
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "info";
+    [Parameter] public EventCallback OnOk { get; set; }
+
+    private string? _lastMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Message) && Message != _lastMessage)
+        {
+            _lastMessage = Message;
+
+            await JS.InvokeVoidAsync("blazorSwal.show", Message, Icon);
+
+            if (OnOk.HasDelegate)
+                await OnOk.InvokeAsync();
+        }
+    }
+}

@@ -3,9 +3,9 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using WhoOwesWho.AuthorizationService.Controllers;
-using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Models;
 using Xunit;
 
 namespace WhoOwesWho.AuthorizationServiceTests.Controllers
