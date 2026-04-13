@@ -7,7 +7,6 @@ namespace WhoOwesWho.UserService.EfCore.Extensions
 {
     public static class UserContextExtensions
     {
-
         public static async Task ConfigureDatabaseAsync(this WebApplication app)
         {
             using var scope = app.Services.CreateScope();

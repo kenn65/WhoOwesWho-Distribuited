@@ -22,12 +22,14 @@ namespace WhoOwesWho.AuthorizationService.Services
                 throw new ArgumentException("Email and/or password was not provided");
             }
             emailAddress = await authorizationSecurityService.UnprotectAsync(emailAddress);
+            var unprotectedPassword = await authorizationSecurityService.UnprotectAsync(password);
+            
             if (!emailAddress.IsValid())
             {
                 return false;
             }
 
-            if (!password.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired))
+            if (!unprotectedPassword.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired))
             {
                 return false;
             }

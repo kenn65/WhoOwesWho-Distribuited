@@ -2,7 +2,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.Shared.Attributes;

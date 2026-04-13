@@ -1,0 +1,68 @@
+﻿@using WhoOwesWho.WebApp.CoreBusiness.Entities.Alert
+@using WhoOwesWho.WebApp.Services
+
+@inherits LayoutComponentBase
+@inject ICookieClientService _cookieClientService
+@inject IAlertService _alertService
+@inject IJSRuntime JS
+
+<div class="page">
+    <div class="topbar">
+        @if (!_isAuthorized)
+        {
+            <AnonymousNavMenu />
+        }
+        else
+        {
+            <AuthorizedNavMenu />
+        }
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool _isAuthorized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _alertService.OnShow += HandleAlert;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isAuthorized = await _cookieClientService.IsAuthorizedAsync();
+            StateHasChanged();
+        }
+    }
+    
+    private async Task HandleAlert(AlertRequestModel request)
+    {
+        var result = await JS.InvokeAsync<SwalResult>(
+            "blazorSwal.showAdvanced",
+            request.Message,
+            request.Type.ToString()
+        );
+
+        // Handle confirmation dialogs
+        if (request.Completion != null)
+        {
+            request.Completion.SetResult(result.IsConfirmed);
+        }
+    }
+
+    public class SwalResult
+    {
+        public bool IsConfirmed { get; set; }
+    }
+}

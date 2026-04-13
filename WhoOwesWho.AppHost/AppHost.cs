@@ -199,6 +199,41 @@ var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservi
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
+builder.AddProject<Projects.WhoOwesWho_WebApp>("whooweswho-webapp")
+    .WithReference(authorizationService)
+    .WaitFor(authorizationService)
+    .WithReference(currencyService)
+    .WaitFor(currencyService)
+    .WithReference(encryptionService)
+    .WaitFor(encryptionService)
+    .WithReference(eventService)
+    .WaitFor(eventService)
+    .WithReference(messagingService)
+    .WaitFor(messagingService)
+    .WithReference(paymentService)
+    .WaitFor(paymentService)
+    .WithReference(userService)
+    .WaitFor(userService);
+
+//var frontend = builder.AddExecutable(
+//    "frontend",
+//    "npm",
+//    @"D:\WhoOwesWhoAspire\WhoOwesWho.Next\whooweswho-app",
+//    "run",
+//    "dev"
+//)
+//.WithHttpEndpoint(targetPort: 3000).WaitFor(authorizationService)
+//        .WaitFor(userService)
+//        .WaitFor(currencyService)
+//        .WaitFor(eventService)
+//        .WaitFor(paymentService);
+
+
+//var gateway = builder.AddProject<Projects.WhoOwesWho_Gateway>("gateway")
+//        .WaitFor(frontend);
+
+
+
 //var frontend = builder.AddExecutable(
 //    "frontend",
 //    "npm",

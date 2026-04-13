@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.AuthorizationService.Models;
 using WhoOwesWho.AuthorizationService.Services;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Controllers
 {

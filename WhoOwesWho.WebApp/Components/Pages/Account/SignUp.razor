@@ -1,0 +1,101 @@
+﻿@page "/account/signup"
+@using WhoOwesWho.WebApp.UseCases.User
+
+@inject NavigationManager _navigationManager
+@inject IProtectionUseCase _protectionUseCase
+@inject IUserUseCase _userUseCase
+@inject IAlertService _alertService
+
+<div class="text-center">
+    <h1 class="text-4xl">Sign in</h1>
+    <br />
+    <br />
+    <EditForm method="post" Model="@_userModel" OnValidSubmit="ExecuteSignUp" FormName="signup" Enhance>
+        <DataAnnotationsValidator />
+        <label for="fullName" class="form-label">Full Name:</label>
+        <br />
+        <InputText id="emailAddress" @bind-Value="_userModel!.FullName" placeholder="Your first and last name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+        <ValidationMessage For="@(() => _userModel.FullName)" class="text-danger" />
+        <br />
+        <br />
+        <label for="emailAddress" class="form-label">Email Address:</label>
+        <br />
+        <InputText id="emailAddress" @bind-Value="_userModel.EmailAddress" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+        <ValidationMessage For="@(() => _userModel.EmailAddress)" class="text-danger" />
+        <br />
+        <br />
+        <label for="mobilePhoneNumber" class="form-label">Mobile Phone Number:</label>
+        <br />
+        <InputText id="mobilePhoneNumber" @bind-Value="_userModel.MobilePhoneNumber" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+        <ValidationMessage For="@(() => _userModel.MobilePhoneNumber)" class="text-danger" />
+        <br />
+        <br />
+        <label for="password" class="form-label">Password:</label>
+        <br />
+        <InputText type="password" id="password" @bind-Value="_userModel.Password" placeholder="Your password containing at least eight characters including one upper case character and two digits" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+        <ValidationMessage For="@(() => _userModel.Password)" class="text-danger" />
+        <br />
+        <br />
+        <label for="administrator" class="form-label">Administrator</label>
+        <br />
+        <InputCheckbox id="administrator" @bind-Value="_userModel.Admin" class="shadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
+        <br />
+        <br />
+        <SubmitButton Text="Sign up"
+            ProcessingText="Processing..."
+            IsProcessing="@_isSubmitting" />
+    </EditForm>
+</div>
+
+@code {
+
+    private bool _isSubmitting = false;
+    public string _hostName = string.Empty;
+
+    [SupplyParameterFromForm]
+    public UserModel? _userModel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _userModel ??= new UserModel();
+        var uri = new Uri(_navigationManager.Uri);
+        _hostName = $"{uri.Host}:{uri.Port}";
+    }
+
+    private async Task ExecuteSignUp(EditContext args)
+    {
+        _isSubmitting = true;
+        StateHasChanged();
+        await Task.Yield();
+        try
+        {
+            var userModel = new UserModel
+            {
+                Id = Guid.Empty,
+                FullName = _userModel!.FullName,
+                EmailAddress = await _protectionUseCase.ExecuteProtectAsync(_userModel.EmailAddress!),
+                MobilePhoneNumber = _userModel.MobilePhoneNumber,
+                Password = await _protectionUseCase.ExecuteProtectAsync(_userModel.Password!),
+                Admin = _userModel.Admin
+            };
+
+            var requestModel = new SignUpRequestModel
+            {
+                Entity = userModel,
+                Host = _hostName
+            };
+            var response = await _userUseCase.ExecuteAsync(requestModel);
+            if (!response.Success)
+            {
+                await _alertService.Error(response.Message!);
+                _navigationManager.NavigateTo("/signup", forceLoad: true);
+            }
+            await _alertService.Success(response.Message!);
+            _navigationManager.NavigateTo("/signup", forceLoad: true);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

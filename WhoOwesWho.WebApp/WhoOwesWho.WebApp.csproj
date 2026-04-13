@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mapster" Version="10.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WhoOwesWho.ServiceDefaults\WhoOwesWho.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.WebApp.CoreBusiness\WhoOwesWho.WebApp.CoreBusiness.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.WebApp.Infrastructure\WhoOwesWho.WebApp.Infrastructure.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.WebApp.UseCases\WhoOwesWho.WebApp.UseCases.csproj" />
+  </ItemGroup>
+
+</Project>

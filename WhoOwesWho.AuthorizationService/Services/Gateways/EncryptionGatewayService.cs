@@ -1,5 +1,4 @@
-﻿using WhoOwesWho.AuthorizationService.Models;
-using WhoOwesWho.AuthorizationService.Services.Base;
+﻿using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services.Gateways

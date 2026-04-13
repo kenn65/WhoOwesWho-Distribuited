@@ -31,6 +31,7 @@
     <ProjectReference Include="..\WhoOwesWho.MessagingService\WhoOwesWho.MessagingService.csproj" />
     <ProjectReference Include="..\WhoOwesWho.PaymentService\WhoOwesWho.PaymentService.csproj" />
     <ProjectReference Include="..\WhoOwesWho.UserService\WhoOwesWho.UserService.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.WebApp\WhoOwesWho.WebApp.csproj" />
   </ItemGroup>
 
 </Project>
