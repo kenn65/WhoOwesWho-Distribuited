@@ -17,7 +17,7 @@ namespace WhoOwesWho.CurrencyService.Repositories
         {
             var value = await db.StringGetAsync("currencies");
             return (value.HasValue
-                ? JsonSerializer.Deserialize<IEnumerable<CurrencyResponseModel>>(value!)
+                ? JsonSerializer.Deserialize<IEnumerable<CurrencyResponseModel>>(value!.ToString())
                 : null);
         }
               

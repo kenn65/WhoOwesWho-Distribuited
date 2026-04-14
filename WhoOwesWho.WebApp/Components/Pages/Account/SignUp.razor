@@ -1,5 +1,4 @@
 ﻿@page "/account/signup"
-@using WhoOwesWho.WebApp.UseCases.User
 
 @inject NavigationManager _navigationManager
 @inject IProtectionUseCase _protectionUseCase
@@ -26,7 +25,7 @@
         <br />
         <label for="mobilePhoneNumber" class="form-label">Mobile Phone Number:</label>
         <br />
-        <InputText id="mobilePhoneNumber" @bind-Value="_userModel.MobilePhoneNumber" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+        <InputText id="mobilePhoneNumber" @bind-Value="_userModel.MobilePhoneNumber" placeholder="Your mobile phone number" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
         <ValidationMessage For="@(() => _userModel.MobilePhoneNumber)" class="text-danger" />
         <br />
         <br />
@@ -69,29 +68,20 @@
         await Task.Yield();
         try
         {
-            var userModel = new UserModel
-            {
-                Id = Guid.Empty,
-                FullName = _userModel!.FullName,
-                EmailAddress = await _protectionUseCase.ExecuteProtectAsync(_userModel.EmailAddress!),
-                MobilePhoneNumber = _userModel.MobilePhoneNumber,
-                Password = await _protectionUseCase.ExecuteProtectAsync(_userModel.Password!),
-                Admin = _userModel.Admin
-            };
-
             var requestModel = new SignUpRequestModel
             {
-                Entity = userModel,
+                Entity = _userModel,
                 Host = _hostName
             };
-            var response = await _userUseCase.ExecuteAsync(requestModel);
+            var response = await _userUseCase.ExecuteSignUpAsync(requestModel);
             if (!response.Success)
             {
                 await _alertService.Error(response.Message!);
-                _navigationManager.NavigateTo("/signup", forceLoad: true);
+                _navigationManager.NavigateTo("account/signup", forceLoad: true);
+                return;
             }
             await _alertService.Success(response.Message!);
-            _navigationManager.NavigateTo("/signup", forceLoad: true);
+            _navigationManager.NavigateTo("/account/signin", forceLoad: true);
         }
         finally
         {

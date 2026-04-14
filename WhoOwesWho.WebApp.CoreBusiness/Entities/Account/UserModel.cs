@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 
-namespace WhoOwesWho.WebApp.CoreBusiness.Entities.User
+namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account
 {
     public class UserModel : ModelBase
     {

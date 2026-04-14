@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.User;
+﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies
 {

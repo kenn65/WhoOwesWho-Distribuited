@@ -2,7 +2,8 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
+
 using StackExchange.Redis;
 using System.Text;
 using WhoOwesWho.EventService.EfCore.Context;
@@ -41,7 +42,6 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton<IEventPublisher, EventPublisher>();
-
 builder.Services.AddScoped<IEventLookupService, EventLookupService>();
 builder.Services.AddScoped<IEventCommandService, EventCommandService>();
 builder.Services.AddScoped<IEventSecurityService, EventSecurityService>();
@@ -52,69 +52,26 @@ builder.Services.AddScoped<IEventQueryRepository, EventQueryRepository>();
 builder.Services.AddScoped<IEventCacheRepository, EventCacheRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
-
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Authorization:Issuer"],
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Authorization:Audience"],
-        ValidateLifetime = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Authorization:JwtSecret"]!)),
-        ValidateIssuerSigningKey = true
-    };
-});
 
 builder.Services.AddSwaggerGen(options =>
 {
-    // Bearer token security definition
-    options.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
-    {
-        Type = SecuritySchemeType.Http,
-        In = ParameterLocation.Header,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        Description = "Enter your bearer token"
-    });
-
-    // API Key security definition
     options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
         Name = "X-API-Key",
-        Description = "Enter your API key",
+        In = ParameterLocation.Header,
+        Description = "API Key"
     });
 
-    // Security requirements for both schemes
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" },
-                In = ParameterLocation.Header,
-                Name = "X-API-Key"
-            },
-            new string[] { }
-        },
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "bearerAuth" },
-                In = ParameterLocation.Header,
-                Name = "Authorization"
-            },
-            new string[] { }
-        }
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Description = "JWT token"
     });
 });
 

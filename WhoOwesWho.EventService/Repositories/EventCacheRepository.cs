@@ -16,7 +16,7 @@ namespace WhoOwesWho.EventService.Repositories
         {
             var value = await db.StringGetAsync($"user:{id}");
             return value.HasValue
-                ? JsonSerializer.Deserialize<UserMessageResponseModel>(value!)
+                ? JsonSerializer.Deserialize<UserMessageResponseModel>(value!.ToString())
                 : null;
         }
 

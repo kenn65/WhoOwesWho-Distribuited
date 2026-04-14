@@ -116,7 +116,7 @@ namespace WhoOwesWho.EventService.Services
             {
                 var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
                 var publishingItems = evt.Adapt<EventMessageRequestModel>();
-                publishingItems.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+                publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItems);
                 response.Message = "Successfully assigned user to event.";
                 return response;
@@ -134,7 +134,7 @@ namespace WhoOwesWho.EventService.Services
             {
                 var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
                 var publishingItem = evt.Adapt<EventMessageRequestModel>();
-                publishingItem.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+                publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItem);
                 response.Message = "Successfully unassigned user from event.";
                 return response;

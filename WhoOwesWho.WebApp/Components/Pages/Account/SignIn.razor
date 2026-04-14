@@ -39,7 +39,7 @@
         <br />
         <br />
         <div>
-            <a href="#" class="text-blue-500 hover:underline" @onclick="HandleSignUp">Sign up</a>
+            <a href="#" class="text-blue-500 hover:underline" @onclick="GotoSignUp">Sign up</a>
         </div>
     }
     else
@@ -133,6 +133,7 @@
             {
                 await _alertService.Error("An error occurred while signing in. Did you verify your e-mail address (e-mail message)?");
                 _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+                return;
             }
             CookiesResponseModel data = response.Adapt<CookiesResponseModel>();
             await _cookieClientService.SetCookiesAsync(data);
@@ -158,7 +159,7 @@
         }
     }
 
-    private async Task HandleSignUp()
+    private async Task GotoSignUp()
     {
         try
         {

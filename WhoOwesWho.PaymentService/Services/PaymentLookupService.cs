@@ -79,7 +79,7 @@ namespace WhoOwesWho.PaymentService.Services
                 var whoOwesWho = (await paymentCalculationService.CalculateWhoOwesWho(whoOwesWhoBalances)).ToList();
 
                 var eventModel = evt.Adapt<EventModel>();
-                eventModel.Users = eventUsers!;
+                eventModel!.Users = eventUsers!;
                
                 var response = new PaymentPageResponseModel
                 {
