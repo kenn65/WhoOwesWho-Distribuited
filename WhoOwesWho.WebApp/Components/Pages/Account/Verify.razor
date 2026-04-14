@@ -1,0 +1,60 @@
+﻿@page "/account/verify" 
+
+@inject NavigationManager _navigationManager
+@inject IUserUseCase _userUseCase
+@inject IAlertService _alertService
+
+<div className="text-center">
+    <br />
+    <h1 className="text-4xl">E-mail verification</h1>
+    <br />
+    <br />
+    <br />
+    <hr />
+    <br />
+    <br />
+    <div class="justify-center text-center">
+        <image
+          src="wow-logo.png"
+          alt="Who Owes Who"
+          width=200
+          height=200
+          class="mx-auto"
+        />
+      </div>
+</div>
+
+
+
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "emailAddress")]
+    public string EmailAddress { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await VerifyEmailAddress();
+    }
+
+    private async Task VerifyEmailAddress()
+    {
+        var requestModel = new VerificationRequestModel
+            {
+                EmailAddress = EmailAddress
+            };
+        var response = await _userUseCase.VerifyAsync(requestModel);
+        if (!response.Success)
+        {
+            await _alertService.Error(response.Message!);
+            _navigationManager.NavigateTo("/", forceLoad: true);
+            return;
+        }
+        else
+        {
+            await _alertService.Success(response.Message!);
+            _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+        }
+    }
+
+}

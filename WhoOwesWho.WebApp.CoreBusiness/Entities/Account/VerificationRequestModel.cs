@@ -2,7 +2,7 @@
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account
 {
-    public class AuthorizationRequestModel
+    public class VerificationRequestModel
     {
         [Required]
         public string? EmailAddress { get; set; }

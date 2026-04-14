@@ -18,7 +18,7 @@ namespace WhoOwesWho.AuthorizationService.Repositories
         {
             var value = await db.StringGetAsync($"user:{emailAddress}");
             return value.HasValue
-                ? JsonSerializer.Deserialize<UserMessageResponseModel>(value!)
+                ? JsonSerializer.Deserialize<UserMessageResponseModel>(value.ToString()!)
                 : null;
         }
 
@@ -26,7 +26,7 @@ namespace WhoOwesWho.AuthorizationService.Repositories
         {
             var value = await db.StringGetAsync($"user:{id}");
             return value.HasValue
-                ? JsonSerializer.Deserialize<UserMessageResponseModel>(value!)
+                ? JsonSerializer.Deserialize<UserMessageResponseModel>(value.ToString()!)
                 : null;
         }
 

@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using WhoOwesWho.EncryptionService.Middleware;
 using WhoOwesWho.EncryptionService.Services;
 
@@ -11,32 +11,16 @@ builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IEncryptionSecurityService, EncryptionSecurityService>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    // API Key security definition
     options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
         Name = "X-API-Key",
-        Description = "Enter your API key",
-    });
-
-    // Security requirements for both schemes
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" },
-                In = ParameterLocation.Header,
-                Name = "X-API-Key"
-            },
-            new string[] { }
-        }
+        In = ParameterLocation.Header,
+        Description = "API Key"
     });
 });
 
@@ -55,9 +39,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 app.UseMiddleware<ApiKeyMiddleware>();
 

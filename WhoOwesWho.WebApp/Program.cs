@@ -23,6 +23,8 @@ builder.Services.AddTransient<IProtectionUseCase, ProtectionUseCase>();
 builder.Services.AddTransient<IProtection, ProtectionPlugin>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<ICookieClientService, CookieClientService>();
+builder.Services.AddTransient<IUserUseCase, UserUseCase>();
+builder.Services.AddTransient<IUser, UserPlugin>();
 var app = builder.Build();
 
 app.MapDefaultEndpoints();

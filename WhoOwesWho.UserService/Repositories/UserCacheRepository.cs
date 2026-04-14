@@ -17,7 +17,7 @@ namespace WhoOwesWho.UserService.Repositories
             {
                 var value = await db.StringGetAsync($"user:{id}");
                 return value.HasValue
-                    ? JsonSerializer.Deserialize<UserMessageResponseModel>(value!)
+                    ? JsonSerializer.Deserialize<UserMessageResponseModel>(value!.ToString())
                     : null;
             }
 
@@ -25,7 +25,7 @@ namespace WhoOwesWho.UserService.Repositories
             {
                 var value = await db.StringGetAsync($"activeevent:{id}");
                 var response = value.HasValue
-                    ? JsonSerializer.Deserialize<EventMessageResponseModel>(value!)
+                    ? JsonSerializer.Deserialize<EventMessageResponseModel>(value!.ToString())
                     : null;
                 if (response is null)
                 {

@@ -121,6 +121,9 @@ namespace WhoOwesWho.UserService.Controllers
                     var entity = response.Adapt<UserMessageRequestModel>();
                     await userPublishingService.SendUserAsync(entity);
                 }
+                response.Message = response.Success 
+                    ? "Email address successfully verified." 
+                    : "An unexpected error occurred. Please, try again.";
                 return Ok(response);
 
             }
@@ -194,7 +197,7 @@ namespace WhoOwesWho.UserService.Controllers
                 {
                     var user = await userLookupService.GetSingleUserByEmailAddressAsync(request.EmailAddress!, true);
                     var entity = user.Adapt<UserMessageRequestModel>();
-                    await userPublishingService.SendUserAsync(entity);
+                    await userPublishingService.SendUserAsync(entity!);
                 }
                 return Ok(response);
             }

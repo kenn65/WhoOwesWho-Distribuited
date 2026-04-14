@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using StackExchange.Redis;
 using System.Text;
 using WhoOwesWho.CurrencyService.Repositories;
@@ -67,33 +67,7 @@ builder.Services.AddSwaggerGen(options =>
         Name = "X-API-Key",
         Description = "Enter your API key",
     });
-
-    // Security requirements for both schemes
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" },
-                In = ParameterLocation.Header,
-                Name = "X-API-Key"
-            },
-            []
-        },
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "bearerAuth" },
-                In = ParameterLocation.Header,
-                Name = "Authorization"
-            },
-            []
-        }
-    });
 });
-
-
-
 
 var app = builder.Build();
 

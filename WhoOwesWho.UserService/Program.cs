@@ -2,7 +2,7 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using StackExchange.Redis;
 using System.Text;
 using WhoOwesWho.UserService.EfCore.Context;
@@ -78,7 +78,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 
-
 builder.Services.AddSwaggerGen(options =>
 {
     // Bearer token security definition
@@ -100,31 +99,8 @@ builder.Services.AddSwaggerGen(options =>
         Name = "X-API-Key",
         Description = "Enter your API key",
     });
-
-    // Security requirements for both schemes
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" },
-                In = ParameterLocation.Header,
-                Name = "X-API-Key"
-            },
-            []
-        },
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "bearerAuth" },
-                In = ParameterLocation.Header,
-                Name = "Authorization"
-            },
-            []
-        }
-    });
-
 });
+
 
 var app = builder.Build();
 
@@ -138,7 +114,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.UserService API"));
 }
-
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

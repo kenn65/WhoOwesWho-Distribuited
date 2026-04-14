@@ -1,5 +1,4 @@
 ﻿using Mapster;
-using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
@@ -73,7 +72,7 @@ namespace WhoOwesWho.UserService.Services
             if (validationResult is { Success: true, NoAdmin: true })
             {
                 var user = response.Adapt<UserMessageRequestModel>();
-                await userPublishingServicee.SendUserAsync(user);
+                await userPublishingServicee.SendUserAsync(user!);
                 return new UserModel
                 {
                     Success = true,
