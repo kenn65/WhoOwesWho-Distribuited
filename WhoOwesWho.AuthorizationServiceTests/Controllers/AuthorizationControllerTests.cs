@@ -21,7 +21,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
                 {
             // Arrange
             authenticationNotificationService
-                .Setup(x => x.SendAuthenticationMessage(request))
+                .Setup(x => x.SendAuthenticationMessageAsync(request))
                 .ReturnsAsync(response);
 
             var sut = new AuthorizationController(
@@ -29,7 +29,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
                 authenticationNotificationService.Object);
 
             // Act
-            var result = await sut.Authenticate(request);
+            var result = await sut.AuthenticateAsync(request);
 
             // Assert
             var ok = result as OkObjectResult;
@@ -46,7 +46,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
         {
             // Arrange
             authenticationNotificationService
-                .Setup(x => x.SendAuthenticationMessage(request))
+                .Setup(x => x.SendAuthenticationMessageAsync(request))
                 .ReturnsAsync(response);
 
             var sut = new AuthorizationController(
@@ -54,11 +54,11 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
                 authenticationNotificationService.Object);
 
             // Act
-            await sut.Authenticate(request);
+            await sut.AuthenticateAsync(request);
 
             // Assert
             authenticationNotificationService.Verify(
-                x => x.SendAuthenticationMessage(request),
+                x => x.SendAuthenticationMessageAsync(request),
                 Times.Once);
         }
 
@@ -70,7 +70,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
         {
             // Arrange
             authenticationNotificationService
-                .Setup(x => x.SendAuthenticationMessage(request))
+                .Setup(x => x.SendAuthenticationMessageAsync(request))
                 .ThrowsAsync(new Exception("error"));
 
             var sut = new AuthorizationController(
@@ -78,7 +78,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
                 authenticationNotificationService.Object);
 
             // Act
-            var result = await sut.Authenticate(request);
+            var result = await sut.AuthenticateAsync(request);
 
             // Assert
             var badRequest = result as BadRequestObjectResult;
@@ -95,7 +95,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
         {
             // Arrange
             authorizationService
-                .Setup(x => x.Authorize(request))
+                .Setup(x => x.AuthorizeAsync(request))
                 .ReturnsAsync(response);
 
             var sut = new AuthorizationController(
@@ -103,7 +103,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
                authenticationNotificationService.Object);
 
             // Act
-            var result = await sut.Authorize(request);
+            var result = await sut.AuthorizeAsync(request);
 
             // Assert
             var ok = result as OkObjectResult;
@@ -120,7 +120,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
         {
             // Arrange
             authorizationService
-                .Setup(x => x.Authorize(request))
+                .Setup(x => x.AuthorizeAsync(request))
                 .ReturnsAsync(response);
 
             var sut = new AuthorizationController(
@@ -128,11 +128,11 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
               authenticationNotificationService.Object);
 
             // Act
-            await sut.Authorize(request);
+            await sut.AuthorizeAsync(request);
 
             // Assert
             authorizationService.Verify(
-                x => x.Authorize(request),
+                x => x.AuthorizeAsync(request),
                 Times.Once);
         }
 
@@ -144,7 +144,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
         {
             // Arrange
             authorizationService
-                .Setup(x => x.Authorize(request))
+                .Setup(x => x.AuthorizeAsync(request))
                 .ThrowsAsync(new Exception("error"));
 
             var sut = new AuthorizationController(
@@ -152,7 +152,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Controllers
              authenticationNotificationService.Object);
 
             // Act
-            var result = await sut.Authorize(request);
+            var result = await sut.AuthorizeAsync(request);
 
             // Assert
             var badRequest = result as BadRequestObjectResult;

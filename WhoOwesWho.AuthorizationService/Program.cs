@@ -1,6 +1,7 @@
 using Azure.Messaging.ServiceBus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 using StackExchange.Redis;
 using WhoOwesWho.AuthorizationService.Middleware;
 using WhoOwesWho.AuthorizationService.Repositories;
@@ -49,38 +50,58 @@ builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>(
 builder.Services.AddControllers();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    // API Key security definition
-    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    options.AddDocumentTransformer((document, context, ct) =>
     {
-        Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
-        Name = "X-API-Key",
-        Description = "Enter your API key",
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["ApiKey"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            Name = "X-API-Key",
+            In = ParameterLocation.Header,
+            Description = "API Key"
+        };
+
+        foreach (var path in document.Paths.Values)
+        {
+            foreach (var operation in path.Operations!.Values)
+            {
+                operation.Security ??= new List<OpenApiSecurityRequirement>();
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecuritySchemeReference("ApiKey"),
+                        new List<string>()
+                    }
+                });
+            }
+        }
+        return Task.CompletedTask;
     });
 });
 
-
 var app = builder.Build();
-
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.AuthorizationService API"));
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "WhoOwesWho.AuthorizationService API";
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecuritySchemes = ["ApiKey"]
+        };
+    });
 }
-
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-app.UseMiddleware<ApiKeyMiddleware>();
-
+app.UseMiddleware<ApiKeySecurity>();
 app.Run();
-    
+

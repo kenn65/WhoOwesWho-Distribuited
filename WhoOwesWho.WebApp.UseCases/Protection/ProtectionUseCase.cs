@@ -1,4 +1,6 @@
-﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
+﻿using System.Reflection.Metadata;
+using System.Web;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Protection;
 using WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces;
 
@@ -11,11 +13,12 @@ namespace WhoOwesWho.WebApp.UseCases.Protection
         Task<ProtectionResponseModel> ExecuteProtectCookiesAsync(CookiesRequestModel request);
     }
 
-    public class ProtectionUseCase(IProtection protectionPlugin) : IProtectionUseCase
+    public class ProtectionUseCase(IProtectionPlugin protectionPlugin) : IProtectionUseCase
     {
         public async Task<string> ExecuteProtectAsync(string text)
         {
-            var response = await protectionPlugin.ProtectAsync(text);
+            var encodedText = HttpUtility.UrlEncode(text);
+            var response = await protectionPlugin.ProtectAsync(encodedText);
             return response.ProtectedValue ?? string.Empty;
         }
 

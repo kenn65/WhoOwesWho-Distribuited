@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account
 {
-    public class AuthenticationRequestModel
+    public class AuthenticationRequestModel : RequestModelBase
     {
         [Required]
         public string EmailAddress { get; set; } = string.Empty;

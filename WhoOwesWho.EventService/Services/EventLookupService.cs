@@ -7,7 +7,7 @@ namespace WhoOwesWho.EventService.Services
 {
     public interface IEventLookupService
     {
-        Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true);
+        Task<EventResponseModel?> GetEventAsync(string id, bool active = true);
         Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
         Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true);
         Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true);
@@ -21,14 +21,16 @@ namespace WhoOwesWho.EventService.Services
     {
 
 
-        public async Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true)
+        public async Task<EventResponseModel?> GetEventAsync(string id, bool active = true)
         {
-            return await eventQueryRepository.GetEventAsync(id, active);
+            var eventId = await eventSecurityService.UnprotectAsync(id); 
+            return await eventQueryRepository.GetEventAsync(Guid.Parse(eventId), active);
         }
 
-        public async Task<EventResponseModel?> GetEventByUserAsync(string userId,  bool active = true)
+        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true)
         {
-            return await eventQueryRepository.GetEventByUserAsync(userId, active);
+            var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
+            return await eventQueryRepository.GetEventByUserAsync(unprotectedUserId, active);
         }
 
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true)

@@ -30,10 +30,7 @@ namespace WhoOwesWho.Shared.Models
 
         [JsonProperty("settled")]
         public bool Settled { get; set; }
-
-        [JsonProperty("active")]
-        public bool Active { get; set; }
-
+        
         [JsonProperty("userId")]
         public string? UserId { get; set; }
 

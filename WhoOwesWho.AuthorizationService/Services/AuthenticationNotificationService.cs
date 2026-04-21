@@ -8,7 +8,7 @@ namespace WhoOwesWho.AuthorizationService.Services
 {
     public interface IAuthenticationNotificationService
     {
-        Task<AuthenticationResponseModel> SendAuthenticationMessage(AuthenticationRequestModel model);
+        Task<AuthenticationResponseModel> SendAuthenticationMessageAsync(AuthenticationRequestModel model);
     }
 
     public class AuthenticationNotificationService(IConfiguration configuration,
@@ -18,7 +18,7 @@ namespace WhoOwesWho.AuthorizationService.Services
         IAuthenticationValidationService authenticationValidationService
         ) : ServiceBase(configuration), IAuthenticationNotificationService
     {
-        public async Task<AuthenticationResponseModel> SendAuthenticationMessage(AuthenticationRequestModel request)
+        public async Task<AuthenticationResponseModel> SendAuthenticationMessageAsync(AuthenticationRequestModel request)
         {
             var response = new AuthenticationResponseModel();
             try

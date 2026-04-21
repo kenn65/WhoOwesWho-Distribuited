@@ -1,24 +1,45 @@
 ﻿@page "/"
 
-<PageTitle>Who Owes Who</PageTitle>
+@inject ICookiesMasterService _cookiesMasterService
+@inject NavigationManager _navigationManager
 
 <div class="text-center">
-      <br />
-      <h1 class="text-4xl">Who Owes Who</h1>
-      <br />
+    <br />
+    <h1 class="text-4xl">Who Owes Who</h1>
+    <br />
     <p class="text-xl">Your group travels loan calculator</p>
-      <br />
-      <br />
-      <hr />
-      <br />
-      <br />
-      <div class="justify-center text-center">
-        <image
-          src="wow-logo.png"
-          alt="Who Owes Who"
-          width=200
-          height=200
-          class="mx-auto"
-        />
-      </div>
+    <br />
+    <br />
+    <hr />
+    <br />
+    <br />
+    <div class="justify-center text-center">
+        <image src="wow-logo-big.png"
+               alt="Who Owes Who"
+               width=200
+               height=200
+               class="mx-auto" />
+    </div>
+    <br />
+    <br />
+    <hr />
+    <br />
+    <div>
+        <a href="/account/signin" class="text-blue-500 hover:underline">Sign in</a>
+    </div>
+    <br />
+    <div>
+        <a href="account/signup" class="text-blue-500 hover:underline">Sign up</a>
+    </div>
 </div>
+
+@code{
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await _cookiesMasterService.IsAuthorizedAsync())
+        {
+            _navigationManager.NavigateTo("/me");
+        }
+    }
+}

@@ -32,17 +32,17 @@ namespace WhoOwesWho.EventService.Repositories
             {
                 request.Id = Guid.NewGuid();
                 var userId = string.Empty;
-                if (!Guid.TryParse(request.UserId, out var _))
-                {
-                    userId = await eventSecurityService.UnprotectAsync(request.UserId!);
-                }
-                var creationUser = await eventCacheRepository.GetUserByIdAsync(userId);
+                //if (!Guid.TryParse(request.UserId, out var _))
+                //{
+                //    userId = await eventSecurityService.UnprotectAsync(request.UserId!);
+                //}
+                //var creationUser = await eventCacheRepository.GetUserByIdAsync(userId);
                 request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
 
                 var entity = new Events
                 {
                     Id = request.Id,
-                    CreatedBy = creationUser!.FullName,
+                    CreatedBy = request!.CreatedBy,
                     Name = request.Name,
                     Location = request.Location,
                     Currency = request.Currency,

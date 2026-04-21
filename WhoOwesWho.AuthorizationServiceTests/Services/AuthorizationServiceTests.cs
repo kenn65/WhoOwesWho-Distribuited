@@ -38,7 +38,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync("decrypted@test.com");
 
             // Act
-            await sut.Authorize(request);
+            await sut.AuthorizeAsync(request);
 
             // Assert
             authorizationSecurityService.Verify(x => x.UnprotectAsync(It.IsAny<string>()), Times.Once);
@@ -77,7 +77,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync(user);
 
             // Act
-            await sut.Authorize(request);
+            await sut.AuthorizeAsync(request);
 
             // Assert
             authorizationCacheRepository.Verify(x => x.GetUserAsync(decryptedEmail), Times.Once);
@@ -121,7 +121,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync(expected);
 
             // Act
-            var result = await sut.Authorize(request);
+            var result = await sut.AuthorizeAsync(request);
 
             // Assert
             result.Should().Be(expected);
@@ -176,7 +176,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync(new AuthorizationResponseModel());
 
             // Act
-            await sut.Authorize(request);
+            await sut.AuthorizeAsync(request);
 
             // Assert
             capturedToken.Should().NotBeNull();
@@ -228,7 +228,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync(expected);
 
             // Act
-            var result = await sut.Authorize(request);
+            var result = await sut.AuthorizeAsync(request);
 
             // Assert
             result.Should().Be(expected);
@@ -253,7 +253,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync((UserMessageResponseModel?)null);
 
             // Act
-            Func<Task> act = async () => await sut.Authorize(request);
+            Func<Task> act = async () => await sut.AuthorizeAsync(request);
 
             // Assert
             await act.Should().ThrowAsync<NullReferenceException>();

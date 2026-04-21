@@ -1,0 +1,129 @@
+﻿@page "/me"
+@inject NavigationManager _navigationManager
+@inject IUserUseCase _userUseCase
+@inject ICookiesMasterService _cookiesMasterService
+
+<div class="text-center">
+    <br />
+    <br />
+    <h1 class="text-4xl">My Who Owes Who</h1>
+    <br />
+    <br />
+    <p>@_userName</p>
+    <br />
+    <br />
+    <p class="text-xl">Welcome to your self service center</p>
+    <br />
+    <br />
+    <ul>
+        <li class="pb-10">
+            <div class="border-blue-400 border-spacing-10 border-t w-1/2 text-center m-auto pt-10">
+                <a href="#" class="text-xl text-blue-600 underline">
+                    Administration
+                </a>
+                <br />
+                <br />
+                <p>
+                    A user can act as an administrator, which allows them to create events and manage payments (edit and delete).
+                    <br />
+                    <br />
+                    Multiple events may have different administrators.
+                    <br />
+                    <br />
+                    A user can become an administrator either during signup or later via their profile. When logged in, the user can enable the administrator option in “My Profile” and click “Update” — provided that no other member of their group has already been assigned as administrator.
+                    <br />
+                    <br />
+                    Within a group assigned to an event, exactly one person must be designated as the administrator.
+                    <br />
+                    <br />
+                    A user cannot be assigned to more than one event at the same time.
+                </p>
+            </div>
+        </li>
+        <li class="pb-10">
+            <div class="border-blue-400 border-spacing-10 border-t w-1/2 text-center m-auto pt-10">
+                <a href="/me/events" class="text-xl text-blue-600 underline">
+                    Events
+                </a>
+                <br />
+                <br />
+                <p>
+                    Administrators can create, edit, and delete events on this page.
+                    <br />
+                    <br />
+                    All users can view a list of available events and assign themselves to one. A user may only be assigned to a single event at a time, until that event has been closed (settled).
+                </p>
+            </div>
+        </li>
+        <li class="pb-10">
+            <div class="border-blue-400 border-spacing-10 border-t w-1/2 text-center m-auto pt-10">
+                <a href="/me/profile" class="text-xl text-blue-600 underline">
+                    My profile
+                </a>
+                <br />
+                <br />
+                <p>View and update your profile settings here.</p>
+            </div>
+        </li>
+        <li class="pb-10">
+            <div class="border-blue-400 border-spacing-10 border-t w-1/2 text-center m-auto pt-10">
+                <a href="/me/workspace" class="text-xl text-blue-600 underline">
+                    My workspace
+                </a>
+                <br />
+                <br />
+                <p>
+                    Here you can join an event and create payments that act as shared expenses (loans) for participants in that event — including yourself, for example when you pay the full amount for a shared expense.
+                </p>
+            </div>
+        </li>
+        <li class="pb-10">
+            <div class="border-blue-400 border-spacing-10 border-t w-1/2 text-center m-auto pt-10">
+                <a href="/me/payments" class="text-xl text-blue-600 underline">
+                    Payments
+                </a>
+                <br />
+                <br />
+                <p>
+                    View all payments for the selected event, along with real-time settlement updates.
+                </p>
+            </div>
+        </li>
+        <li class="pb-10">
+            <div class="border-blue-400 border-spacing-10 border-t border-b w-1/2 text-center m-auto pt-10 pb-10">
+                <a href="/me/settlements"
+                   class="text-xl text-blue-600 underline">
+                    Settlements
+                </a>
+                <br />
+                <br />
+                <p>
+                    View all closed events, including their payments and final settlement results.
+                </p>
+            </div>
+        </li>
+    </ul>
+</div>
+
+@code {
+
+
+    private string _userName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var cookies = await _cookiesMasterService.GetAsync();
+        if (cookies is null)
+        {
+            _navigationManager.NavigateTo("/", true);
+        }
+        else
+        {
+            var response = await _userUseCase.ExecuteAsync(
+                cookies.UserIdValue,
+                cookies.TokenValue,
+                false);
+            _userName = $"Hi {response!.FullName!}";
+        }
+    }
+}

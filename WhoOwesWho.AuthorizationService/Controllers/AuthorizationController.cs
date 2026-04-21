@@ -7,17 +7,17 @@ namespace WhoOwesWho.AuthorizationService.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class AuthorizationController(
-        IAuthorizationService authorizationService, 
+        IAuthorizationService authorizationService,
         IAuthenticationNotificationService authenticationNotificationService
         ) : ControllerBase
     {
         [HttpPost]
         [Route("authenticate")]
-        public async Task<IActionResult> Authenticate([FromBody] AuthenticationRequestModel request)
+        public async Task<IActionResult> AuthenticateAsync([FromBody] AuthenticationRequestModel request)
         {
             try
             {
-                return Ok(await authenticationNotificationService.SendAuthenticationMessage(request));
+                return Ok(await authenticationNotificationService.SendAuthenticationMessageAsync(request));
             }
             catch (Exception e)
             {
@@ -28,16 +28,74 @@ namespace WhoOwesWho.AuthorizationService.Controllers
 
         [HttpPost]
         [Route("authorize")]
-        public async Task<IActionResult> Authorize([FromBody] AuthorizationRequestModel request)
+        public async Task<IActionResult> AuthorizeAsync([FromBody] AuthorizationRequestModel request)
         {
             try
             {
-                return Ok(await authorizationService.Authorize(request));
+                return Ok(await authorizationService.AuthorizeAsync(request));
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("set-cookies")]
+        public IActionResult SetCookies([FromBody] AuthorizationResponseModel data)
+        {
+            var options = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/"
+            };
+
+            Response.Cookies.Append(data.TokenName, data.TokenValue!, options);
+            Response.Cookies.Append(data.UserIdName, data.UserIdValue!, options);
+            Response.Cookies.Append(data.UserEmailAddressName, data.UserEmailAddressValue!, options);
+            Response.Cookies.Append(data.AdminName, data.AdminValue!, options);
+            return Ok();
+        }
+
+        [HttpPost("delete-cookies")]
+        public IActionResult DeleteCookies()
+        {
+            var options = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/"
+            };
+
+            var data = new AuthorizationResponseModel();
+
+            Response.Cookies.Delete(data.TokenName, options);
+            Response.Cookies.Delete(data.UserIdName, options);
+            Response.Cookies.Delete(data.UserEmailAddressName, options);
+            Response.Cookies.Delete(data.AdminName, options);
+
+            // fallback (important)
+            var expired = new CookieOptions
+            {
+                Path = "/",
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddDays(-1)
+            };
+
+            Response.Cookies.Append(data.TokenName, "", expired);
+            Response.Cookies.Append(data.UserIdName, "", expired);
+            Response.Cookies.Append(data.UserEmailAddressName, "", expired);
+            Response.Cookies.Append(data.AdminName, "", expired);
+
+            return Ok();
+        }
+
+        
     }
+
+
+
 }

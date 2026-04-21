@@ -2,7 +2,7 @@
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account
 {
-    public class AuthorizationResponseModel : ModelBase
+    public class AuthorizationResponseModel : ResponseModelBase
     {
         public static string TokenName => ".WhoOwesWho.Token";
         public string? TokenValue { get; set; }

@@ -2,7 +2,7 @@
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies
 {
-    public class CookiesResponseModel : ModelBase
+    public class CookiesResponseModel : ResponseModelBase
     {
         public string TokenName => ".WhoOwesWho.Token";
         public string TokenValue { get; set; } = string.Empty;

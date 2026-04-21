@@ -6,7 +6,7 @@ using WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Protection
 {
-    public class ProtectionPlugin(IConfiguration configuration) : ApiPluginClientBase(configuration), IProtection
+    public class ProtectionPlugin(IConfiguration configuration) : ApiPluginClientBase(configuration), IProtectionPlugin
     {
         private readonly IConfiguration configuration = configuration;
 

@@ -1,12 +1,20 @@
 ﻿using System.Net;
-using WhoOwesWho.EncryptionService.Services.Base;
+using WhoOwesWho.AuthorizationService.Services.Base;
 
-namespace WhoOwesWho.EncryptionService.Middleware
+namespace WhoOwesWho.AuthorizationService.Middleware
 {
-    public class ApiKeyMiddleware(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
+    public class ApiKeySecurity(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
     {
         public async Task InvokeAsync(HttpContext context)
         {
+            var path = context.Request.Path.Value ?? string.Empty;
+            if (path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase))
+            {
+                await next(context);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(context.Request.Headers[AppSettings.ApiKeyHeaderName]))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -33,6 +41,5 @@ namespace WhoOwesWho.EncryptionService.Middleware
             var apiKey = AppSettings.ApiKey;
             return apiKey == userApiKey;
         }
-
     }
 }

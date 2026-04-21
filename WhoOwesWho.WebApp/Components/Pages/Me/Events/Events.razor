@@ -1,0 +1,118 @@
+﻿@page "/me/events"
+
+@inject IStateHandler<EventModel> _eventStateHandler
+@inject NavigationManager _navigationManager
+@inject ICookiesMasterService _cookiesMasterService
+@inject IEventsUseCase _eventUseCase
+@inject IAlertService _alertService
+
+@if (EventList == null)
+{
+    <div class="flex justify-center items-center h-40">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
+    </div>
+}
+else
+{
+    <div class="text-center">
+        <br />
+        <br />
+        <h1 class="text-4xl">Events</h1>
+        <br />
+        <br />
+        <p class="text-xl">Active events list</p>
+        <br />
+        <br />
+        @if (IsAdmin)
+        {
+            <NavigationButton Text="Create new event"
+                              ProcessingText="Navigating..."
+                              NavigationUrl="/me/events/create" />
+        }
+        <br />
+        <br />
+        <table class="justify-center m-auto">
+            <thead>
+                <tr>
+                    <th class="p-6">Name</th>
+                    <th class="p-6">Location</th>
+                    <th class="p-6">Currency</th>
+                    <th class="p-6">Start Date</th>
+                    <th class="p-6">Created By</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (EventResponseModel item in EventList)
+                {
+                    <tr>
+                        <td class="p-6">@item.Name</td>
+                        <td class="p-6">@item.Location</td>
+                        <td class="p-6">@item.Currency</td>
+                        <td class="p-6">@item.StartDateIso </td>
+                        <td class="p-6">@item.CreatedBy </td>
+
+                        @if (IsAdmin)
+                        {
+                            <td class="p-3">
+                                <NavigationStateButton Text="Edit"
+                                                       ProcessingText="Navigating..."
+                                                       OnClick="() => EditEvent(item.Adapt<EventModel>())" />
+                            </td>
+
+                            <td class="p-3">
+                                <NavigationStateButton Text="Delete"
+                                                       ProcessingText="Navigating..."
+                                                       OnClick="() => DeleteEvent(item.Adapt<EventModel>())" />
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <br />
+        <br />
+    </div>
+
+}
+
+@code {
+
+    private bool IsAdmin { get; set; }
+    private IEnumerable<EventResponseModel>? EventList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsAdmin = await _cookiesMasterService.IsAdministratorAsync();
+        EventList = await GetEventsAsync();
+    }
+
+    private async Task EditEvent(EventModel item)
+    {
+        _eventStateHandler.SelectedItem = item;
+        _navigationManager.NavigateTo("/me/events/edit");
+    }
+
+    private async Task DeleteEvent(EventModel item)
+    {
+        var confirmation = await _alertService.Confirm("Are you sure you want to delete this event?");
+        if (confirmation)
+        {
+            var cookies = await _cookiesMasterService.GetAsync();
+            var response = await _eventUseCase.ExecuteAsync(item.Id, cookies!.TokenValue);
+            if (!response.Success)
+            {
+                await _alertService.Error(response.Message!);
+                return;
+            }
+            await _alertService.Success(response.Message!);
+            _navigationManager.NavigateTo("/me/events", true);
+        }
+    }
+
+    private async Task<IEnumerable<EventResponseModel>> GetEventsAsync()
+    {
+        var cookies = await _cookiesMasterService.GetAsync();
+        return await _eventUseCase.ExecuteAsync(true, cookies!.TokenValue);
+    }
+}

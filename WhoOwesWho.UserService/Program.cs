@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 using StackExchange.Redis;
 using System.Text;
 using WhoOwesWho.UserService.EfCore.Context;
@@ -16,18 +17,20 @@ using static WhoOwesWho.UserService.Repositories.IUserCacheRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Db
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("whooweswho-users")));
 
 builder.AddServiceDefaults();
 
-// Add services to the container.
+// Service Bus
 builder.Services.AddSingleton(provider =>
 {
     var connectionString = builder.Configuration.GetConnectionString("sbemulatorns");
     return new ServiceBusClient(connectionString);
 });
 
+// Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var configuration = builder.Configuration.GetConnectionString("redis-cache");
@@ -40,9 +43,11 @@ builder.Services.AddSingleton(sp =>
     return mux.GetDatabase();
 });
 
+// Messaging
 builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
 builder.Services.AddSingleton<IUserPublisher, UserPublisher>();
 
+// Services
 builder.Services.AddScoped<IUserPublishingServicee, UserPublishingService>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
 builder.Services.AddScoped<IUserLookupService, UserLookupService>();
@@ -59,65 +64,101 @@ builder.Services.AddScoped<IUserSecurityService, UserSecurityService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddScoped<IEventGatewayService, EventGatewayService>();
 
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Authorization:Issuer"],
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Authorization:Audience"],
-        ValidateLifetime = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Authorization:JwtSecret"]!)),
-        ValidateIssuerSigningKey = true
-    };
-});
 
-builder.Services.AddSwaggerGen(options =>
-{
-    // Bearer token security definition
-    options.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
+// 🔐 Authentication (JWT)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        Type = SecuritySchemeType.Http,
-        In = ParameterLocation.Header,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        Description = "Enter your bearer token"
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Authorization:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Authorization:Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Authorization:JwtSecret"]!)
+            )
+        };
     });
 
-    // API Key security definition
-    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+
+// 📄 OpenAPI (Scalar)
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, ct) =>
     {
-        Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
-        Name = "X-API-Key",
-        Description = "Enter your API key",
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        // 🔑 API Key
+        document.Components.SecuritySchemes["ApiKey"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            Name = "X-API-Key",
+            In = ParameterLocation.Header,
+            Description = "API Key"
+        };
+
+        // 🔐 Bearer
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Description = "Bearer token"
+        };
+
+        // 👉 OR logic (ApiKey OR Bearer)
+        foreach (var path in document.Paths.Values)
+        {
+            foreach (var operation in path.Operations!.Values)
+            {
+                operation.Security ??= new List<OpenApiSecurityRequirement>();
+
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    { new OpenApiSecuritySchemeReference("ApiKey"), new List<string>() }
+                });
+
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
+                });
+            }
+        }
+        return Task.CompletedTask;
     });
 });
-
 
 var app = builder.Build();
-
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     await app.ConfigureDatabaseAsync();
+
     app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.UserService API"));
+
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "WhoOwesWho.UserService API";
+
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecuritySchemes = ["ApiKey", "Bearer"]
+        };
+    });
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<ApiKeySecurity>();
 app.Run();
-

@@ -2,7 +2,7 @@
 @using WhoOwesWho.WebApp.Services
 
 @inherits LayoutComponentBase
-@inject ICookieClientService _cookieClientService
+@inject ICookiesMasterService _cookiesMasterService
 @inject IAlertService _alertService
 @inject IJSRuntime JS
 
@@ -22,7 +22,7 @@
 
     <!-- Main content -->
     <main class="flex-grow w-full flex justify-center">
-        <div class="w-full max-w-4xl px-4">
+        <div class="w-full px-4">
             <article class="content">
                 @Body
             </article>
@@ -63,17 +63,9 @@
     protected override async Task OnInitializedAsync()
     {
         _alertService.OnShow += HandleAlert;
+        _isAuthorized = await _cookiesMasterService.IsAuthorizedAsync();
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _isAuthorized = await _cookieClientService.IsAuthorizedAsync();
-            StateHasChanged();
-        }
-    }
-    
+        
     private async Task HandleAlert(AlertRequestModel request)
     {
         var result = await JS.InvokeAsync<SwalResult>(
