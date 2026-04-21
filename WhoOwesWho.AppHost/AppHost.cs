@@ -149,13 +149,16 @@ serviceBus
 // --- WHO OWES WHO MICROSERVICES ----------------------------------------------------
 
 var authorizationService = builder.AddProject<Projects.WhoOwesWho_AuthorizationService>("authorizationservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WithReference(cache)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
+
 var currencyService = builder.AddProject<Projects.WhoOwesWho_CurrencyService>("currencyservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WithReference(cache)
@@ -163,6 +166,7 @@ var currencyService = builder.AddProject<Projects.WhoOwesWho_CurrencyService>("c
      .WaitFor(sql);
 
 var encryptionService = builder.AddProject<Projects.WhoOwesWho_EncryptionService>("encryptionservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WithReference(cache)
@@ -170,6 +174,7 @@ var encryptionService = builder.AddProject<Projects.WhoOwesWho_EncryptionService
      .WaitFor(sql);
 
 var eventService = builder.AddProject<Projects.WhoOwesWho_EventService>("eventservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WithReference(cache)
@@ -178,12 +183,14 @@ var eventService = builder.AddProject<Projects.WhoOwesWho_EventService>("eventse
      .WaitFor(sql);
 
 var messagingService = builder.AddProject<Projects.WhoOwesWho_MessagingService>("messagingservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WaitFor(serviceBus)
      .WaitFor(sql);
 
 var paymentService = builder.AddProject<Projects.WhoOwesWho_PaymentService>("paymentservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WithReference(cache)
@@ -192,6 +199,7 @@ var paymentService = builder.AddProject<Projects.WhoOwesWho_PaymentService>("pay
      .WaitFor(sql);
 
 var userService = builder.AddProject<Projects.WhoOwesWho_UserService>("userservice")
+     .WithUrlForEndpoint("https", url => url.Url = "/scalar/v1")
      .WithReference(serviceBus)
      .WithReference(sql)
      .WithReference(cache)
