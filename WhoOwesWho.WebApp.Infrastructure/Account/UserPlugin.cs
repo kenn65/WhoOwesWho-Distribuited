@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
 using WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces;
@@ -52,6 +53,18 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
             var endpoint = await CreateEndpoint("password/reset");
             return await PostAsync<ResetPasswordResponseModel, ResetPasswordRequestModel>(endpoint, request, apiKey, true);
         }
+        public async Task<UserModel> UpdateUserAsync(string userId, string jwtToken, UserUpdateRequestModel? requst)
+        {
+            var apiKey = await GetApiKeyAsync();
+            var endpoint = await CreateEndpoint($"{userId}");
+            return await PatchAsync<UserModel, UserUpdateRequestModel>(endpoint, requst!, apiKey, true, null, jwtToken);
+        }
+        public async Task<ChangePasswordResponseModel> ChangePasswordAsync(string jwtToken, ChangePasswordRequestModel request)
+        {
+            var apiKey = await GetApiKeyAsync();
+            var endpoint = await CreateEndpoint("password/change");
+            return await PatchAsync<ChangePasswordResponseModel, ChangePasswordRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+        }
 
         private async Task<string> GetBaseAddressAsync() => appSettings.UserMicroserviceBaseAddress!;
         private async Task<string> GetApiKeyAsync() => appSettings.UserMicroserviceApiKey!;
@@ -62,5 +75,6 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
             return $"{baseAddress}/{trailingPath}";
         }
 
+       
     }
 }

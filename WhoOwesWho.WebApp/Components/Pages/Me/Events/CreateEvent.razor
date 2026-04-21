@@ -2,79 +2,87 @@
 @using WhoOwesWho.WebApp.UseCases.Currencies
 
 
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject ICookiesMasterService _cookiesMasterService
 @inject IUserUseCase _userUseCase
 @inject IEventsUseCase _eventsUseCase
 @inject IAlertService _alertService
 @inject ICurrenciesUseCase _currenciesUseCase
+@if (CurrencyList == null)
+{
+    <div class="flex justify-center items-center h-40">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-700"></div>
+    </div>
+}
+else
+{
+    <div class="text-center">
+        <br />
+        <br />
+        <h1 class="text-4xl">Event</h1>
+        <br />
+        <br />
+        <p class="text-xl">Create new event</p>
+        <br />
+        <br />
+        <EditForm method="post" Model="@EventRequestModel" OnValidSubmit="HandleSubmit" FormName="newevent" Enhance>
+            <DataAnnotationsValidator />
+            <label for="name" class="form-label">Name:</label>
+            <br />
+            <InputText id="name" @bind-Value="EventRequestModel!.Name" placeholder="Enter event name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <ValidationMessage For="@(() => EventRequestModel.Name)" class="text-danger" />
+            <br />
+            <br />
+            <label for="location" class="form-label">Location:</label>
+            <br />
+            <InputText id="location" @bind-Value="EventRequestModel.Location" placeholder="Enter event name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <ValidationMessage For="@(() => EventRequestModel.Location)" class="text-danger" />
+            <br />
+            <br />
+            <label for="currency" class="form-label">Currency:</label>
+            <br />
+            <InputSelect id="currency" @bind-Value="EventRequestModel!.Currency" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4">
+                <option value="" disabled selected>Select currency...</option>
+                @foreach (CurrencyResponseModel item in CurrencyList)
+                {
+                    <option value="@item.Iso">@item.Iso</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => EventRequestModel.Currency)" class="text-danger" />
+            <br />
+            <br />
+            <label for="startDate" class="form-label">Start date:</label>
+            <br />
+            <InputDate id="startDate" @bind-Value="EventRequestModel!.StartDateDate" @bind-Value:format="dd-MM-yyyy" @attributes="_dateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <br />
+            <br />
+            <label for="createdBy" class="form-label">Created by:</label>
+            <br />
+            <InputText id="createdBy" @bind-Value="EventRequestModel.CreatedBy" readonly class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <br />
+            <br />
+            <label for="autoAssign" class="form-label">Assign yourself to this event:</label>
+            <br />
+            <InputCheckbox id="autoAssign" @bind-Value="EventRequestModel.AutoAssign" class="tshadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
+            <br />
+            <br />
+            <SubmitButton Text="OK"
+            ProcessingText="Processing..." />
+            &nbsp;&nbsp;&nbsp;
+            <ActionButton Text="Cancel"
+            ProcessingText="Cancelling..."
+            NavigationUrl="/me/events" />
 
-<div class="text-center">
-    <br />
-    <br />
-    <h1 class="text-4xl">Event</h1>
-    <br />
-    <br />
-    <p class="text-xl">Create new event</p>
-    <br />
-    <br />
-    <EditForm method="post" Model="@EventRequestModel" OnValidSubmit="HandleSubmit" FormName="newevent" Enhance>
-        <DataAnnotationsValidator />
-        <label for="name" class="form-label">Name:</label>
-        <br />
-        <InputText id="name" @bind-Value="EventRequestModel!.Name" placeholder="Enter event name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <ValidationMessage For="@(() => EventRequestModel.Name)" class="text-danger" />
-        <br />
-        <br />
-        <label for="location" class="form-label">Name:</label>
-        <br />
-        <InputText id="location" @bind-Value="EventRequestModel.Location" placeholder="Enter event name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <ValidationMessage For="@(() => EventRequestModel.Location)" class="text-danger" />
-        <br />
-        <br />
-        <label for="currency" class="form-label">Currency:</label>
-        <br />
-        <InputSelect id="currency" @bind-Value="EventRequestModel!.Currency" min="@_minDate" placeholder="Select currency..." class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4">
-            <option value="" disabled selected>Select currency...</option>
-            @foreach (CurrencyResponseModel item in CurrencyList)
-            {
-                <option value="@item.Iso">@item.Iso</option>
-            }
-        </InputSelect>
-        <ValidationMessage For="@(() => EventRequestModel.Currency)" class="text-danger" />
-        <br />
-        <br />
-        <label for="startDate" class="form-label">Start date:</label>
-        <br />
-        <InputDate id="startDate" @bind-Value="EventRequestModel!.StartDateDate" @bind-Value:format="dd-MM-yyyy" @attributes="_dateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <br />
-        <br />
-        <label for="createdBy" class="form-label">Created by:</label>
-        <br />
-        <InputText id="createdBy" @bind-Value="EventRequestModel.CreatedBy" readonly class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <br />
-        <br />
-        <label for="autoAssign" class="form-label">Assign yourself to this event:</label>
-        <br />
-        <InputCheckbox id="autoAssign" @bind-Value="EventRequestModel.AutoAssign" class="tshadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
-        <br />
-        <br />
-        <SubmitButton Text="OK"
-                      ProcessingText="Processing..." />
-        &nbsp;&nbsp;&nbsp;
-        <ActionButton Text="Cancel"
-                      ProcessingText="Cancelling..."
-                      NavigationUrl="/me/events" />
-
-    </EditForm>
-</div>
+        </EditForm>
+    </div>            
+}
 
 @code {
-    private string _minDate = DateTime.Today.ToString("yyyy-MM-dd");
+    private string minDate = DateTime.Today.ToString("yyyy-MM-dd");
     private IEnumerable<CurrencyResponseModel> CurrencyList = new List<CurrencyResponseModel>();
     private Dictionary<string, object> _dateAttributes => new()
     {
-        { "min", _minDate }
+        { "min", minDate }
     };
 
     [SupplyParameterFromForm]
@@ -106,7 +114,7 @@
             return;
         }
         await _alertService.Success(response.Message!);
-        _navigationManager.NavigateTo($"/me/events", true);
+        _nav.NavigateTo($"/me/events", true);
     }
 
     private async Task<string> GetUserAsync()
@@ -121,7 +129,7 @@
 
     private async Task HandleCancel()
     {
-        _navigationManager.NavigateTo("/me/events", true);
+        _nav.NavigateTo("/me/events", true);
     }
 }
 

@@ -184,7 +184,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
             );
 
             // Act
-            var result = await sut.Update(protectedId, request);
+            var result = await sut.UpdateUserAsync(protectedId, request);
 
             // Assert
             commandMock.Verify(x =>
@@ -232,7 +232,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
             );
 
             // Act
-            var result = await sut.VerifyEmailAddress(request);
+            var result = await sut.VerifyEmailAddressAsync(request);
 
             // Assert
             publishingMock.Verify(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()), Times.Once);
@@ -278,7 +278,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
             );
 
             // Act
-            await sut.VerifyEmailAddress(request);
+            await sut.VerifyEmailAddressAsync(request);
 
             // Assert
             publishingMock.Verify(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()), Times.Never);
@@ -323,7 +323,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
             );
 
             // Act
-            var result = await sut.ChangePassword(request);
+            var result = await sut.ChangePasswordAsync(request);
 
             // Assert
             publishingMock.Verify(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()), Times.Once);

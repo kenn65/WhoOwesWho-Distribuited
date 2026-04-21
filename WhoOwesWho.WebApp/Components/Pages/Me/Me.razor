@@ -1,5 +1,5 @@
 ﻿@page "/me"
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject IUserUseCase _userUseCase
 @inject ICookiesMasterService _cookiesMasterService
 
@@ -115,7 +115,7 @@
         var cookies = await _cookiesMasterService.GetAsync();
         if (cookies is null)
         {
-            _navigationManager.NavigateTo("/", true);
+            _nav.NavigateTo("/", true);
         }
         else
         {

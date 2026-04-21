@@ -14,12 +14,13 @@
     [Parameter] public string Text { get; set; } = "Submit";
     [Parameter] public string ProcessingText { get; set; } = "Processing...";
     [Parameter] public string NavigationUrl { get; set; } = "#";
+    [Parameter] public bool ForceLoad { get; set; } = false;
 
     private bool IsProcessing;
 
     private string GetCssClass() =>
         IsProcessing
-          ? "bg-green-700 text-white font-extralight py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-default"
+          ? "bg-green-700  text-white font-extralight py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-default"
           : "bg-gray-700 hover:bg-green-700 text-white font-extralight py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer";
 
     private async Task HandleNavigation()
@@ -27,6 +28,6 @@
         IsProcessing = true;
         StateHasChanged();
         await Task.Delay(50); // yield to renderer before navigating
-        NavigationManager.NavigateTo(NavigationUrl);
+        NavigationManager.NavigateTo(NavigationUrl, ForceLoad);
     }
 }

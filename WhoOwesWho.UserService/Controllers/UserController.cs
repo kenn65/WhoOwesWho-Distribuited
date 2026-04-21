@@ -94,7 +94,7 @@ namespace WhoOwesWho.UserService.Controllers
         [HttpPatch]
         [Route("{userId}")]
         [Authorize]
-        public async Task<IActionResult> Update(string userId, [FromBody] UserUpdateRequestModel? entity)
+        public async Task<IActionResult> UpdateUserAsync(string userId, [FromBody] UserUpdateRequestModel? entity)
         {
             try
             {
@@ -110,7 +110,7 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpPost]
         [Route("emailaddress/verify")]
-        public async Task<IActionResult> VerifyEmailAddress([FromBody] VerificationRequestModel request)
+        public async Task<IActionResult> VerifyEmailAddressAsync([FromBody] VerificationRequestModel request)
         {
             try
             {
@@ -135,7 +135,7 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpPost]
         [Route("password/forgot")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel request)
+        public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequestModel request)
         {
             try
             {
@@ -150,7 +150,7 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpGet]
         [Route("password/reset/verify/{emailAddress}/{forgotPasswordToken}")]
-        public async Task<IActionResult> VerifyResetPassword([Required] string emailAddress, [Required] string forgotPasswordToken)
+        public async Task<IActionResult> VerifyResetPasswordAsync([Required] string emailAddress, [Required] string forgotPasswordToken)
         {
             try
             {
@@ -173,7 +173,7 @@ namespace WhoOwesWho.UserService.Controllers
 
         [HttpPost]
         [Route("password/reset")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel request)
+        public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequestModel request)
         {
             try
             {
@@ -188,7 +188,7 @@ namespace WhoOwesWho.UserService.Controllers
         [HttpPatch]
         [Authorize]
         [Route("password/change")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestModel request)
+        public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequestModel request)
         {
             try
             {
