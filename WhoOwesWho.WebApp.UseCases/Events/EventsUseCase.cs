@@ -12,6 +12,7 @@ namespace WhoOwesWho.WebApp.UseCases.Events
         Task<EventResponseModel> ExecuteAsync(Guid id, string jwtToken);
         Task<EventResponseModel> ExecuteAsync(string id, bool active, string jwtToken);
         Task<EventResponseModel> ExecuteAsync(EventRequestModel request, string jwtToken, bool dummy = false);
+        Task<EventAssignmentResponseModel> ExecuteAsync(string userId, string jwtToken);
     }
 
     public class EventsUseCase(IEventsPlugin eventsPlugin, IProtectionUseCase protectionUseCase) : IEventsUseCase
@@ -41,6 +42,11 @@ namespace WhoOwesWho.WebApp.UseCases.Events
         public async Task<EventResponseModel> ExecuteAsync(EventRequestModel request, string jwtToken, bool dummy = false)
         {
             return await eventsPlugin.UpdateEventAsync(request, jwtToken);
+        }
+
+        public async Task<EventAssignmentResponseModel> ExecuteAsync(string userId, string jwtToken)
+        {
+            return await eventsPlugin.GetUserAssignmentAsync(userId, jwtToken);
         }
     }
 }

@@ -52,6 +52,14 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
             return await PatchAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
         }
 
+        public async Task<EventAssignmentResponseModel> GetUserAssignmentAsync(string userId, string jwtToken)
+        {
+            var apiKey = await GetApiKeyAsync();
+            var baseAddress = await GetEventUsersBaseAddressAsync();
+            var endpoint = await CreateEndpointAsync(baseAddress, $"{userId}");
+            return await GetAsync<EventAssignmentResponseModel>(endpoint, apiKey, true, null, jwtToken);
+        }
+
         private async Task<string> GetEventsBaseAddressAsync() => appSettings.EventMicroserviceEventsBaseAddress!;
         private async Task<string> GetEventUsersBaseAddressAsync() => appSettings.EventMicroserviceEventUsersBaseAddress!;
         private async Task<string> GetUserEventsBassAddressAsync() => appSettings.EventMicroserviceUserEventsBaseAddress!;

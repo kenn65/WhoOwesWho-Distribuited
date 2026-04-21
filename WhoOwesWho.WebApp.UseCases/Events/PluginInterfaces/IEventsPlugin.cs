@@ -9,5 +9,6 @@ namespace WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces
         Task<EventResponseModel> DeleteEventAsync(string id, string jwtToken);
         Task<EventResponseModel> GetEventAsync(string eventId, bool active, string jwtToken);
         Task<EventResponseModel> UpdateEventAsync(EventRequestModel request, string jwtToken);
+        Task<EventAssignmentResponseModel> GetUserAssignmentAsync(string userId, string jwtToken);
     }
 }

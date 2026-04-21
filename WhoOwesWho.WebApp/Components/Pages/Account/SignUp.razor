@@ -1,6 +1,6 @@
 ﻿@page "/account/signup"
 
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject IProtectionUseCase _protectionUseCase
 @inject IUserUseCase _userUseCase
 @inject IAlertService _alertService
@@ -55,7 +55,7 @@
     protected override void OnInitialized()
     {
         _userModel ??= new UserModel();
-        var uri = new Uri(_navigationManager.Uri);
+        var uri = new Uri(_nav.Uri);
         _host = $"{uri.Host}:{uri.Port}";
     }
 
@@ -73,10 +73,10 @@
         if (!response.Success)
         {
             await _alertService.Error(response.Message!);
-            _navigationManager.NavigateTo("account/signup", forceLoad: true);
+            _nav.NavigateTo("account/signup", forceLoad: true);
             return;
         }
         await _alertService.Success(response.Message!);
-        _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+        _nav.NavigateTo("/account/signin", forceLoad: true);
     }
 }

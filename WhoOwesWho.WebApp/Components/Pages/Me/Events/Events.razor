@@ -1,7 +1,7 @@
 ﻿@page "/me/events"
 
 @inject IStateHandler<EventModel> _eventStateHandler
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject ICookiesMasterService _cookiesMasterService
 @inject IEventsUseCase _eventUseCase
 @inject IAlertService _alertService
@@ -90,7 +90,7 @@ else
     private async Task EditEvent(EventModel item)
     {
         _eventStateHandler.SelectedItem = item;
-        _navigationManager.NavigateTo("/me/events/edit");
+        _nav.NavigateTo("/me/events/edit");
     }
 
     private async Task DeleteEvent(EventModel item)
@@ -106,7 +106,7 @@ else
                 return;
             }
             await _alertService.Success(response.Message!);
-            _navigationManager.NavigateTo("/me/events", true);
+            _nav.NavigateTo("/me/events", true);
         }
     }
 

@@ -1,7 +1,7 @@
 ﻿@page "/"
 
 @inject ICookiesMasterService _cookiesMasterService
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 
 <div class="text-center">
     <br />
@@ -39,7 +39,7 @@
     {
         if (await _cookiesMasterService.IsAuthorizedAsync())
         {
-            _navigationManager.NavigateTo("/me");
+            _nav.NavigateTo("/me");
         }
     }
 }

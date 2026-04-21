@@ -1,5 +1,5 @@
 ﻿@page "/account/signin"
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject IAuthorizationUseCase _authorizationUseCase
 @inject IConfiguration _configuration
 @inject IAlertService _alertService
@@ -21,7 +21,7 @@
             <br />
             <label for="password" class="form-label">Password:</label>
             <br />
-            <InputText type="password" id="password" @bind-Value="_authenticationRequestModel.Password" placeholder="Your password containing at least eight characters including one upper case character and two digits" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <InputText id="password" type="password" @bind-Value="_authenticationRequestModel.Password" placeholder="Your password containing at least eight characters including one upper case character and two digits" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
             <ValidationMessage For="@(() => _authenticationRequestModel.Password)" class="text-danger" />
             <br />
             <br />
@@ -75,7 +75,7 @@
     {
         _authenticationRequestModel ??= new AuthenticationRequestModel();
         _authenticationCodeRequestModel ??= new AuthenticationCodeRequestModel();
-        var uri = new Uri(_navigationManager.Uri);
+        var uri = new Uri(_nav.Uri);
         string hostName = $"{uri.Host}:{uri.Port}";
         _authenticationRequestModel!.Host = hostName;
     }
@@ -108,7 +108,7 @@
         if (_code != _authenticationCodeRequestModel!.Code)
         {
             await _alertService.Error("Invalid authentication code");
-            _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+            _nav.NavigateTo("/account/signin", forceLoad: true);
             return;
         }
 
@@ -121,18 +121,18 @@
         if (!response.Success)
         {
             await _alertService.Error("An error occurred while signing in. Did you verify your e-mail address?");
-            _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+            _nav.NavigateTo("/account/signin", forceLoad: true);
             return;
         }
 
         var data = response.Adapt<CookiesResponseModel>();
         await _cookiesMasterService.SetCookiesAsync(data);
-        _navigationManager.NavigateTo("/me", forceLoad: true);
+        _nav.NavigateTo("/me", forceLoad: true);
     }
 
        
     private async Task GotoSignUp()
     {
-        _navigationManager.NavigateTo("/account/signup", forceLoad: true);
+        _nav    .NavigateTo("/account/signup", forceLoad: true);
     }
 }

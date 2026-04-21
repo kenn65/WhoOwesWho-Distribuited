@@ -1,6 +1,6 @@
 ﻿@page "/account/verification" 
 
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject IUserUseCase _userUseCase
 @inject IAlertService _alertService
 
@@ -50,13 +50,13 @@
         if (!response.Success)
         {
             await _alertService.Error(response.Message!);
-            _navigationManager.NavigateTo("/", forceLoad: true);
+            _nav.NavigateTo("/", forceLoad: true);
             return;
         }
         else
         {
             await _alertService.Success(response.Message!);
-            _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+            _nav.NavigateTo("/account/signin", forceLoad: true);
         }
     }
 

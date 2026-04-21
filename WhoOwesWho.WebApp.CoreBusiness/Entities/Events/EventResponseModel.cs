@@ -1,4 +1,4 @@
-﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
+﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Extensions;
 

@@ -1,7 +1,7 @@
 ﻿@page "/me/events/edit"
 @using WhoOwesWho.WebApp.UseCases.Currencies
 
-@inject NavigationManager _navigationManager
+@inject NavigationManager _nav
 @inject IStateHandler<EventModel> _eventState
 @inject IUserUseCase _userUseCase
 @inject IEventsUseCase _eventsUseCase
@@ -33,7 +33,7 @@ else
             <ValidationMessage For="@(() => EventResponseModel.Name)" class="text-danger" />
             <br />
             <br />
-            <label for="location" class="form-label">Name:</label>
+            <label for="location" class="form-label">Location:</label>
             <br />
             <InputText id="location" @bind-Value="EventResponseModel.Location" placeholder="Enter event name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
             <ValidationMessage For="@(() => EventResponseModel.Location)" class="text-danger" />
@@ -41,7 +41,7 @@ else
             <br />
             <label for="currency" class="form-label">Currency:</label>
             <br />
-            <InputSelect id="currency" @bind-Value="EventResponseModel!.Currency" min="@_minDate" placeholder="Select currency..." class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4">
+            <InputSelect id="currency" @bind-Value="EventResponseModel!.Currency" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4">
                 <option value="" disabled selected>Select currency...</option>
                 @foreach (CurrencyResponseModel item in CurrencyList)
                 {
@@ -79,10 +79,10 @@ else
     private IEnumerable<CurrencyResponseModel> CurrencyList = new List<CurrencyResponseModel>();
     private Guid EventId;
     private CookiesResponseModel? Cookies = null;
-    private string _minDate = DateTime.Today.ToString("yyyy-MM-dd");
+    private string minDate = DateTime.Today.ToString("yyyy-MM-dd");
     private Dictionary<string, object> _dateAttributes => new()
     {
-        { "min", _minDate }
+        { "min", minDate }
     };
 
     [SupplyParameterFromForm]
@@ -127,7 +127,7 @@ else
             return;
         }
         await _alertService.Success(response.Message!);
-        _navigationManager.NavigateTo($"/me/events", true);
+        _nav.NavigateTo($"/me/events", true);
     }
 
     private async Task<string> GetUserAsync()
@@ -141,6 +141,6 @@ else
 
     private async Task HandleCancel()
     {
-        _navigationManager.NavigateTo("/me/events", true);
+        _nav.NavigateTo("/me/events", true);
     }
 }
