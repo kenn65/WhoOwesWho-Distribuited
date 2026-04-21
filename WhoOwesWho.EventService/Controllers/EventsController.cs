@@ -49,7 +49,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await eventLookupService.GetEventAsync(Guid.Parse(eventId), active));
+                return Ok(await eventLookupService.GetEventAsync(eventId, active));
             }
             catch (Exception e)
             {
@@ -81,7 +81,7 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
-                return Ok(await eventCommanddService.DeleteEventAsync(Guid.Parse(eventId)));
+                return Ok(await eventCommanddService.DeleteEventAsync(eventId));
             }
             catch (Exception e)
             {

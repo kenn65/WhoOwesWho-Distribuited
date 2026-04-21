@@ -3,10 +3,18 @@ using WhoOwesWho.CurrencyService.Services.Base;
 
 namespace WhoOwesWho.CurrencyService.Middleware
 {
-    public class ApiKeyMiddleware(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
+    public class ApiKeySecurity(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
     {
         public async Task InvokeAsync(HttpContext context)
         {
+            var path = context.Request.Path.Value ?? string.Empty;
+            if (path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase))
+            {
+                await next(context);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(context.Request.Headers[AppSettings.ApiKeyHeaderName!]))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;

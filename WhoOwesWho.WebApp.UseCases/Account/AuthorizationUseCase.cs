@@ -1,4 +1,5 @@
 ﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces;
 using WhoOwesWho.WebApp.UseCases.Protection;
 
@@ -10,7 +11,7 @@ namespace WhoOwesWho.WebApp.UseCases.Account
         Task<AuthorizationResponseModel> ExecuteAsync(AuthorizationRequestModel request);
     }
 
-    public class AuthorizationUseCase(IAuthorize authorizationPlugin, IProtectionUseCase protectionUseCase) : IAuthorizationUseCase
+    public class AuthorizationUseCase(IAuthorizationPlugin authorizationPlugin, IProtectionUseCase protectionUseCase) : IAuthorizationUseCase
     {
         public async Task<AuthenticationResponseModel> ExecuteAsync(AuthenticationRequestModel request)
         {
@@ -28,7 +29,7 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             var requestModel = new AuthorizationRequestModel
             {
                 EmailAddress = await protectionUseCase.ExecuteProtectAsync(request.EmailAddress!),
-            };  
+            };
             return await authorizationPlugin.AuthorizeAsync(requestModel);
         }
     }

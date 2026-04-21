@@ -1,11 +1,9 @@
 ﻿@page "/account/signin"
-
-
 @inject NavigationManager _navigationManager
 @inject IAuthorizationUseCase _authorizationUseCase
 @inject IConfiguration _configuration
 @inject IAlertService _alertService
-@inject ICookieClientService _cookieClientService
+@inject ICookiesMasterService _cookiesMasterService
 
 <div class="text-center">
     <h1 class="text-4xl">Sign in</h1>
@@ -17,7 +15,7 @@
             <DataAnnotationsValidator />
             <label for="emailAddress" class="form-label">Email Address:</label>
             <br />
-            <InputText id="emailAddress" @bind-Value="_authenticationRequestModel!.EmailAddress" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <InputText id="emailAddress" type="email" @bind-Value="_authenticationRequestModel!.EmailAddress" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
             <ValidationMessage For="@(() => _authenticationRequestModel.EmailAddress)" class="text-danger" />
             <br />
             <br />
@@ -28,12 +26,11 @@
             <br />
             <br />
             <SubmitButton Text="Sign in"
-                          ProcessingText="Processing..."
-                          IsProcessing="@_isSubmitting" />
+                          ProcessingText="Processing..." />
         </EditForm>
         <br />
         <br />
-        <div >
+        <div>
             <a href="/account/password/forgot" class="text-blue-500 hover:underline">Forgot your password?</a>
         </div>
         <br />
@@ -48,18 +45,16 @@
             <DataAnnotationsValidator />
             <label for="authenticationCode" class="form-label">Authentication Code:</label>
             <br />
-            <InputText id="authenticationCode" @bind-Value="_authenticationCodeRequestModel!.Code" placeholder="Enter code sent to your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
+            <InputText id="authenticationCode" @bind-Value="_authenticationCodeRequestModel!.Code" placeholder="Enter code sent to your e-mail address" class="text-center shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
             <ValidationMessage For="@(() => _authenticationCodeRequestModel.Code)" class="text-danger" />
             <br />
             <br />
             <SubmitButton Text="OK"
-                ProcessingText="Processing..."
-                IsProcessing="@_isSubmitting" />
+                          ProcessingText="Processing..." />
             &nbsp;&nbsp;&nbsp;
             <ActionButton Text="Cancel"
-                ProcessingText="Cancelling..."
-                IsProcessing="@_isProcessing"
-                OnClick="@HandleCodeCancel" />
+                          ProcessingText="Cancelling..."
+                          NavigationUrl="/account/signin" />
         </EditForm>
     }
 </div>
@@ -67,18 +62,16 @@
 @code {
     [Parameter]
     public string _code { get; set; } = "";
-    private bool _isSubmitting = false;
-    private bool _isProcessing = false;
 
     [SupplyParameterFromForm]
     public AuthenticationRequestModel? _authenticationRequestModel { get; set; }
 
     [SupplyParameterFromForm]
-    public AuthenticationCodeRequestModel? _authenticationCodeRequestModel { get; set; } 
+    public AuthenticationCodeRequestModel? _authenticationCodeRequestModel { get; set; }
 
     public AuthenticationResponseModel _autenticationResponseModel { get; set; } = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _authenticationRequestModel ??= new AuthenticationRequestModel();
         _authenticationCodeRequestModel ??= new AuthenticationCodeRequestModel();
@@ -89,86 +82,57 @@
 
     private async Task Authenticate(EditContext args)
     {
-        _isSubmitting = true;
         StateHasChanged();
         await Task.Yield();
-        try
-        {
-            _autenticationResponseModel = await _authorizationUseCase.ExecuteAsync(_authenticationRequestModel!);
 
-            if (!_autenticationResponseModel.Success)
-            {
-                await _alertService.Error(_autenticationResponseModel.Message!);
-            }
-            else
-            {
-                _code = _autenticationResponseModel.Code;
-                await _alertService.Success(_autenticationResponseModel.Message!);
-            }
-        }
-        finally
+        _autenticationResponseModel = await _authorizationUseCase.ExecuteAsync(_authenticationRequestModel!);
+
+        if (!_autenticationResponseModel.Success)
         {
-            _isSubmitting = false;
+            await _alertService.Error(_autenticationResponseModel.Message!);
         }
+        else
+        {
+            _code = _autenticationResponseModel.Code;
+            await _alertService.Success(_autenticationResponseModel.Message!);
+        }
+
     }
 
     private async Task Authorize(EditContext args)
     {
-        _isSubmitting = true;
+
         StateHasChanged();
         await Task.Yield();
-        try
-        {
-            if (_code != _authenticationCodeRequestModel!.Code)
-            {
-                await _alertService.Error("Invalid authentication code");
-                _navigationManager.NavigateTo("/account/signin", forceLoad: true);
-            }
-            var requestModel = new AuthorizationRequestModel
-            {
-                EmailAddress = _authenticationRequestModel!.EmailAddress,
-            };
-            var response = await _authorizationUseCase.ExecuteAsync(requestModel);
-            if (!response.Success)
-            {
-                await _alertService.Error("An error occurred while signing in. Did you verify your e-mail address (e-mail message)?");
-                _navigationManager.NavigateTo("/account/signin", forceLoad: true);
-                return;
-            }
-            CookiesResponseModel data = response.Adapt<CookiesResponseModel>();
-            await _cookieClientService.SetCookiesAsync(data);
-            _navigationManager.NavigateTo("/", forceLoad: true);
 
-        }
-        finally
+        if (_code != _authenticationCodeRequestModel!.Code)
         {
-            _isSubmitting = false;
-        }
-    }
-
-    private async Task HandleCodeCancel()
-    {
-        try
-        {
-            _isProcessing = true;
+            await _alertService.Error("Invalid authentication code");
             _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+            return;
         }
-        finally
+
+        var requestModel = new AuthorizationRequestModel
         {
-            _isProcessing = false;
+            EmailAddress = _authenticationRequestModel!.EmailAddress,
+        };
+
+        var response = await _authorizationUseCase.ExecuteAsync(requestModel);
+        if (!response.Success)
+        {
+            await _alertService.Error("An error occurred while signing in. Did you verify your e-mail address?");
+            _navigationManager.NavigateTo("/account/signin", forceLoad: true);
+            return;
         }
+
+        var data = response.Adapt<CookiesResponseModel>();
+        await _cookiesMasterService.SetCookiesAsync(data);
+        _navigationManager.NavigateTo("/me", forceLoad: true);
     }
 
+       
     private async Task GotoSignUp()
     {
-        try
-        {
-            _isProcessing = true;
-            _navigationManager.NavigateTo("/account/signup", forceLoad: true);
-        }
-        finally
-        {
-            _isProcessing = false;
-        }
+        _navigationManager.NavigateTo("/account/signup", forceLoad: true);
     }
 }

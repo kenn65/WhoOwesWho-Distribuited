@@ -1,12 +1,20 @@
 ﻿using System.Net;
-using WhoOwesWho.EventService.Services.Base;
+using WhoOwesWho.PaymentService.Services.Base;
 
-namespace WhoOwesWho.EventService.Middleware
+namespace WhoOwesWho.PaymentService.Middleware
 {
-    public class ApiKeyMiddleware(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
+    public class ApiKeySecurity(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
     {
         public async Task InvokeAsync(HttpContext context)
         {
+            var path = context.Request.Path.Value ?? string.Empty;
+            if (path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase))
+            {
+                await next(context);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(context.Request.Headers[AppSettings.ApiKeyHeaderName!]))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -23,7 +31,7 @@ namespace WhoOwesWho.EventService.Middleware
 
             await next(context);
         }
-        
+
         private async Task<bool> ValidateApiKey(string userApiKey)
         {
             if (string.IsNullOrWhiteSpace(userApiKey))
@@ -33,5 +41,6 @@ namespace WhoOwesWho.EventService.Middleware
             var apiKey = AppSettings.ApiKey;
             return apiKey == userApiKey;
         }
+
     }
 }

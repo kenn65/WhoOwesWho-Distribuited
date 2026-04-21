@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-
+using Scalar.AspNetCore;
 using StackExchange.Redis;
 using System.Text;
 using WhoOwesWho.EventService.EfCore.Context;
@@ -54,24 +54,72 @@ builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddControllers();
 
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+// 🔐 Authentication (JWT)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        Type = SecuritySchemeType.ApiKey,
-        Name = "X-API-Key",
-        In = ParameterLocation.Header,
-        Description = "API Key"
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Authorization:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Authorization:Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Authorization:JwtSecret"]!)
+            )
+        };
     });
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+
+// 📄 OpenAPI (Scalar)
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, ct) =>
     {
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Description = "JWT token"
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        // 🔑 API Key
+        document.Components.SecuritySchemes["ApiKey"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            Name = "X-API-Key",
+            In = ParameterLocation.Header,
+            Description = "API Key"
+        };
+
+        // 🔐 Bearer
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Description = "Bearer token"
+        };
+
+        // 👉 OR logic (ApiKey OR Bearer)
+        foreach (var path in document.Paths.Values)
+        {
+            foreach (var operation in path.Operations!.Values)
+            {
+                operation.Security ??= new List<OpenApiSecurityRequirement>();
+
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    { new OpenApiSecuritySchemeReference("ApiKey"), new List<string>() }
+                });
+
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
+                });
+            }
+        }
+        return Task.CompletedTask;
     });
 });
 
@@ -83,14 +131,23 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
     await app.ConfigureDatabaseAsync();
+
     app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.EventService API"));
+
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "WhoOwesWho.EventService API";
+
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecuritySchemes = ["ApiKey", "Bearer"]
+        };
+    });
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<ApiKeySecirity>();
 app.Run();
-

@@ -1,10 +1,8 @@
 ﻿using Mapster;
-using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
-using WhoOwesWho.UserService.Services.Gateways;
 
 namespace WhoOwesWho.UserService.Services
 {

@@ -10,7 +10,7 @@ namespace WhoOwesWho.AuthorizationService.Services
 {
     public interface IAuthorizationService
     {
-        Task<AuthorizationResponseModel?> Authorize(AuthorizationRequestModel request);
+        Task<AuthorizationResponseModel?> AuthorizeAsync(AuthorizationRequestModel request);
     }
     public class AuthorizationService(
         IConfiguration configuration,
@@ -18,7 +18,7 @@ namespace WhoOwesWho.AuthorizationService.Services
         IAuthorizationSecurityService authorizationSecurityService
         ) : ServiceBase(configuration), IAuthorizationService
     {
-        public async Task<AuthorizationResponseModel?> Authorize(AuthorizationRequestModel request)
+        public async Task<AuthorizationResponseModel?> AuthorizeAsync(AuthorizationRequestModel request)
         {
             request.EmailAddress = await authorizationSecurityService.UnprotectAsync(request.EmailAddress!);
             var user = await authorizationCacheRepository.GetUserAsync(request.EmailAddress!);

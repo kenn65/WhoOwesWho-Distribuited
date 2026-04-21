@@ -1,19 +1,28 @@
 ﻿using System.Net;
-using WhoOwesWho.MessagingService.Services.Base;
+using WhoOwesWho.UserService.Services.Base;
+using WhoOwesWho.UserService.Settings;
 
-namespace WhoOwesWho.MessagingService.Middleware
+namespace WhoOwesWho.UserService.Middleware
 {
-    public class ApiKeyMiddleware(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
+    public class ApiKeySecurity(IConfiguration configuration, RequestDelegate next) : ServiceBase(configuration)
     {
         public async Task InvokeAsync(HttpContext context)
         {
-            if (string.IsNullOrWhiteSpace(context.Request.Headers[AppSettings.ApiKeyHeaderName!]))
+            var path = context.Request.Path.Value ?? string.Empty;
+            if (path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase))
+            {
+                await next(context);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(context.Request.Headers[AppSettings.ApiKeyHeaderName]))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return;
             }
 
-            string? userApiKey = context.Request.Headers[AppSettings.ApiKeyHeaderName!];
+            string? userApiKey = context.Request.Headers[AppSettings.ApiKeyHeaderName];
 
             if (!await ValidateApiKey(userApiKey!))
             {
@@ -33,6 +42,5 @@ namespace WhoOwesWho.MessagingService.Middleware
             var apiKey = AppSettings.ApiKey;
             return apiKey == userApiKey;
         }
-
     }
 }

@@ -13,7 +13,7 @@ namespace WhoOwesWho.EventService.Services
         Task<AssignmentResponseModel> AssignAsync(AssignmentRequestModel request);
         Task<EventResponseModel?> CreateEventAsync(EventRequestModel request);
         Task<UpdateResponseModel> UpdateEventAsync(EventRequestModel request);
-        Task<DeleteEventResponseModel> DeleteEventAsync(Guid id);
+        Task<DeleteEventResponseModel> DeleteEventAsync(string id);
         Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request);
         Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request);
         Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request);
@@ -35,6 +35,10 @@ namespace WhoOwesWho.EventService.Services
             {
                 if (request.AutoAssign)
                 {
+                    if (!Guid.TryParse(request.UserId, out var _))
+                    {
+                        request.UserId = await eventSecurityService.UnprotectAsync(request.UserId!);
+                    }
                     var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId!);
                     await AssignAsync(new AssignmentRequestModel
                     {
@@ -66,9 +70,10 @@ namespace WhoOwesWho.EventService.Services
             };
         }
 
-        public async Task<DeleteEventResponseModel> DeleteEventAsync(Guid id)
+        public async Task<DeleteEventResponseModel> DeleteEventAsync(string id)
         {
-            var response = await eventMutationRepository.DeleteEventAsync(id);
+            var unprotectedId = await eventSecurityService.UnprotectAsync(id);
+            var response = await eventMutationRepository.DeleteEventAsync(Guid.Parse(unprotectedId));
             if (response.Success)
             {
                 response.Message = "Event deleted successfully.";
@@ -114,7 +119,7 @@ namespace WhoOwesWho.EventService.Services
             var response = await eventMutationRepository.AssignToEventAsync(request);
             if (response.Success)
             {
-                var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
+                var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
                 var publishingItems = evt.Adapt<EventMessageRequestModel>();
                 publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItems);
@@ -132,7 +137,7 @@ namespace WhoOwesWho.EventService.Services
             var response = await eventMutationRepository.UnassignFromEventAsync(request);
             if (response.Success)
             {
-                var evt = await eventLookupService.GetEventAsync(Guid.Parse(request.EventId!), true);
+                var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
                 var publishingItem = evt.Adapt<EventMessageRequestModel>();
                 publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItem);

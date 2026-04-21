@@ -1,4 +1,5 @@
 using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 using WhoOwesWho.EncryptionService.Middleware;
 using WhoOwesWho.EncryptionService.Services;
 
@@ -11,37 +12,58 @@ builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IEncryptionSecurityService, EncryptionSecurityService>();
 
 builder.Services.AddControllers();
-builder.Services.AddSwaggerGen();
 
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    options.AddDocumentTransformer((document, context, ct) =>
     {
-        Type = SecuritySchemeType.ApiKey,
-        Name = "X-API-Key",
-        In = ParameterLocation.Header,
-        Description = "API Key"
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["ApiKey"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            Name = "X-API-Key",
+            In = ParameterLocation.Header,
+            Description = "API Key"
+        };
+
+        foreach (var path in document.Paths.Values)
+        {
+            foreach (var operation in path.Operations!.Values)
+            {
+                operation.Security ??= new List<OpenApiSecurityRequirement>();
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecuritySchemeReference("ApiKey"),
+                        new List<string>()
+                    }
+                });
+            }
+        }
+        return Task.CompletedTask;
     });
 });
 
-
 var app = builder.Build();
-
 app.MapDefaultEndpoints();
 
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(options => options.SwaggerEndpoint("/Swagger/v1/swagger.json", "WhoOwesWho.EncryptionService API"));
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "WhoOwesWho.EncryptionService API";
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecuritySchemes = ["ApiKey"]
+        };
+    });
 }
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-app.UseMiddleware<ApiKeyMiddleware>();
-
+app.UseMiddleware<ApiKeySecurity>();
 app.Run();
-

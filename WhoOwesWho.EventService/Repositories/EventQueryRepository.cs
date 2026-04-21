@@ -17,8 +17,8 @@ namespace WhoOwesWho.EventService.Repositories
     }
 
     public class EventQueryRepository(
-        EventDbContext context, 
-        IEventSecurityService eventSecurityService, 
+        EventDbContext context,
+        IEventSecurityService eventSecurityService,
         IUserCacheService userCacheService
         ) : IEventQueryRepository
     {
@@ -33,8 +33,7 @@ namespace WhoOwesWho.EventService.Repositories
 
         public async Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true)
         {
-            var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
-                var entityAssignments = await context.EventAssingments.Where(ea => ea.UserId.ToString() == unprotectedUserId).FirstOrDefaultAsync();
+            var entityAssignments = await context.EventAssingments.Where(ea => ea.UserId.ToString() == userId).FirstOrDefaultAsync();
             if (entityAssignments is null)
             {
                 return new EventResponseModel();

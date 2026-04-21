@@ -25,6 +25,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Base
         protected void AddHeaders(IFlurlClient client, string apiKey, string? token = null)
         {
             client.Headers.Add("Content-Type", "application/json");
+            client.Headers.Add("Accept", "*/*");
             client.Headers.Add(configuration["Security:ApiKeyHeaderName"], apiKey);
 
             if (!string.IsNullOrWhiteSpace(token))

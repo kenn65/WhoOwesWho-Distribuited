@@ -1,13 +1,22 @@
 
 using WhoOwesWho.WebApp.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.Infrastructure.Account;
+using WhoOwesWho.WebApp.Infrastructure.Currencies;
+using WhoOwesWho.WebApp.Infrastructure.Events;
 using WhoOwesWho.WebApp.Infrastructure.Protection;
 using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.StateHandlers;
 using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces;
+using WhoOwesWho.WebApp.UseCases.Currencies;
+using WhoOwesWho.WebApp.UseCases.Currencies.PluginInterfaces;
+using WhoOwesWho.WebApp.UseCases.Events;
+using WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces;
 using WhoOwesWho.WebApp.UseCases.Protection;
 using WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,14 +26,22 @@ builder.AddServiceDefaults();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IAuthorizationUseCase, AuthorizationUseCase>();
-builder.Services.AddTransient<IAuthorize, AuthorizationPlugin>();
+builder.Services.AddTransient<IAuthorizationPlugin, AuthorizationPlugin>();
 builder.Services.AddTransient<IProtectionUseCase, ProtectionUseCase>();
-builder.Services.AddTransient<IProtection, ProtectionPlugin>();
+builder.Services.AddTransient<IProtectionPlugin, ProtectionPlugin>();
 builder.Services.AddScoped<IAlertService, AlertService>();
-builder.Services.AddScoped<ICookieClientService, CookieClientService>();
+builder.Services.AddScoped<ICookiesMasterService, CookiesMasterService>();
+builder.Services.AddScoped<IStateHandler<EventModel>, StateHandler<EventModel>>();
 builder.Services.AddTransient<IUserUseCase, UserUseCase>();
-builder.Services.AddTransient<IUser, UserPlugin>();
+builder.Services.AddTransient<IUserPlugin, UserPlugin>();
+builder.Services.AddTransient<IEventsUseCase, EventsUseCase>();
+builder.Services.AddTransient<IEventsPlugin, EventsPlugin>();
+builder.Services.AddTransient<ICurrenciesUseCase, CurrenciesUseCase>();
+builder.Services.AddTransient<ICurrencyPlugin, CurrencyPlugin>();
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
@@ -51,23 +68,9 @@ app.MapPost("/api/auth/set-cookies", (CookiesResponseModel data, HttpContext ctx
     Set(data.UserIdName, data.UserIdValue);
     Set(data.UserEmailAddressName, data.UserEmailAddressValue);
     Set(data.AdminName, data.AdminValue);
-    
+
     return Results.Ok();
 });
-
-
-// GET COOKIES
-app.MapGet("/api/auth/get-cookies", (HttpContext ctx) =>
-{
-    return Results.Ok(new CookiesResponseModel
-    {
-        TokenValue = ctx.Request.Cookies[".WhoOwesWho.Token"] ?? "",
-        UserIdValue = ctx.Request.Cookies[".WhoOwesWho.UserId"] ?? "",
-        UserEmailAddressValue = ctx.Request.Cookies[".WhoOwesWho.Email"] ?? "",
-        AdminValue = ctx.Request.Cookies[".WhoOwesWho.UserAdmin"] ?? "",
-    });
-});
-
 
 // DELETE COOKIES
 app.MapPost("/api/auth/delete-cookies", (HttpContext ctx) =>
@@ -98,7 +101,6 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
-
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();

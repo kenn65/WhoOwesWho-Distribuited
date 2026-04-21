@@ -23,7 +23,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             request.Password = "password";
 
             // Act
-            var result = await sut.SendAuthenticationMessage(request);
+            var result = await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             result.Success.Should().BeFalse();
@@ -40,7 +40,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             request.Password = null;
 
             // Act
-            var result = await sut.SendAuthenticationMessage(request);
+            var result = await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             result.Success.Should().BeFalse();
@@ -62,7 +62,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync(false);
 
             // Act
-            var result = await sut.SendAuthenticationMessage(request);
+            var result = await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             result.Success.Should().BeFalse();
@@ -94,7 +94,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ReturnsAsync((UserMessageResponseModel?)null);
 
             // Act
-            var result = await sut.SendAuthenticationMessage(request);
+            var result = await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             result.Success.Should().BeFalse();
@@ -135,7 +135,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .Returns(Task.CompletedTask);
 
             // Act
-            var result = await sut.SendAuthenticationMessage(request);
+            var result = await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             result.Success.Should().BeTrue();
@@ -180,7 +180,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .ThrowsAsync(new Exception("Boom"));
 
             // Act
-            Func<Task> act = async () => await sut.SendAuthenticationMessage(request);
+            Func<Task> act = async () => await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             await act.Should()

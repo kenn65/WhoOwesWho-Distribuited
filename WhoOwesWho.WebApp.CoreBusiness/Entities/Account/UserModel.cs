@@ -3,7 +3,7 @@ using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account
 {
-    public class UserModel : ModelBase
+    public class UserModel : ResponseModelBase
     {
         public string? ProtectedId { get; set; }
         public Guid Id { get; set; } = Guid.Empty;
