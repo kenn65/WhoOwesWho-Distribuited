@@ -1,75 +1,87 @@
 ﻿@page "/account/signup"
 
 @inject NavigationManager _nav
-@inject IProtectionUseCase _protectionUseCase
 @inject IUserUseCase _userUseCase
 @inject IAlertService _alertService
 
-<div class="text-center">
+<div class="text-center mb-3">
     <h1 class="text-4xl">Sign in</h1>
     <br />
     <br />
-    <EditForm method="post" Model="@_userModel" OnValidSubmit="ExecuteSignUp" FormName="signup" Enhance>
-        <DataAnnotationsValidator />
-        <label for="fullName" class="form-label">Full Name:</label>
-        <br />
-        <InputText id="emailAddress" type="email" @bind-Value="_userModel!.FullName" placeholder="Your first and last name" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <ValidationMessage For="@(() => _userModel.FullName)" class="text-danger" />
-        <br />
-        <br />
-        <label for="emailAddress" class="form-label">Email Address:</label>
-        <br />
-        <InputText id="emailAddress" @bind-Value="_userModel.EmailAddress" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <ValidationMessage For="@(() => _userModel.EmailAddress)" class="text-danger" />
+    <EditForm method="post" Model="@UserModel" OnValidSubmit="HandleSubmit" FormName="signup" Enhance>
+        <TextElement Id="fullname"
+                     Caption="Full Name:"
+                     Placeholder="Your first and last name"
+                     Value="@UserModel!.FullName"
+                     ValueChanged="@(v => UserModel.FullName = v)"
+                     ValueExpression="@(() => UserModel.FullName)" />
         <br />
         <br />
-        <label for="mobilePhoneNumber" class="form-label">Mobile Phone Number:</label>
-        <br />
-        <InputText id="mobilePhoneNumber" @bind-Value="_userModel.MobilePhoneNumber" placeholder="Your mobile phone number" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <ValidationMessage For="@(() => _userModel.MobilePhoneNumber)" class="text-danger" />
-        <br />
-        <br />
-        <label for="password" class="form-label">Password:</label>
-        <br />
-        <InputText type="password" id="password" @bind-Value="_userModel.Password" placeholder="Your password containing at least eight characters including one upper case character and two digits" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-        <ValidationMessage For="@(() => _userModel.Password)" class="text-danger" />
+        <TextElement Id="emailaddress"
+                     Type="email"
+                     Caption="Email Address:"
+                     Placeholder="Your e-mail address"
+                     Value="@UserModel!.EmailAddress"
+                     ValueChanged="@(v => UserModel.EmailAddress = v)"
+                     ValueExpression="@(() => UserModel.EmailAddress)" />
         <br />
         <br />
-        <label for="administrator" class="form-label">Administrator</label>
+        <TextElement Id="mobilephonenumber"
+                     Caption="Mobile Phone Number:"
+                     Placeholder="Your mobile phone number"
+                     Value="@UserModel!.MobilePhoneNumber"
+                     ValueChanged="@(v => UserModel.MobilePhoneNumber = v)"
+                     ValueExpression="@(() => UserModel.MobilePhoneNumber)" />
         <br />
-        <InputCheckbox id="administrator" @bind-Value="_userModel.Admin" class="shadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
+        <br />
+        <TextElement Id="password"
+                     Type="password"
+                     Caption="Password:"
+                     Placeholder="Your password containing at least eight characters including one upper case character and two digits"
+                     Value="@UserModel!.Password"
+                     ValueChanged="@(v => UserModel.Password = v)"
+                     ValueExpression="@(() => UserModel.Password)" />
+        <br />
+        <br />
+        <label for="administrator" class="form-label">Administrator:</label>
+        <br />
+        <InputCheckbox id="administrator" @bind-Value="UserModel.Admin" class="shadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
         <br />
         <br />
         <SubmitButton Text="Sign up"
-                      ProcessingText="Processing..." />
+                      ProcessingText="Processing..."
+                      IsProcessing="IsProcessing" />
     </EditForm>
 </div>
 
 @code {
 
-    public string _host = string.Empty;
+    public string Host = string.Empty;
+    public bool IsProcessing = false;
 
     [SupplyParameterFromForm]
-    public UserModel? _userModel { get; set; }
+    public UserModel? UserModel { get; set; }
 
     protected override void OnInitialized()
     {
-        _userModel ??= new UserModel();
+        UserModel ??= new UserModel();
         var uri = new Uri(_nav.Uri);
-        _host = $"{uri.Host}:{uri.Port}";
+        Host = $"{uri.Host}:{uri.Port}";
     }
 
-    private async Task ExecuteSignUp(EditContext args)
+    private async Task HandleSubmit(EditContext args)
     {
+        IsProcessing = true;
         StateHasChanged();
         await Task.Yield();
 
         var requestModel = new SignUpRequestModel
         {
-            Entity = _userModel,
-            Host = _host
+            Entity = UserModel,
+            Host = Host
         };
         var response = await _userUseCase.ExecuteAsync(requestModel);
+        await StopProcessing();
         if (!response.Success)
         {
             await _alertService.Error(response.Message!);
@@ -78,5 +90,12 @@
         }
         await _alertService.Success(response.Message!);
         _nav.NavigateTo("/account/signin", forceLoad: true);
+    }
+
+    private async Task StopProcessing()
+    {
+        IsProcessing = false;
+        StateHasChanged();
+        await Task.Yield();
     }
 }

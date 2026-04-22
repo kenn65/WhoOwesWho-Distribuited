@@ -1,0 +1,27 @@
+﻿<div class="w-2/4 mx-auto text-left" style="margin-bottom: -30px">
+    <label for="@Id" class="form-label">@Caption</label>
+    <br />
+    <InputSelect id="@Id"
+                 Value="@Value"
+                 ValueChanged="@ValueChanged"
+                 ValueExpression="@ValueExpression"
+                 class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full">
+        <option value="" disabled selected>Select currency...</option>
+        @foreach (CurrencyResponseModel item in CurrencyList!)
+        {
+            <option value="@item.Iso">@item.Iso</option>
+        }
+    </InputSelect>
+    <ValidationMessage For="@ValueExpression" class="text-danger" />
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+    [Parameter] public string Caption { get; set; } = string.Empty;
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<string?>> ValueExpression { get; set; } = default!;
+    [Parameter] public IEnumerable<CurrencyResponseModel>? CurrencyList { get; set; }
+
+
+}

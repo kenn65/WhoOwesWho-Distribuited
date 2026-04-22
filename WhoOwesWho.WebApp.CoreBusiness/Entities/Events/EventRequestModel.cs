@@ -10,18 +10,18 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
         [Required]
         public string CreatedBy { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please enter an event name")]
         public string Name { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please enter the event location")]
         public string Location { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please select the evemt settlement currency")]
         public string Currency { get; set; } = string.Empty;
 
         public string CurrencySymbol { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please select the event start date")]
         public string? StartDate {get;set;} = string.Empty;
 
         [Required]

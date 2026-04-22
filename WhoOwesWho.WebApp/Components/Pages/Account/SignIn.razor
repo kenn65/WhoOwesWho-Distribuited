@@ -5,28 +5,35 @@
 @inject IAlertService _alertService
 @inject ICookiesMasterService _cookiesMasterService
 
-<div class="text-center">
+<div class="text-center mb-3">
     <h1 class="text-4xl">Sign in</h1>
     <br />
     <br />
-    @if (string.IsNullOrEmpty(_code))
+    @if (string.IsNullOrEmpty(Code))
     {
-        <EditForm method="post" Model="@_authenticationRequestModel" OnValidSubmit="Authenticate" FormName="signin" Enhance>
+        <EditForm method="post" Model="@AuthenticationRequestModel" OnValidSubmit="HandleAuthenticationSubmit" FormName="signin" Enhance>
             <DataAnnotationsValidator />
-            <label for="emailAddress" class="form-label">Email Address:</label>
+            <TextElement Id="emailaddress"
+                         Type="email"
+                         Caption="Email address:"
+                         Placeholder="Your e-mail address"
+                         Value="@AuthenticationRequestModel!.EmailAddress"
+                         ValueChanged="@(v => AuthenticationRequestModel.EmailAddress = v)"
+                         ValueExpression="@(() => AuthenticationRequestModel.EmailAddress)" />
             <br />
-            <InputText id="emailAddress" type="email" @bind-Value="_authenticationRequestModel!.EmailAddress" placeholder="Your e-mail address" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-            <ValidationMessage For="@(() => _authenticationRequestModel.EmailAddress)" class="text-danger" />
             <br />
-            <br />
-            <label for="password" class="form-label">Password:</label>
-            <br />
-            <InputText id="password" type="password" @bind-Value="_authenticationRequestModel.Password" placeholder="Your password containing at least eight characters including one upper case character and two digits" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-            <ValidationMessage For="@(() => _authenticationRequestModel.Password)" class="text-danger" />
+            <TextElement Id="password"
+                         Type="password"
+                         Caption="Password:"
+                         Placeholder="Your password containing at least eight characters including one upper case character and two digits"
+                         Value="@AuthenticationRequestModel!.Password"
+                         ValueChanged="@(v => AuthenticationRequestModel.Password = v)"
+                         ValueExpression="@(() => AuthenticationRequestModel.Password)" />
             <br />
             <br />
             <SubmitButton Text="Sign in"
-                          ProcessingText="Processing..." />
+                          ProcessingText="Processing..."
+                          IsProcessing="IsProcessing" />
         </EditForm>
         <br />
         <br />
@@ -41,16 +48,19 @@
     }
     else
     {
-        <EditForm method="post" Model="@_authenticationCodeRequestModel" OnValidSubmit="Authorize" FormName="code" Enhance>
+        <EditForm method="post" Model="@AuthenticationCodeRequestModel" OnValidSubmit="HandleAuthorizationSubmit" FormName="code" Enhance>
             <DataAnnotationsValidator />
-            <label for="authenticationCode" class="form-label">Authentication Code:</label>
-            <br />
-            <InputText id="authenticationCode" @bind-Value="_authenticationCodeRequestModel!.Code" placeholder="Enter code sent to your e-mail address" class="text-center shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-2/4" />
-            <ValidationMessage For="@(() => _authenticationCodeRequestModel.Code)" class="text-danger" />
+            <TextElement Id="authenticationcode"
+                         Caption="Authentication Code:"
+                         Placeholder="Enter the authentication code from your e-mail"
+                         Value="@AuthenticationCodeRequestModel!.Code"
+                         ValueChanged="@(v => AuthenticationCodeRequestModel.Code = v)"
+                         ValueExpression="@(() => AuthenticationCodeRequestModel.Code)" />
             <br />
             <br />
             <SubmitButton Text="OK"
-                          ProcessingText="Processing..." />
+                          ProcessingText="Processing..."
+                          IsProcessing="IsProcessing" />
             &nbsp;&nbsp;&nbsp;
             <ActionButton Text="Cancel"
                           ProcessingText="Cancelling..."
@@ -61,52 +71,55 @@
 
 @code {
     [Parameter]
-    public string _code { get; set; } = "";
+    public string Code { get; set; } = string.Empty;
 
     [SupplyParameterFromForm]
-    public AuthenticationRequestModel? _authenticationRequestModel { get; set; }
+    public AuthenticationRequestModel? AuthenticationRequestModel { get; set; }
 
     [SupplyParameterFromForm]
-    public AuthenticationCodeRequestModel? _authenticationCodeRequestModel { get; set; }
+    public AuthenticationCodeRequestModel? AuthenticationCodeRequestModel { get; set; }
 
-    public AuthenticationResponseModel _autenticationResponseModel { get; set; } = new();
+    public AuthenticationResponseModel AutenticationResponseModel { get; set; } = new();
+
+    private bool IsProcessing = false;
 
     protected override async Task OnInitializedAsync()
     {
-        _authenticationRequestModel ??= new AuthenticationRequestModel();
-        _authenticationCodeRequestModel ??= new AuthenticationCodeRequestModel();
+        AuthenticationRequestModel ??= new AuthenticationRequestModel();
+        AuthenticationCodeRequestModel ??= new AuthenticationCodeRequestModel();
         var uri = new Uri(_nav.Uri);
         string hostName = $"{uri.Host}:{uri.Port}";
-        _authenticationRequestModel!.Host = hostName;
+        AuthenticationRequestModel!.Host = hostName;
     }
 
-    private async Task Authenticate(EditContext args)
+    private async Task HandleAuthenticationSubmit(EditContext args)
     {
+        IsProcessing = true;
         StateHasChanged();
         await Task.Yield();
 
-        _autenticationResponseModel = await _authorizationUseCase.ExecuteAsync(_authenticationRequestModel!);
-
-        if (!_autenticationResponseModel.Success)
+        AutenticationResponseModel = await _authorizationUseCase.ExecuteAsync(AuthenticationRequestModel!);
+        await StopProcessing();
+        if (!AutenticationResponseModel.Success)
         {
-            await _alertService.Error(_autenticationResponseModel.Message!);
+            await _alertService.Error(AutenticationResponseModel.Message!);
         }
         else
         {
-            _code = _autenticationResponseModel.Code;
-            await _alertService.Success(_autenticationResponseModel.Message!);
+            Code = AutenticationResponseModel.Code;
+            await _alertService.Success(AutenticationResponseModel.Message!);
         }
-
     }
 
-    private async Task Authorize(EditContext args)
+    private async Task HandleAuthorizationSubmit(EditContext args)
     {
-
+        IsProcessing = true;
         StateHasChanged();
         await Task.Yield();
 
-        if (_code != _authenticationCodeRequestModel!.Code)
+        if (Code != AuthenticationCodeRequestModel!.Code)
         {
+            await StopProcessing();
             await _alertService.Error("Invalid authentication code");
             _nav.NavigateTo("/account/signin", forceLoad: true);
             return;
@@ -114,12 +127,13 @@
 
         var requestModel = new AuthorizationRequestModel
         {
-            EmailAddress = _authenticationRequestModel!.EmailAddress,
+            EmailAddress = AuthenticationRequestModel!.EmailAddress,
         };
 
         var response = await _authorizationUseCase.ExecuteAsync(requestModel);
         if (!response.Success)
         {
+            await StopProcessing();
             await _alertService.Error("An error occurred while signing in. Did you verify your e-mail address?");
             _nav.NavigateTo("/account/signin", forceLoad: true);
             return;
@@ -127,12 +141,20 @@
 
         var data = response.Adapt<CookiesResponseModel>();
         await _cookiesMasterService.SetCookiesAsync(data);
+        await StopProcessing();
         _nav.NavigateTo("/me", forceLoad: true);
     }
 
        
     private async Task GotoSignUp()
     {
-        _nav    .NavigateTo("/account/signup", forceLoad: true);
+        _nav.NavigateTo("/account/signup", forceLoad: true);
+    }
+
+    private async Task StopProcessing()
+    {
+        IsProcessing = false;
+        StateHasChanged();
+        await Task.Yield();
     }
 }

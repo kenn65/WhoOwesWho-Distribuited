@@ -8,19 +8,18 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users
         public string? ProtectedId { get; set; }
         public Guid Id { get; set; } = Guid.Empty;
 
-        [Required]
-        public string? FullName { get; set; }
+        [Required(ErrorMessage = "Please enter your full name")]
+        public string FullName { get; set; } = string.Empty;
 
-        [Required]
-        public string? EmailAddress { get; set; }
+        [Required(ErrorMessage = "Please enter your e-mail address")]
+        public string EmailAddress { get; set; } = string.Empty;
 
-        [Required]
-        public string? MobilePhoneNumber { get; set; }
-
+        [Required(ErrorMessage = "Please enter your mobile phone number")]
+        public string MobilePhoneNumber { get; set; } = string.Empty;
         public bool Admin { get; set; }
 
-        [Required]
-        public string? Password { get; set; }
+        [Required(ErrorMessage = "Please enter your desired password")]
+        public string? Password { get; set; } = string.Empty;
         public bool EmailAddressVerified { get; set; }
     }
 }

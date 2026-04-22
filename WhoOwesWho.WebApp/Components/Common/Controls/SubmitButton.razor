@@ -1,9 +1,7 @@
-﻿<!-- Components/Controls/SubmitButton.razor -->
+﻿﻿<!-- Components/Controls/SubmitButton.razor -->
 <button type="submit"
         disabled="@IsProcessing"
-        class="@GetCssClass()"
-        @onclick="HandleClick"
-        >
+        class="@GetCssClass()">
 
     @(IsProcessing ? ProcessingText : Text)
 
@@ -12,19 +10,10 @@
 @code {
     [Parameter] public string Text { get; set; } = "Submit";
     [Parameter] public string ProcessingText { get; set; } = "Processing...";
-
-
-    private bool IsProcessing;
+    [Parameter] public bool IsProcessing { get; set; }
 
     private string GetCssClass() =>
         IsProcessing
             ? "bg-green-700 text-white px-4 py-2 rounded cursor-default"
             : "bg-gray-700 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer";
-
-    private async Task HandleClick()
-    {
-        IsProcessing = true;
-        StateHasChanged();
-        await Task.Delay(50); // yield to renderer before navigating
-    }
 }
