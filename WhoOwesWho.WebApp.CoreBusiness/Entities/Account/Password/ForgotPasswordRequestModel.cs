@@ -5,7 +5,7 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password
 {
     public class ForgotPasswordRequestModel : RequestModelBase
     {
-        [Required]
+        [Required(ErrorMessage = "Please enter your e-mail address")]
         public string EmailAddress { get; set; } = string.Empty;
 
         [Required]

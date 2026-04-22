@@ -7,13 +7,13 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password
     {
         public string EmailAddress { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please enter you existing password")]
         public string Password { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please enter your new password")]
         public string NewPassword1 { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please repeat your new password")]
         public string NewPassword2 { get; set; } = string.Empty;
     }
 }

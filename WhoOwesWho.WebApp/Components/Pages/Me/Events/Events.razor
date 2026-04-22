@@ -14,7 +14,7 @@
 }
 else
 {
-    <div class="text-center">
+    <div class="text-center mb-3">
         <br />
         <br />
         <h1 class="text-4xl">Events</h1>
@@ -39,6 +39,7 @@ else
                     <th class="p-6">Currency</th>
                     <th class="p-6">Start Date</th>
                     <th class="p-6">Created By</th>
+                    <th class="p-6">Actions</th>
                     <th></th>
                 </tr>
             </thead>
@@ -54,13 +55,13 @@ else
 
                         @if (IsAdmin)
                         {
-                            <td class="p-3">
+                            <td class="p-2">
                                 <NavigationStateButton Text="Edit"
                                                        ProcessingText="Navigating..."
                                                        OnClick="() => EditEvent(item.Adapt<EventModel>())" />
                             </td>
 
-                            <td class="p-3">
+                            <td class="p-2">
                                 <NavigationStateButton Text="Delete"
                                                        ProcessingText="Navigating..."
                                                        OnClick="() => DeleteEvent(item.Adapt<EventModel>())" />

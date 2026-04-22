@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
+﻿using System.ComponentModel.DataAnnotations;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Extensions;
 
@@ -10,14 +11,18 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
 
         public string CreatedBy { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Event name is required")]
         public string Name { get; set; } = string.Empty;
-                
+
+        [Required(ErrorMessage = "Event location is required")]
         public string Location { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Event currency is required")]
         public string Currency { get; set; } = string.Empty;
 
         public string CurrencySymbol { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Event start date is required")]
         public long StartDate { get; set; }
 
         public DateTime StartDateDate { get; set; }
