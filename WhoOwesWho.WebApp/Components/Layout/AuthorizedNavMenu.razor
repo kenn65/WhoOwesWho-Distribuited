@@ -1,7 +1,4 @@
-﻿@inject NavigationManager _nav
-@inject ICookiesMasterService _cookiesMasterService
-
-<div class="top-row navbar navbar-dark bg-dark navbar-expand-lg" style="background-color: cornflowerblue !important">
+﻿<div class="top-row navbar navbar-dark bg-dark navbar-expand-lg" style="background-color: cornflowerblue !important">
     <div class="container-fluid">
 
         <!-- Brand -->
@@ -49,10 +46,3 @@
         
 </div>
 
-@code {
-    private async Task HandleSignOut(MouseEventArgs args)
-    {
-        await _cookiesMasterService.DeleteCookiesAsync();
-        _nav.NavigateTo("/", forceLoad: true);
-    }
-}

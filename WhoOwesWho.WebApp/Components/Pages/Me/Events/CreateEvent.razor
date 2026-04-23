@@ -1,14 +1,6 @@
 ﻿@page "/me/events/create"
-@using WhoOwesWho.WebApp.UseCases.Currencies
 
-
-@inject NavigationManager _nav
-@inject ICookiesMasterService _cookiesMasterService
-@inject IUserUseCase _userUseCase
-@inject IEventsUseCase _eventsUseCase
-@inject IAlertService _alertService
-@inject ICurrenciesUseCase _currenciesUseCase
-@if (CurrencyList == null)
+@if (CurrencyList == null || EventRequestModel?.CreatedBy == null)
 {
     <div class="flex justify-center items-center h-40">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
@@ -51,10 +43,10 @@ else
                                    CurrencyList="@CurrencyList" />
             <br />
             <br />
-            <div class="w-2/4 mx-auto text-left" style="margin-bottom: -30px">
+            <div class="w-2/4 mx-auto text-left -mb-8">
                 <label for="startDate" class="form-label">Start date:</label>
                 <br />
-                <InputDate id="startDate" @bind-Value="EventRequestModel!.StartDateDate" @bind-Value:format="dd-MM-yyyy" @attributes="_dateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+                <InputDate id="startDate" @bind-Value="EventRequestModel!.StartDateDate" @bind-Value:format="dd-MM-yyyy" @attributes="dateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
             </div>
             <br />
             <br />
@@ -71,7 +63,7 @@ else
             <InputCheckbox id="autoAssign" @bind-Value="EventRequestModel.AutoAssign" class="tshadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
             <br />
             <br />
-            <SubmitButton Text="OK"
+            <SubmitButton Text="Submit"
                           ProcessingText="Processing..."
                           IsProcessing="IsProcessing" />
             &nbsp;&nbsp;&nbsp;
@@ -81,73 +73,4 @@ else
                           ForceLoad="true" />
         </EditForm>
     </div>
-
 }
-
-@code {
-    private string minDate = DateTime.Today.ToString("yyyy-MM-dd");
-    private IEnumerable<CurrencyResponseModel> CurrencyList = new List<CurrencyResponseModel>();
-    private Dictionary<string, object> _dateAttributes => new()
-    {
-        { "min", minDate }
-    };
-    private bool IsProcessing = false;
-    private CookiesResponseModel? Cookies;
-
-    [SupplyParameterFromForm]
-    public EventRequestModel? EventRequestModel { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        EventRequestModel ??= new EventRequestModel();
-        EventRequestModel.StartDateDate = DateTime.Today;
-        Cookies = await _cookiesMasterService.GetAsync();
-        EventRequestModel.CreatedBy = await GetUserAsync();
-        CurrencyList = await GetCurrenciesAsync();
-    }
-
-    private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
-    {
-        return await _currenciesUseCase.GetCurrenciesAsync(Cookies!.TokenValue);
-    }
-
-    private async Task HandleSubmit()
-    {
-        IsProcessing = true;
-        EventRequestModel!.StartDate = EventRequestModel!.StartDateDate.ToString("yyyy-MM-dd");
-        EventRequestModel.UserId = Cookies!.UserIdValue;
-        var response = await _eventsUseCase.ExecuteAsync(EventRequestModel, Cookies!.TokenValue);
-        await StopProcessing();
-        if (!response.Success)
-        {
-            await _alertService.Error(response.Message!);
-            return;
-        }
-        await _alertService.Success(response.Message!);
-        _nav.NavigateTo($"/me/events", true);
-    }
-
-    private async Task<string> GetUserAsync()
-    {
-        var response = await _userUseCase.ExecuteAsync(
-                Cookies!.UserIdValue,
-                Cookies.TokenValue,
-                false);
-        return response!.FullName!;
-    }
-
-    private async Task HandleCancel()
-    {
-        _nav.NavigateTo("/me/events", true);
-    }
-
-    private async Task StopProcessing()
-    {
-        IsProcessing = false;
-        StateHasChanged();
-        await Task.Yield();
-    }
-}
-
-   
-

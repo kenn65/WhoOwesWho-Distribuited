@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System.Net;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
@@ -11,13 +10,20 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
     {
         private readonly AppSettings appSettings = new(configuration);
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active, string jwtToken)
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string userId, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
-            var activeString = active.ToString().ToLowerInvariant();
-            var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, $"{activeString}");
-            return await GetAsync<IEnumerable<EventResponseModel>>(endpoint, apiKey, true, null, jwtToken);
+            var baseAddress = await GetUserEventsBassAddressAsync();
+            var endpoint = await CreateEndpointAsync(baseAddress, string.Empty);
+            return await GetAsync<IEnumerable<EventResponseModel>>(
+                endpoint, 
+                apiKey, 
+                true, 
+                new Dictionary<string, dynamic>
+                {
+                    { "userId", userId}
+                }, 
+                jwtToken);
         }
 
         public async Task<EventResponseModel> CreateEventAsync(EventRequestModel request, string jwtToken)

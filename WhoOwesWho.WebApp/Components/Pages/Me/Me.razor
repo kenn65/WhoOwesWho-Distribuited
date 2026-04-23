@@ -1,7 +1,4 @@
 ﻿@page "/me"
-@inject NavigationManager _nav
-@inject IUserUseCase _userUseCase
-@inject ICookiesMasterService _cookiesMasterService
 
 <div class="text-center mb-3">
     <br />
@@ -104,26 +101,3 @@
         </li>
     </ul>
 </div>
-
-@code {
-
-
-    private string _userName = string.Empty;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var cookies = await _cookiesMasterService.GetAsync();
-        if (cookies is null)
-        {
-            _nav.NavigateTo("/", true);
-        }
-        else
-        {
-            var response = await _userUseCase.ExecuteAsync(
-                cookies.UserIdValue,
-                cookies.TokenValue,
-                false);
-            _userName = $"Hi {response!.FullName!}";
-        }
-    }
-}

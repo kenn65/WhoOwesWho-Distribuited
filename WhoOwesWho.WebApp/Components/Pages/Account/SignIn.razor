@@ -1,9 +1,4 @@
 ﻿@page "/account/signin"
-@inject NavigationManager _nav
-@inject IAuthorizationUseCase _authorizationUseCase
-@inject IConfiguration _configuration
-@inject IAlertService _alertService
-@inject ICookiesMasterService _cookiesMasterService
 
 <div class="text-center mb-3">
     <h1 class="text-4xl">Sign in</h1>
@@ -11,7 +6,7 @@
     <br />
     @if (string.IsNullOrEmpty(Code))
     {
-        <EditForm method="post" Model="@AuthenticationRequestModel" OnValidSubmit="HandleAuthenticationSubmit" FormName="signin" Enhance>
+        <EditForm method="post" Model="@AuthenticationRequestModel" OnValidSubmit="HandleAuthenticationAsync" FormName="signin" Enhance>
             <DataAnnotationsValidator />
             <TextElement Id="emailaddress"
                          Type="email"
@@ -48,7 +43,7 @@
     }
     else
     {
-        <EditForm method="post" Model="@AuthenticationCodeRequestModel" OnValidSubmit="HandleAuthorizationSubmit" FormName="code" Enhance>
+        <EditForm method="post" Model="@AuthenticationCodeRequestModel" OnValidSubmit="HandleAuthorizationAsync" FormName="code" Enhance>
             <DataAnnotationsValidator />
             <TextElement Id="authenticationcode"
                          Caption="Authentication Code:"
@@ -64,97 +59,8 @@
             &nbsp;&nbsp;&nbsp;
             <ActionButton Text="Cancel"
                           ProcessingText="Cancelling..."
-                          NavigationUrl="/account/signin" />
+                          NavigationUrl="/account/signin" 
+                          ForceLoad = "true"/>
         </EditForm>
     }
 </div>
-
-@code {
-    [Parameter]
-    public string Code { get; set; } = string.Empty;
-
-    [SupplyParameterFromForm]
-    public AuthenticationRequestModel? AuthenticationRequestModel { get; set; }
-
-    [SupplyParameterFromForm]
-    public AuthenticationCodeRequestModel? AuthenticationCodeRequestModel { get; set; }
-
-    public AuthenticationResponseModel AutenticationResponseModel { get; set; } = new();
-
-    private bool IsProcessing = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        AuthenticationRequestModel ??= new AuthenticationRequestModel();
-        AuthenticationCodeRequestModel ??= new AuthenticationCodeRequestModel();
-        var uri = new Uri(_nav.Uri);
-        string hostName = $"{uri.Host}:{uri.Port}";
-        AuthenticationRequestModel!.Host = hostName;
-    }
-
-    private async Task HandleAuthenticationSubmit(EditContext args)
-    {
-        IsProcessing = true;
-        StateHasChanged();
-        await Task.Yield();
-
-        AutenticationResponseModel = await _authorizationUseCase.ExecuteAsync(AuthenticationRequestModel!);
-        await StopProcessing();
-        if (!AutenticationResponseModel.Success)
-        {
-            await _alertService.Error(AutenticationResponseModel.Message!);
-        }
-        else
-        {
-            Code = AutenticationResponseModel.Code;
-            await _alertService.Success(AutenticationResponseModel.Message!);
-        }
-    }
-
-    private async Task HandleAuthorizationSubmit(EditContext args)
-    {
-        IsProcessing = true;
-        StateHasChanged();
-        await Task.Yield();
-
-        if (Code != AuthenticationCodeRequestModel!.Code)
-        {
-            await StopProcessing();
-            await _alertService.Error("Invalid authentication code");
-            _nav.NavigateTo("/account/signin", forceLoad: true);
-            return;
-        }
-
-        var requestModel = new AuthorizationRequestModel
-        {
-            EmailAddress = AuthenticationRequestModel!.EmailAddress,
-        };
-
-        var response = await _authorizationUseCase.ExecuteAsync(requestModel);
-        if (!response.Success)
-        {
-            await StopProcessing();
-            await _alertService.Error("An error occurred while signing in. Did you verify your e-mail address?");
-            _nav.NavigateTo("/account/signin", forceLoad: true);
-            return;
-        }
-
-        var data = response.Adapt<CookiesResponseModel>();
-        await _cookiesMasterService.SetCookiesAsync(data);
-        await StopProcessing();
-        _nav.NavigateTo("/me", forceLoad: true);
-    }
-
-       
-    private async Task GotoSignUp()
-    {
-        _nav.NavigateTo("/account/signup", forceLoad: true);
-    }
-
-    private async Task StopProcessing()
-    {
-        IsProcessing = false;
-        StateHasChanged();
-        await Task.Yield();
-    }
-}

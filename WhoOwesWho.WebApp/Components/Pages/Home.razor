@@ -1,8 +1,5 @@
 ﻿@page "/"
 
-@inject ICookiesMasterService _cookiesMasterService
-@inject NavigationManager _nav
-
 <div class="text-center mb-3">
     <br />
     <h1 class="text-4xl">Who Owes Who</h1>
@@ -32,14 +29,3 @@
         <a href="account/signup" class="text-blue-500 hover:underline">Sign up</a>
     </div>
 </div>
-
-@code{
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (await _cookiesMasterService.IsAuthorizedAsync())
-        {
-            _nav.NavigateTo("/me");
-        }
-    }
-}

@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.EventService.Models;
+﻿using Mapster;
+using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services.Base;
 using WhoOwesWho.Shared.Models;
@@ -9,14 +10,16 @@ namespace WhoOwesWho.EventService.Services
     {
         Task<EventResponseModel?> GetEventAsync(string id, bool active = true);
         Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
-        Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync(string userId);
         Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true);
         Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active = true);
     }
     public class EventLookupService(
         IConfiguration configuration,
         IEventSecurityService eventSecurityService,
-        IEventQueryRepository eventQueryRepository
+        IEventQueryRepository eventQueryRepository,
+        IEventCacheRepository eventCacheRepository
         ) : ServiceBase(configuration), IEventLookupService
     {
 
@@ -33,7 +36,29 @@ namespace WhoOwesWho.EventService.Services
             return await eventQueryRepository.GetEventByUserAsync(unprotectedUserId, active);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true)
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string userId)
+        {
+            var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
+            var user = await eventCacheRepository.GetUserByIdAsync(unprotectedUserId);
+            IEnumerable<UserMessageResponseModel> users = new List<UserMessageResponseModel>
+            {
+                {
+                    user! 
+                }
+            };
+            var response = await eventQueryRepository.GetEventsAsync();
+            foreach(var item in response)
+            {
+                if (item.Users is null || !item.Users.Any())
+                {
+                    item.Users = users;
+                }    
+            }
+            return response;
+            
+        }
+
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active)
         {
             return await eventQueryRepository.GetEventsAsync(active);
         }

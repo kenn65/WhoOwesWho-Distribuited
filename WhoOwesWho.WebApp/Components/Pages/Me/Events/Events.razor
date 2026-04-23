@@ -1,11 +1,5 @@
 ﻿@page "/me/events"
 
-@inject IStateHandler<EventModel> _eventStateHandler
-@inject NavigationManager _nav
-@inject ICookiesMasterService _cookiesMasterService
-@inject IEventsUseCase _eventUseCase
-@inject IAlertService _alertService
-
 @if (EventList == null)
 {
     <div class="flex justify-center items-center h-40">
@@ -39,7 +33,11 @@ else
                     <th class="p-6">Currency</th>
                     <th class="p-6">Start Date</th>
                     <th class="p-6">Created By</th>
-                    <th class="p-6">Actions</th>
+                    <th class="p-6">Active</th>
+                    @if (IsAdmin)
+                    {
+                        <th class="p-6">Actions</th>                
+                    }
                     <th></th>
                 </tr>
             </thead>
@@ -52,19 +50,24 @@ else
                         <td class="p-6">@item.Currency</td>
                         <td class="p-6">@item.StartDateIso </td>
                         <td class="p-6">@item.CreatedBy </td>
+                        <td class="p-6">
+                            <span class="@(item.Settled ? "text-red-600" : "text-green-600")">
+                                @item.ActiveIcon
+                            </span>
+                        </td>
 
                         @if (IsAdmin)
                         {
                             <td class="p-2">
                                 <NavigationStateButton Text="Edit"
                                                        ProcessingText="Navigating..."
-                                                       OnClick="() => EditEvent(item.Adapt<EventModel>())" />
+                                                       OnClick="() => EditEventAsync(item.Adapt<EventModel>())" />
                             </td>
 
                             <td class="p-2">
                                 <NavigationStateButton Text="Delete"
                                                        ProcessingText="Navigating..."
-                                                       OnClick="() => DeleteEvent(item.Adapt<EventModel>())" />
+                                                       OnClick="() => DeleteEventAsync(item.Adapt<EventModel>())" />
                             </td>
                         }
                     </tr>
@@ -74,46 +77,4 @@ else
         <br />
         <br />
     </div>
-
-}
-
-@code {
-
-    private bool IsAdmin { get; set; }
-    private IEnumerable<EventResponseModel>? EventList { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        IsAdmin = await _cookiesMasterService.IsAdministratorAsync();
-        EventList = await GetEventsAsync();
-    }
-
-    private async Task EditEvent(EventModel item)
-    {
-        _eventStateHandler.SelectedItem = item;
-        _nav.NavigateTo("/me/events/edit");
-    }
-
-    private async Task DeleteEvent(EventModel item)
-    {
-        var confirmation = await _alertService.Confirm("Are you sure you want to delete this event?");
-        if (confirmation)
-        {
-            var cookies = await _cookiesMasterService.GetAsync();
-            var response = await _eventUseCase.ExecuteAsync(item.Id, cookies!.TokenValue);
-            if (!response.Success)
-            {
-                await _alertService.Error(response.Message!);
-                return;
-            }
-            await _alertService.Success(response.Message!);
-            _nav.NavigateTo("/me/events", true);
-        }
-    }
-
-    private async Task<IEnumerable<EventResponseModel>> GetEventsAsync()
-    {
-        var cookies = await _cookiesMasterService.GetAsync();
-        return await _eventUseCase.ExecuteAsync(true, cookies!.TokenValue);
-    }
 }

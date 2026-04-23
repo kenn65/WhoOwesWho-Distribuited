@@ -34,6 +34,7 @@ builder.Services.AddTransient<IProtectionUseCase, ProtectionUseCase>();
 builder.Services.AddTransient<IProtectionPlugin, ProtectionPlugin>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<ICookiesMasterService, CookiesMasterService>();
+builder.Services.AddScoped<IHostNameService, HostNameService>();
 builder.Services.AddScoped<IStateHandler<EventModel>, StateHandler<EventModel>>();
 builder.Services.AddTransient<IUserUseCase, UserUseCase>();
 builder.Services.AddTransient<IUserPlugin, UserPlugin>();
@@ -67,6 +68,35 @@ app.MapPost("/api/auth/set-cookies", (CookiesResponseModel data, HttpContext ctx
     Set(data.TokenName, data.TokenValue);
     Set(data.UserIdName, data.UserIdValue);
     Set(data.UserEmailAddressName, data.UserEmailAddressValue);
+    Set(data.AdminName, data.AdminValue);
+
+    return Results.Ok();
+});
+
+// UPDATE ADMIN COOKIE
+app.MapPost("/api/auth/update-admin-cookie", (CookiesResponseModel data, HttpContext ctx) =>
+{
+    var options = new CookieOptions
+    {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.None,
+        Path = "/",
+        Expires = DateTimeOffset.UtcNow.AddHours(48)
+    };
+
+    void Set(string name, string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            ctx.Response.Cookies.Append(name, value, options);
+    }
+
+    void Delete(string name)
+    {
+        ctx.Response.Cookies.Delete(name);
+    }
+
+    Delete(data.AdminName);
     Set(data.AdminName, data.AdminValue);
 
     return Results.Ok();

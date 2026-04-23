@@ -47,7 +47,7 @@ namespace WhoOwesWho.UserService.Services
                 response.Success = check;
                 response.Message = !check
                     ? "An unexpected error occurred, please try again."
-                    : "<p><strong>Sign up successful!</strong><br /> An e-mail has been sent to you for your account verification.</p>";
+                    : "Sign up successful! An e-mail has been sent to you for your account verification.";
                 return response;
             }
             catch

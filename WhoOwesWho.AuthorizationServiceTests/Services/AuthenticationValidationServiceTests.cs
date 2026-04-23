@@ -1,15 +1,9 @@
 ﻿using AutoFixture.Xunit2;
-using Castle.Core.Configuration;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
+using WhoOwesWho.AuthorizationService.Settings;
 using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using Xunit;
@@ -60,7 +54,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             var result = await sut.ValidateUserCredentialsAsync("encrypted", "Password1");
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(AuthenticationValidationTypes.UserCredentialsInvalid);
         }
 
         [Theory, AutoMoqData]
@@ -92,7 +86,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             var result = await sut.ValidateUserCredentialsAsync("encrypted", invalidPassword);
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(AuthenticationValidationTypes.UserCredentialsInvalid);
         }
 
         [Theory, AutoMoqData]
@@ -114,22 +108,27 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             configuration
                 .Setup(x => x["Password:Format:DigitsRequired"])
                 .Returns("2");
-
+                        
             var email = "valid@test.com";
+            var password = "Password11";
 
             authorizationSecurityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>()))
+                .Setup(x => x.UnprotectAsync(email))
                 .ReturnsAsync(email);
+
+            authorizationSecurityService
+                .Setup(x => x.UnprotectAsync(password))
+                .ReturnsAsync(password);
 
             authorizationCacheRepository
                 .Setup(x => x.GetUserAsync(It.IsAny<string>()))
                 .ReturnsAsync((UserMessageResponseModel?)null);
 
             // Act
-            var result = await sut.ValidateUserCredentialsAsync("encrypted", "Password1");
+            var result = await sut.ValidateUserCredentialsAsync(email, password);
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(AuthenticationValidationTypes.UserInvalid);
         }
 
         [Theory, AutoMoqData]
@@ -153,23 +152,27 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .Setup(x => x["Password:Format:DigitsRequired"])
                 .Returns("2");
 
-            var email = "valid@test.com";
+            user.EmailAddress = "valid@test.com";
+            user.Password = "Password11";
             user.EmailAddressVerified = false;
-            user.Password = "Password1";
+            
+            authorizationSecurityService
+                .Setup(x => x.UnprotectAsync(user.EmailAddress))
+                .ReturnsAsync(user.EmailAddress);
 
             authorizationSecurityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>()))
-                .ReturnsAsync(email);
+                .Setup(x => x.UnprotectAsync(user.Password))
+                .ReturnsAsync(user.Password);
 
             authorizationCacheRepository
-                .Setup(x => x.GetUserAsync(email))
+                .Setup(x => x.GetUserAsync(user.EmailAddress))
                 .ReturnsAsync(user);
 
             // Act
-            var result = await sut.ValidateUserCredentialsAsync("encrypted", "Password1");
+            var result = await sut.ValidateUserCredentialsAsync("valid@test.com", "Password11");
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(AuthenticationValidationTypes.EmailAddressVerificationInvalid);
         }
 
         [Theory, AutoMoqData]
@@ -209,7 +212,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             var result = await sut.ValidateUserCredentialsAsync("encrypted", "WrongPassword1");
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(AuthenticationValidationTypes.UserCredentialsInvalid);
         }
 
         [Theory, AutoMoqData]
@@ -255,7 +258,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             var result = await sut.ValidateUserCredentialsAsync(email, password);
 
             // Assert
-            result.Should().BeTrue();
+            result.Should().Be(AuthenticationValidationTypes.UserCredentialsValid);
         }
     }
 }

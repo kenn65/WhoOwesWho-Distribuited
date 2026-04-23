@@ -19,6 +19,15 @@ namespace WhoOwesWho.WebApp.Services.Base
             );
         }
 
+        protected async Task UpdateAdminCookieAsync(CookiesResponseModel data)
+        {
+            await _js.InvokeVoidAsync(
+                "cookieApi.setCookies",
+                $"{BaseUrl}api/auth/update-admin-cookie",
+                data
+            );
+        }
+
         protected async Task RemoveCookiesAsync()
         {
             await _js.InvokeVoidAsync(

@@ -4,6 +4,7 @@ using Moq;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
+using WhoOwesWho.AuthorizationService.Settings;
 using WhoOwesWho.Shared.Attributes;
 using WhoOwesWho.Shared.Models;
 using Xunit;
@@ -49,7 +50,8 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
         [Theory, AutoMoqData]
         public async Task SendAuthenticationMessage_ReturnsError_WhenCredentialsInvalid(
-            [Frozen] Mock<IAuthenticationValidationService> validationServiceMock,
+            [Frozen] Mock<IAuthorizationSecurityService> securityService,
+            [Frozen] Mock<IAuthenticationValidationService> validationService,
             AuthenticationNotificationService sut,
             AuthenticationRequestModel request)
         {
@@ -57,9 +59,17 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             request.EmailAddress = "test@test.com";
             request.Password = "password";
 
-            validationServiceMock
+            securityService
+                .Setup(x => x.UnprotectAsync(request.EmailAddress))
+                .ReturnsAsync(request.EmailAddress);
+
+            securityService
+                .Setup(x => x.UnprotectAsync(request.Password))
+                .ReturnsAsync(request.Password);
+
+            validationService
                 .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(false);
+                .ReturnsAsync(AuthenticationValidationTypes.UserCredentialsInvalid);
 
             // Act
             var result = await sut.SendAuthenticationMessageAsync(request);
@@ -71,27 +81,26 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
         [Theory, AutoMoqData]
         public async Task SendAuthenticationMessage_ReturnsError_WhenUserNotFound(
-            [Frozen] Mock<IAuthenticationValidationService> validationService,
             [Frozen] Mock<IAuthorizationSecurityService> securityService,
-            [Frozen] Mock<IAuthorizationCacheRepository> repository,
+            [Frozen] Mock<IAuthenticationValidationService> validationService,
             AuthenticationNotificationService sut,
             AuthenticationRequestModel request)
         {
             // Arrange
             request.EmailAddress = "encrypted@test.com";
-            request.Password = "password";
-
-            validationService
-                .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(true);
-
+            request.Password = "Password11";
+            
             securityService
                 .Setup(x => x.UnprotectAsync(request.EmailAddress))
-                .ReturnsAsync("decrypted@test.com");
+                .ReturnsAsync(request.EmailAddress);
 
-            repository
-                .Setup(x => x.GetUserAsync(It.IsAny<string>()))
-                .ReturnsAsync((UserMessageResponseModel?)null);
+            securityService
+                .Setup(x => x.UnprotectAsync(request.Password))
+                .ReturnsAsync(request.Password);
+            
+            validationService
+                .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
+                .ReturnsAsync(AuthenticationValidationTypes.UserInvalid);
 
             // Act
             var result = await sut.SendAuthenticationMessageAsync(request);
@@ -117,7 +126,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
             validationService
                 .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(true);
+                .ReturnsAsync(AuthenticationValidationTypes.UserCredentialsValid);
 
             securityService
                 .Setup(x => x.UnprotectAsync(request.EmailAddress))
@@ -165,7 +174,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
             validationService
                 .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(true);
+                .ReturnsAsync(AuthenticationValidationTypes.UserCredentialsValid);
 
             securityService
                 .Setup(x => x.UnprotectAsync(request.EmailAddress))

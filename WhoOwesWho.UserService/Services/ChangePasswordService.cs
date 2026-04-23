@@ -37,21 +37,21 @@ namespace WhoOwesWho.UserService.Services
             var passwordCheck = await userValidationService.ValidatePasswordAsync(password);
             if (!passwordCheck.isValid)
             {
-                response.Message = $"<strong>For existing password:</strong><br />{passwordCheck.errorMessage}";
+                response.Message = $"For existing password:{passwordCheck.errorMessage}";
                 return response;
             }
 
             passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword1);
             if (!passwordCheck.isValid)
             {
-                response.Message = $"<strong>For new password:</strong><br /> {passwordCheck.errorMessage}";
+                response.Message = $"For new password:{passwordCheck.errorMessage}";
                 return response;
             }
 
             passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword2!);
             if (!passwordCheck.isValid)
             {
-                response.Message = $"<strong>For new password repeated:</strong><br /> {passwordCheck.errorMessage}";
+                response.Message = $"For new password repeated:{passwordCheck.errorMessage}";
                 return response;
             }
 

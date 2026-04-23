@@ -1,16 +1,10 @@
-﻿@using WhoOwesWho.WebApp.CoreBusiness.Entities.Alert
-@using WhoOwesWho.WebApp.Services
-
-@inherits LayoutComponentBase
-@inject ICookiesMasterService _cookiesMasterService
-@inject IAlertService _alertService
-@inject IJSRuntime JS
+﻿@inherits LayoutComponentBase
 
 <div class="min-h-screen flex flex-col w-full">
 
     <!-- Topbar -->
     <div class="w-full">
-        @if (!_isAuthorized)
+        @if (!isAuthorized)
         {
             <AnonymousNavMenu />
         }
@@ -42,12 +36,12 @@
 
             <ul class="flex flex-wrap justify-center md:justify-end items-center mt-3 text-sm font-medium text-gray-500 md:mt-0">
                 <li>
-                    <a href="/about" class="text-blue-500 hover:underline mr-4">
+                    <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="text-blue-500 hover:underline mr-4">
                         About
                     </a>
                 </li>
                 <li>
-                    <a href="/privacy" class="text-blue-500 hover:underline">
+                    <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="text-blue-500 hover:underline">
                         Privacy Policy
                     </a>
                 </li>
@@ -56,33 +50,3 @@
     </footer>
 
 </div>
-
-@code {
-    private bool _isAuthorized;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _alertService.OnShow += HandleAlert;
-        _isAuthorized = await _cookiesMasterService.IsAuthorizedAsync();
-    }
-        
-    private async Task HandleAlert(AlertRequestModel request)
-    {
-        var result = await JS.InvokeAsync<SwalResult>(
-            "blazorSwal.showAdvanced",
-            request.Message,
-            request.Type.ToString()
-        );
-
-        // Handle confirmation dialogs
-        if (request.Completion != null)
-        {
-            request.Completion.SetResult(result.IsConfirmed);
-        }
-    }
-
-    public class SwalResult
-    {
-        public bool IsConfirmed { get; set; }
-    }
-}

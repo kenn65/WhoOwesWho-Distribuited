@@ -1,9 +1,5 @@
 ﻿@page "/account/signup"
 
-@inject NavigationManager _nav
-@inject IUserUseCase _userUseCase
-@inject IAlertService _alertService
-
 <div class="text-center mb-3">
     <h1 class="text-4xl">Sign in</h1>
     <br />
@@ -53,49 +49,3 @@
                       IsProcessing="IsProcessing" />
     </EditForm>
 </div>
-
-@code {
-
-    public string Host = string.Empty;
-    public bool IsProcessing = false;
-
-    [SupplyParameterFromForm]
-    public UserModel? UserModel { get; set; }
-
-    protected override void OnInitialized()
-    {
-        UserModel ??= new UserModel();
-        var uri = new Uri(_nav.Uri);
-        Host = $"{uri.Host}:{uri.Port}";
-    }
-
-    private async Task HandleSubmit(EditContext args)
-    {
-        IsProcessing = true;
-        StateHasChanged();
-        await Task.Yield();
-
-        var requestModel = new SignUpRequestModel
-        {
-            Entity = UserModel,
-            Host = Host
-        };
-        var response = await _userUseCase.ExecuteAsync(requestModel);
-        await StopProcessing();
-        if (!response.Success)
-        {
-            await _alertService.Error(response.Message!);
-            _nav.NavigateTo("account/signup", forceLoad: true);
-            return;
-        }
-        await _alertService.Success(response.Message!);
-        _nav.NavigateTo("/account/signin", forceLoad: true);
-    }
-
-    private async Task StopProcessing()
-    {
-        IsProcessing = false;
-        StateHasChanged();
-        await Task.Yield();
-    }
-}

@@ -1,5 +1,13 @@
 ﻿namespace WhoOwesWho.AuthorizationService.Settings
 {
+    public enum AuthenticationValidationTypes
+    {
+        UserCredentialsValid = 0,
+        UserCredentialsInvalid = 1,
+        UserInvalid = 2,
+        EmailAddressVerificationInvalid = 3
+    }
+
     public class AppSettings(IConfiguration configuration)
     {
         public string ApiKeyHeaderName => configuration["Security:ApiKeyHeaderName"]!;

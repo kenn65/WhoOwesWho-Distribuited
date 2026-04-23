@@ -29,7 +29,6 @@ namespace WhoOwesWho.WebApp.UseCases.Account
 
         public async Task<UserModel> ExecuteAsync(VerificationRequestModel request)
         {
-            request.EmailAddress = await protectionUseCase.ExecuteProtectAsync(request.EmailAddress!);
             return await userPlugin.VerifyAccountAsync(request);
         }
 
