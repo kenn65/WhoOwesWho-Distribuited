@@ -1,13 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services.Base;
+using WhoOwesWho.AuthorizationService.Settings;
 using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
     public interface IAuthenticationValidationService
     {
-        Task<bool> ValidateUserCredentialsAsync(string emailAddress, string password);
+        Task<AuthenticationValidationTypes> ValidateUserCredentialsAsync(string emailAddress, string password);
     }
     public class AuthenticationValidationService(
         IConfiguration configuration,
@@ -15,7 +16,7 @@ namespace WhoOwesWho.AuthorizationService.Services
         IAuthorizationSecurityService authorizationSecurityService
         ) : ServiceBase(configuration), IAuthenticationValidationService
     {
-        public async Task<bool> ValidateUserCredentialsAsync([Required] string emailAddress, [Required] string password)
+        public async Task<AuthenticationValidationTypes> ValidateUserCredentialsAsync([Required] string emailAddress, [Required] string password)
         {
             if (string.IsNullOrWhiteSpace(emailAddress) || string.IsNullOrWhiteSpace(password))
             {
@@ -26,26 +27,25 @@ namespace WhoOwesWho.AuthorizationService.Services
             
             if (!emailAddress.IsValid())
             {
-                return false;
+                return AuthenticationValidationTypes.UserCredentialsInvalid;
             }
 
             if (!unprotectedPassword.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired))
             {
-                return false;
+                return AuthenticationValidationTypes.UserCredentialsInvalid;
             }
             var user = await authorizationCacheRepository.GetUserAsync(emailAddress);
-
             if (user is null)
             {
-                return false;
+                return AuthenticationValidationTypes.UserInvalid;
             }
 
             if (!user.EmailAddressVerified)
             {
-                return false;
+                return AuthenticationValidationTypes.EmailAddressVerificationInvalid;
             }
 
-            return password == user.Password;
+            return AuthenticationValidationTypes.UserCredentialsValid;
         }
     }
 }

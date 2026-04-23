@@ -96,6 +96,10 @@ namespace WhoOwesWho.UserService.Services
                     return await CreateResponse(true);
                 }
                 request.EventId = await userSecurityService.UnprotectAsync(request.EventId);
+                if (request.EventId == Guid.Empty.ToString())
+                {
+                    return await CreateResponse(true);
+                }
                 var evt = await userCacheRepository.GetActiveEventByIdAsync(request.EventId);
                 var eventUsers = await GetEventUsersAsync(evt!);
                 var id = await userSecurityService.UnprotectAsync(request.ProtectedId!);

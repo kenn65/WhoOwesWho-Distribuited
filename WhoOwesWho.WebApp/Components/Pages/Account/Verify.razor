@@ -1,9 +1,5 @@
 ﻿@page "/account/verification" 
 
-@inject NavigationManager _nav
-@inject IUserUseCase _userUseCase
-@inject IAlertService _alertService
-
 <div className="text-center">
     <br />
     <h1 className="text-4xl">E-mail verification</h1>
@@ -23,41 +19,3 @@
         />
       </div>
 </div>
-
-
-
-
-@code {
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "emailAddress")]
-    public string EmailAddress { get; set; } = string.Empty;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await VerifyEmailAddress();
-        }
-    }
-
-    private async Task VerifyEmailAddress()
-    {
-        var requestModel = new VerificationRequestModel
-            {
-                EmailAddress = EmailAddress
-            };
-        var response = await _userUseCase.ExecuteAsync(requestModel);
-        if (!response.Success)
-        {
-            await _alertService.Error(response.Message!);
-            _nav.NavigateTo("/", forceLoad: true);
-            return;
-        }
-        else
-        {
-            await _alertService.Success(response.Message!);
-            _nav.NavigateTo("/account/signin", forceLoad: true);
-        }
-    }
-
-}

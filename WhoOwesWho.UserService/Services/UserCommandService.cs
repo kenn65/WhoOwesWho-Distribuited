@@ -33,8 +33,8 @@ namespace WhoOwesWho.UserService.Services
                     Message = "An error occurred while creating the user. Please, try again."
                 };
             }
-
             var entity = user.Adapt<UserMessageRequestModel>();
+            await userPublishingServicee.SendUserAsync(entity);
             await userNotificationService.SendAccountConfirmationMessage(entity, host);
             return await userQueryRepository.GetSingleUserByEmailAddressAsync(user.EmailAddress, true);
         }

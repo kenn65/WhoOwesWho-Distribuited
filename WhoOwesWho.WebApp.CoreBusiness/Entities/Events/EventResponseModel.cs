@@ -33,6 +33,8 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
 
         public bool Settled { get; set; }
 
+        public string ActiveIcon => Settled ? "✖" : "✔";
+        
         public IEnumerable<UserModel>? Users { get; set; } = null;
     }
 }

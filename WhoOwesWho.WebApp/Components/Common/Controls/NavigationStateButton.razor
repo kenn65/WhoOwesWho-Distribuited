@@ -17,10 +17,8 @@
 
     private bool IsProcessing;
 
-    private string GetCssClass() =>
-            IsProcessing
-                ? "bg-green-700 text-white px-4 py-2 rounded cursor-default"
-                : "bg-gray-700 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer";
+    private string GetCssClass() => "bg-gray-700 hover:bg-black text-white font-extralight py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer";
+           
 
     private async Task HandleClick()
     {

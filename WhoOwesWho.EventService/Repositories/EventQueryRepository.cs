@@ -12,6 +12,7 @@ namespace WhoOwesWho.EventService.Repositories
         Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true);
         Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
         Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync();
         Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active);
         Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true);
     }
@@ -43,6 +44,17 @@ namespace WhoOwesWho.EventService.Repositories
               .ProjectToType<EventResponseModel>().FirstOrDefaultAsync();
             entity!.Users = await GetEventAssignmentUsersAsync(userIds);
             return entity;
+        }
+
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync()
+        {
+            var entities = await context.Events.ProjectToType<EventResponseModel>().ToListAsync();
+            foreach (var entity in entities)
+            {
+                var userIds = await context.EventAssingments.Where(ea => ea.EventId == entity.Id).Select(ea => ea.UserId).ToListAsync();
+                entity.Users = await GetEventAssignmentUsersAsync(userIds);
+            }
+            return [.. entities];
         }
 
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active = true)

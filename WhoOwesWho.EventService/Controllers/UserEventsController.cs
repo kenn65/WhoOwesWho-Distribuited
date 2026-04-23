@@ -36,11 +36,27 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
+                var id = await eventSecurityService.UnprotectAsync(userId);
+                var allEvents = (await eventLookupService.GetEventsAsync(active)).ToList();
+                return Ok(allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == Guid.Parse(id))));
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.StackTrace);
+            }
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetUserEvents([FromQuery] string userId)
+        {
+            try
+            {
                 try
                 {
                     var id = await eventSecurityService.UnprotectAsync(userId);
-                    var allEvents = (await eventLookupService.GetEventsAsync(active)).ToList();
-                    return Ok(allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == Guid.Parse(id))));
+                    var allEvents = (await eventLookupService.GetEventsAsync(userId)).ToList();
+                    return Ok(allEvents.Where(e => e.Users!.Any(u => u.Id == Guid.Parse(id))));
                 }
                 catch (Exception e)
                 {
@@ -52,7 +68,5 @@ namespace WhoOwesWho.EventService.Controllers
                 return BadRequest(e.StackTrace);
             }
         }
-
-
     }
 }

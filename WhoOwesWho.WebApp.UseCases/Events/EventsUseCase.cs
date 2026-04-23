@@ -7,7 +7,7 @@ namespace WhoOwesWho.WebApp.UseCases.Events
 {
     public interface IEventsUseCase
     {
-        Task<IEnumerable<EventResponseModel>> ExecuteAsync(bool active, string jwtToken);
+        Task<IEnumerable<EventResponseModel>> ExecuteAsync(string userId, string jwtToken, bool dummy = false);
         Task<EventResponseModel> ExecuteAsync(EventRequestModel request, string jwtToken);
         Task<EventResponseModel> ExecuteAsync(Guid id, string jwtToken);
         Task<EventResponseModel> ExecuteAsync(string id, bool active, string jwtToken);
@@ -22,9 +22,9 @@ namespace WhoOwesWho.WebApp.UseCases.Events
             return await eventsPlugin.CreateEventAsync(request, jwtToken);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> ExecuteAsync(bool active, string jwtToken)
+        public async Task<IEnumerable<EventResponseModel>> ExecuteAsync(string userId, string jwtToken, bool dummy = false)
         {
-            return await eventsPlugin.GetEventsAsync(active, jwtToken);
+            return await eventsPlugin.GetEventsAsync(userId, jwtToken);
         }
 
         public async Task<EventResponseModel> ExecuteAsync(Guid id, string jwtToken)

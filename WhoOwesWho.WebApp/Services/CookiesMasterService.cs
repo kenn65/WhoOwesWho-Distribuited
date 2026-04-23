@@ -9,6 +9,7 @@ namespace WhoOwesWho.WebApp.Services
     public interface ICookiesMasterService
     {
         Task SetCookiesAsync(CookiesResponseModel data);
+        Task SetAdminCookieAsync(CookiesResponseModel data, bool isAdmin);
         Task DeleteCookiesAsync();
         Task<CookiesResponseModel?> GetAsync();
         Task<bool> IsAuthorizedAsync();
@@ -73,6 +74,11 @@ namespace WhoOwesWho.WebApp.Services
             return result == "True";
         }
 
-       
+        public async Task SetAdminCookieAsync(CookiesResponseModel data, bool isAdmin)
+        {
+            var isAdminString = isAdmin ? "True" : "False";
+            data.AdminValue = await protection.ExecuteProtectAsync(isAdminString);
+            await UpdateAdminCookieAsync(data);
+        }
     }
 }
