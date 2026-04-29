@@ -14,13 +14,12 @@ namespace WhoOwesWho.UserService.EfCore.Context
                 .HasKey(u => u.UserId);
 
             modelBuilder.Entity<Users>()
-                .HasIndex(u => u.EmailAddress);
+                .HasIndex(u => u.EmailAddress)
+                .IsUnique();
 
-            //modelBuilder.Entity<ForgotPassword>()
-            //  .HasOne<Users>()          
-            //  .WithMany()               
-            //  .HasForeignKey(ea => ea.UserId);
-            }
-
+            modelBuilder.Entity<Users>()
+                .HasIndex(u => u.FullName)
+                .IsUnique();
+        }
     }
 }

@@ -14,7 +14,14 @@ else
         <h1 class="text-4xl">Events</h1>
         <br />
         <br />
-        <p class="text-xl">Active events list</p>
+        @if (IsAdmin)
+        {
+            <p class="text-xl">My events </p>
+        }
+        else
+        {
+            <p class="text-xl">Active events list</p>
+        }
         <br />
         <br />
         @if (IsAdmin)
@@ -36,7 +43,7 @@ else
                     <th class="p-6">Active</th>
                     @if (IsAdmin)
                     {
-                        <th class="p-6">Actions</th>                
+                        <th class="p-6">Actions</th>
                     }
                     <th></th>
                 </tr>
@@ -56,7 +63,7 @@ else
                             </span>
                         </td>
 
-                        @if (IsAdmin)
+                        @if (!item.Settled && IsAdmin)
                         {
                             <td class="p-2">
                                 <NavigationStateButton Text="Edit"

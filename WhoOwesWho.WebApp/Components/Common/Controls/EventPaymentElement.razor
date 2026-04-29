@@ -1,0 +1,90 @@
+﻿@using WhoOwesWho.WebApp.Components.Common.Controls;
+
+<div class="text-center mb-3">
+    <br />
+    <br />
+    <h1 class="text-4xl">My workspace</h1>
+    <br />
+    <h3 class="text-xl">Events</h3>
+    <br />
+    <p>You are currently assigned to the event:</p>
+    <br />
+    <p class="text-2xl text-blue-800">
+        @EventResponseModel!.Name (@EventResponseModel.Location) starting at @EventResponseModel.StartDateIso
+    </p>
+    <br />
+    <br />
+    @if (!HasPayments)
+    {
+        <EditForm method="post" Model="@EventUnassignmentRequestModel" OnValidSubmit="HandleUnassignSubmitAsync" FormName="eventassignment" Enhance>
+            <InputHidden id="eventId" @bind-Value="@EventIdAsString" />
+            <SubmitButton Text="Unassign"
+                          ProcessingText="Processing..."
+                          IsProcessing="IsProcessing" />
+        </EditForm>
+    }
+
+    <br />
+    <br />
+    <hr />
+    <br />
+    <p>Your current payments balance</p>
+    <br />
+    <p class="text-xl">
+        @UserBalanceResponseModel!.FormattedBalance @UserBalanceResponseModel.CurrencySymbol
+    </p>
+    <br />
+    <br />
+    <br />
+    <hr />
+    <br />
+    <p class="text-2xl">
+        Create payment for user or split payment between multiple users
+    </p>
+    <br />
+    <br />
+    <EditForm method="post" Model="@CreatePaymentRequestModel" OnSubmit="HandlePaymentSubmit" FormName="eventpayment" Enhance>
+        <DataAnnotationsValidator />
+        <PaymentUsersElement Id="paymentusers"
+                             Caption="Check the users participating (yourself included if you gained from this payment):"
+                             Users="@EventResponseModel.Users"
+                             You="@CurrentUser"
+                             HandleUsers="@OnUsersSelected" />
+        <br />
+        <br />
+        <CurrencySelectElement Id="currency"
+                               Caption="Currency:"
+                               Value="@CreatePaymentRequestModel!.Currency"
+                               ValueChanged="@(v=> CreatePaymentRequestModel.Currency = v)"
+                               ValueExpression="@(() => CreatePaymentRequestModel.Currency)"
+                               CurrencyList="@CurrencyList" />
+        <br />
+        <br />
+        <DecimalInputElement id="amount"
+                             Caption="Total amount:"
+                             Value="CreatePaymentRequestModel!.TotalAmount"
+                             DecimalPlaces="2"
+                             Placeholder="@PlaceHolder"
+                             ValueChanged="@(v => CreatePaymentRequestModel.TotalAmount = v)"
+                             ValueExpression="@(() => CreatePaymentRequestModel.TotalAmount)"
+                             Class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+        <br />
+        <br />
+        <TextElement Id="description"
+                     Caption="Description:"
+                     Placeholder="Describe what you paied for"
+                     Value="@CreatePaymentRequestModel.Description"
+                     ValueChanged="@(v => CreatePaymentRequestModel.Description = v)"
+                     ValueExpression="@(() => CreatePaymentRequestModel.Description)" />
+        <br />
+        <br />
+        <SubmitButton IsProcessing="@IsProcessing"
+                      Text="Submit"
+                      ProcessingText="Processing..." />
+        &nbsp;&nbsp;&nbsp;
+        <ActionButton Text="Cancel"
+                      ProcessingText="Cancelling..."
+                      NavigationUrl="/me/workspace"
+                      ForceLoad="true" />
+    </EditForm>
+</div>

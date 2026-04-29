@@ -19,11 +19,14 @@
         {
             public const string EmailAddressAlreadyExists = "E-mail address already exists!";
             public const string EmailAdddressDoesNotExist = "Who Owes Who account with the entered e-mail address does not exist.";
-            public const string EmailAddressNotValid = "E-mail address is not valid!";
+            public const string EmailAddressInvalidValid = "E-mail address is not valid!";
             public const string PasswordRequirements = "Password should contain at least " +
                                                        "{0} characters, including at least " +
                                                        "{1} upper case character(s) and at least " +
                                                        "{2} digit(s)";
+            public const string FullNameAlreadyExists = "This full name already exists!";
+            public const string FullNameDoesNotExist = "Who Owes Who account with the entered full name does not exist.";
+            public const string FullNameInValid = "Full name is not valid!";
         }
     }
 }

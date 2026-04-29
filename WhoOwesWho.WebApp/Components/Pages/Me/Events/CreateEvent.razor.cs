@@ -16,7 +16,7 @@ public partial class CreateEvent(
     IUserUseCase userUseCase,
     ICurrenciesUseCase currenciesUseCase)
 {
-    private string minDate = DateTime.Today.ToString("yyyy-MM-dd");
+    private string minDate = DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
     private IEnumerable<CurrencyResponseModel> CurrencyList = [];
     private Dictionary<string, object> dateAttributes => new()
     {
@@ -24,6 +24,7 @@ public partial class CreateEvent(
     };
     private bool IsProcessing = false;
     private CookiesResponseModel? Cookies;
+    //private string DateFormat { get; set; } = "yyyy-MM-dd";
 
     [SupplyParameterFromForm]
     public EventRequestModel? EventRequestModel { get; set; }

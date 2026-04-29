@@ -65,7 +65,7 @@ namespace WhoOwesWho.UserServiceTests.Services
            UserCommandService sut)
         {
             validationService
-                .Setup(x => x.VerifyUpdate(request))
+                .Setup(x => x.VerifyUpdateAsync(request))
                 .ReturnsAsync(new UpdateUserVerificationModel
                 {
                     Success = false,
@@ -94,8 +94,11 @@ namespace WhoOwesWho.UserServiceTests.Services
         {
             request.IsPasswordUpdating = false;
 
+            validationService.Setup(x => x.ValidateFullNameAsync(It.IsAny<string>(), false))
+                .ReturnsAsync((true, string.Empty));
+
             validationService
-                .Setup(x => x.VerifyUpdate(request))
+                .Setup(x => x.VerifyUpdateAsync(request))
                 .ReturnsAsync(new UpdateUserVerificationModel
                 {
                     Success = true,
@@ -135,6 +138,7 @@ namespace WhoOwesWho.UserServiceTests.Services
             [Frozen] Mock<IUserQueryRepository> queryRepo,
             [Frozen] Mock<IUserMutationRepository> mutationRepo,
             [Frozen] Mock<IUserPublishingServicee> publishingService,
+            [Frozen] Mock<IUserValidationService> validationService,
             UserCommandService sut)
         {
             request.IsPasswordUpdating = true;
@@ -142,6 +146,9 @@ namespace WhoOwesWho.UserServiceTests.Services
             securityService
                 .Setup(x => x.UnprotectAsync(request.ProtectedId!, false))
                 .ReturnsAsync(userId.ToString());
+
+            validationService .Setup(x => x.ValidateFullNameAsync(It.IsAny<string>(), false))
+                .ReturnsAsync((true, string.Empty));
 
             queryRepo
                 .Setup(x => x.GetSingleUserByIdAsync(userId, true))

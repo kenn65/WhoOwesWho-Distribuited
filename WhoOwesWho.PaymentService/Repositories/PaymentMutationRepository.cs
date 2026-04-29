@@ -100,7 +100,7 @@ namespace WhoOwesWho.PaymentService.Repositories
             try
             {
                 var payment = await context.Payments.FirstOrDefaultAsync(p => p.Id == request.PaymentId);
-                payment!.Amount = request.Amount;
+                payment!.Amount = request.Amount!.Value;
                 payment.TotalAmount = request.TotalAmount;
                 payment.OriginalAmount = request.OriginalAmount;
                 payment.OriginalCurrency = request.OriginalCurrency;

@@ -43,6 +43,13 @@ namespace WhoOwesWho.UserService.Services
                     return response;
                 }
 
+                var fullNameCheck = await userValidationService.ValidateFullNameAsync(request.Entity.FullName!, false);
+                if (!fullNameCheck.isValid)
+                {
+                    response.Message = fullNameCheck.errorMessage;
+                    return response;
+                }
+
                 var check = await userCommandService.CreateUserAsync(request.Entity, request.Host!) is not null;
                 response.Success = check;
                 response.Message = !check

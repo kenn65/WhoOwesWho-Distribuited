@@ -5,7 +5,7 @@ using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Models
 {
-    public class    UserBalanceResponseModel : ModelBase
+    public class UserBalanceResponseModel : ModelBase
     {
         [JsonProperty("user")]
         public UserMessageResponseModel? User { get; set; }

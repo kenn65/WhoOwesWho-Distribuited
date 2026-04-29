@@ -5,9 +5,9 @@
     <br />
     <br />
     <EditForm method="post" Model="@UserModel" OnValidSubmit="HandleSubmit" FormName="signup" Enhance>
-        <TextElement Id="fullname"
-                     Caption="Full Name:"
-                     Placeholder="Your first and last name"
+        <TextElement Id="name"
+                     Caption="Name:"
+                     Placeholder="Your first and last name or some other unique nickname"
                      Value="@UserModel!.FullName"
                      ValueChanged="@(v => UserModel.FullName = v)"
                      ValueExpression="@(() => UserModel.FullName)" />

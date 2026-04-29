@@ -101,6 +101,9 @@ namespace WhoOwesWho.UserServiceTests.Services
             validationService
                 .Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
                 .ReturnsAsync((true, ""));
+            validationService
+                .Setup(x => x.ValidateFullNameAsync(It.IsAny<string>(), false))
+                .ReturnsAsync((true, ""));
 
             commandService
                 .Setup(x => x.CreateUserAsync(request.Entity!, request.Host!))
