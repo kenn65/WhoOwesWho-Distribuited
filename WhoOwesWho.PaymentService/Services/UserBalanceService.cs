@@ -1,6 +1,7 @@
 ﻿using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.PaymentService.Services
 {
@@ -32,7 +33,7 @@ namespace WhoOwesWho.PaymentService.Services
                 return new UserBalanceResponseModel
                 {
                     User = await paymentCacheRepository.GetUserByIdAsync(request.UserId!),
-                    Balance = decimal.Round(creditUserAmountSum - debitUserAmountSum, 2, MidpointRounding.AwayFromZero),
+                    Balance = decimal.Round(creditUserAmountSum!.Value - debitUserAmountSum!.Value, 2, MidpointRounding.AwayFromZero),
                     CurrencySymbol = thisEvent!.CurrencySymbol
                 };
             }

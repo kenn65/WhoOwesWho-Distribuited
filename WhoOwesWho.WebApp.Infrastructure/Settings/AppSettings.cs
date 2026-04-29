@@ -19,8 +19,8 @@ namespace WhoOwesWho.WebApp.Infrastructure.Settings
         public string? EventMicroserviceEventUsersBaseAddress = configuration["Eventmicroservice:EventUsersBaseAddress"]!;
         public string? EventMicroserviceUserEventsBaseAddress = configuration["EventMicroservice:UserEventsBaseAddress"]!;
         public string? EventMicroserviceApiKey => configuration["EventMicroservice:Security:ApiKey"]!;
-        public string? PaymentMicroservicePaymentsBaseAddress => configuration["PaymentMicroservice:PaymentsBaseAddress"];
-        public string? PaymentMicroserviceBalanceBaseAddress => configuration["PaymentMicroservice:BalaceBaseAddress"];
+        public string? PaymentMicroserviceBaseAddress => configuration["PaymentMicroservice:PaymentsBaseAddress"]!;
+        public string? PaymentMicroserviceBalanceBaseAddress => configuration["PaymentMicroservice:BalaceBaseAddress"]!;
         public string? PaymentMicroserviceSettlementsBaseAddress => configuration["PaymentMicroservice:SettlementsBaseAddress"];
         public string PaymentMicroserviceApiKey => configuration["PaymentMicroservice:Security:ApiKey"]!;
     }

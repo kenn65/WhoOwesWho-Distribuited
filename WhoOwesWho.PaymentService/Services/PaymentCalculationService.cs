@@ -1,5 +1,4 @@
 ﻿using WhoOwesWho.PaymentService.Models;
-using WhoOwesWho.PaymentService.Repositories;
 using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.PaymentService.Services.Gateways;
 using WhoOwesWho.Shared.Models;
@@ -15,15 +14,13 @@ namespace WhoOwesWho.PaymentService.Services
         public class PaymentCalculationService(
             IConfiguration configuration,
             IUserBalanceService userBalanceService,
-            IPaymentCacheRepository paymentCacheRepository,
             ICurrencyGatewayService currencyGatewayService
             ) : ServiceBase(configuration), IPaymentCalculationService
         {
             public async Task<CalculateAmountResponseModel> CalculateAmount(CreatePaymentRequestModel request)
             {
-                var activeEventResponse = await paymentCacheRepository.GetEventByIdAsync(request.EventId!, true);
                 var exchangeRateResponse = await currencyGatewayService.GetExchangeRateAsync(request.OriginalCurrency!,
-                    activeEventResponse.Currency!, request.Token!);
+                    request.Currency!, request.Token!);
 
                 var usersCount = request.UserIds!.Count();
                 var totalAmount = request.OriginalAmount * exchangeRateResponse.ExchangeRate;
@@ -31,7 +28,7 @@ namespace WhoOwesWho.PaymentService.Services
                 {
                     TotalAmount = totalAmount,
                     Amount = totalAmount / usersCount,
-                    Currency = activeEventResponse.Currency
+                    Currency = request.Currency
                 };
             }
 
@@ -66,15 +63,15 @@ namespace WhoOwesWho.PaymentService.Services
                             continue;
                         }
 
-                        if (creditorBalances[c].Balance >= Math.Abs(debitorBalances[d].Balance))
+                        if (creditorBalances[c].Balance >= Math.Abs(debitorBalances[d].Balance!))
                         {
                             whoOwesWhoModels.Add(new WhoOwesWhoModel
                             {
                                 CreditorName = creditorBalances[c].User?.FullName,
                                 DebitorName = debitorBalances[d].User?.FullName,
-                                Amount = Math.Abs(debitorBalances[d].Balance)
+                                Amount = Math.Abs(debitorBalances[d].Balance!)
                             });
-                            creditorBalances[c].Balance -= Math.Abs(debitorBalances[d].Balance);
+                            creditorBalances[c].Balance -= Math.Abs(debitorBalances[d].Balance!);
                             debitorBalances[d].Balance = 0M;
                         }
                         else
@@ -83,7 +80,7 @@ namespace WhoOwesWho.PaymentService.Services
                             {
                                 CreditorName = creditorBalances[c].User?.FullName,
                                 DebitorName = debitorBalances[d].User?.FullName,
-                                Amount = Math.Abs(creditorBalances[c].Balance)
+                                Amount = Math.Abs(creditorBalances[c].Balance!)
                             });
                             debitorBalances[d].Balance += creditorBalances[c].Balance;
                             creditorBalances[c].Balance = 0M;

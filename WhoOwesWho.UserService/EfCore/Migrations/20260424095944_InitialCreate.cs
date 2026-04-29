@@ -44,7 +44,14 @@ namespace WhoOwesWho.UserService.EfCore.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Users_EmailAddress",
                 table: "Users",
-                column: "EmailAddress");
+                column: "EmailAddress",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_FullName",
+                table: "Users",
+                column: "FullName",
+                unique: true);
         }
 
         /// <inheritdoc />

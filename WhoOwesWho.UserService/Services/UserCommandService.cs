@@ -41,19 +41,31 @@ namespace WhoOwesWho.UserService.Services
 
         public async Task<UserModel?> UpdateUserAsync(UserUpdateRequestModel? request)
         {
+            var user = await userQueryRepository.GetSingleUserByIdAsync(Guid.Parse(await userSecurityService.UnprotectAsync(request!.ProtectedId!)), true);
+            if (user!.FullName != request.FullName)
+            {
+                var fullNameCheck = await userValidationService.ValidateFullNameAsync(request.FullName!, false);
+                if (!fullNameCheck.isValid)
+                {
+                    return new UserModel()
+                    {
+                        Message = fullNameCheck.errorMessage
+                    };
+                }
+            }
+
             var validationResult = request!.IsPasswordUpdating 
                 ? new UpdateUserVerificationModel
                 {
                     Success = true,
                     NoAdmin = true
                 }
-                : await userValidationService.VerifyUpdate(request!);
+                : await userValidationService.VerifyUpdateAsync(request!);
 
             if (validationResult is { Success: false, NoAdmin: false })
             {
                 return new UserModel()
                 {
-                    Success = false,
                     Message = "The event you have assigned to already has an administrator."
                 };
             }
@@ -71,8 +83,8 @@ namespace WhoOwesWho.UserService.Services
             var response = await userMutationRepository.UpdateUserAsync(userEntity);
             if (validationResult is { Success: true, NoAdmin: true })
             {
-                var user = response.Adapt<UserMessageRequestModel>();
-                await userPublishingServicee.SendUserAsync(user!);
+                var userEventModel = response.Adapt<UserMessageRequestModel>();
+                await userPublishingServicee.SendUserAsync(userEventModel!);
                 return new UserModel
                 {
                     Success = true,

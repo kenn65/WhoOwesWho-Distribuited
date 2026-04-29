@@ -1,0 +1,16 @@
+﻿<div class="w-2/4 mx-auto text-left -mb-8">
+    <label for="@Id" class="form-label">@Caption</label>
+    <br />
+    <input type="text"
+           id="@Id"
+           @bind:get="DisplayValue"
+           @bind:set="HandleInput!"
+           @bind:event="oninput"
+           @onblur="HandleBlur"
+           @onfocus="HandleFocus"
+           placeholder="@Placeholder"
+           class="@Class" />
+    <ValidationMessage For="@ValueExpression" class="text-danger" />
+</div>
+
+

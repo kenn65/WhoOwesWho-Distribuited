@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Text.RegularExpressions;
 using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Auxiliaries;
@@ -13,8 +12,9 @@ namespace WhoOwesWho.UserService.Services
     {
         Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password);
         Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool shouldExist);
-        Task<UserModel?> VerifyUserEmailAddress(string emailAddress);
-        Task<UpdateUserVerificationModel> VerifyUpdate(UserUpdateRequestModel request);
+        Task<(bool isValid, string errorMessage)> ValidateFullNameAsync(string fullName, bool shouldExist);
+        Task<UserModel?> VerifyUserEmailAddressAsync(string emailAddress);
+        Task<UpdateUserVerificationModel> VerifyUpdateAsync(UserUpdateRequestModel request);
     }
     public class UserValidationService(
         IConfiguration configuration,
@@ -43,7 +43,7 @@ namespace WhoOwesWho.UserService.Services
             {
                 if (!emailAddress.IsValid())
                 {
-                    return (false, Constants.CredentialsErrorMessages.EmailAddressNotValid);
+                    return (false, Constants.CredentialsErrorMessages.EmailAddressInvalidValid);
                 }
 
                 switch (shouldExist)
@@ -72,11 +72,52 @@ namespace WhoOwesWho.UserService.Services
             }
             catch
             {
-                return (false, Constants.CredentialsErrorMessages.EmailAddressNotValid);
+                return (false, Constants.CredentialsErrorMessages.EmailAddressInvalidValid);
+            }
+        }
+        
+        public async Task<(bool isValid, string errorMessage)> ValidateFullNameAsync(string fullName, bool shouldExist)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(fullName))
+                {
+                    return (false, Constants.CredentialsErrorMessages.FullNameInValid);
+                }
+
+                switch (shouldExist)
+                {
+                    case false:
+                        {
+                            var any = await ValidateFullNameExists(fullName);
+                            if (any.isValid)
+                            {
+                                return (false, Constants.CredentialsErrorMessages.FullNameAlreadyExists);
+                            }
+                            return (true, string.Empty);
+                        }
+                    case true:
+                        {
+                            var any = await ValidateFullNameExists(fullName);
+                            if (!any.isValid)
+                            {
+                                return (false, Constants.CredentialsErrorMessages.FullNameDoesNotExist);
+                            }
+                            break;
+                        }
+                }
+
+                return (true, string.Empty);
+            }
+            catch
+            {
+                return (false, Constants.CredentialsErrorMessages.EmailAddressInvalidValid);
             }
         }
 
-        public async Task<UserModel?> VerifyUserEmailAddress(string emailAddress)
+
+
+        public async Task<UserModel?> VerifyUserEmailAddressAsync(string emailAddress)
         {
             var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
             if (user is null)
@@ -87,7 +128,9 @@ namespace WhoOwesWho.UserService.Services
             return await userMutationRepository.UpdateUserAsync(user);
         }
 
-        public async Task<UpdateUserVerificationModel> VerifyUpdate(UserUpdateRequestModel request)
+        
+
+        public async Task<UpdateUserVerificationModel> VerifyUpdateAsync(UserUpdateRequestModel request)
         {
             try
             {
@@ -127,6 +170,16 @@ namespace WhoOwesWho.UserService.Services
         private async Task<(bool isValid, string errorMessage)> ValidateEmailExists(string emailAddress)
         {
             var check = await userQueryRepository.GetUserEmailExists(emailAddress);
+            if (check)
+            {
+                return (true, string.Empty);
+            }
+            return (false, string.Empty);
+        }
+
+        private async Task<(bool isValid, string errorMessage)> ValidateFullNameExists(string fullName)
+        {
+            var check = await userQueryRepository.GetUserFullNameExists(fullName);
             if (check)
             {
                 return (true, string.Empty);

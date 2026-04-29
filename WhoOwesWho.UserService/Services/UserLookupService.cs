@@ -15,12 +15,16 @@ namespace WhoOwesWho.UserService.Services
     {
         public async Task<UserModel?> GetSingleUserByEmailAddressAsync(string? emailAddress, bool complete = false)
         {
-            return await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, complete);
+            var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, complete);
+            user?.Success = user != null;
+            return user;
         }
 
         public async Task<UserModel?> GetSingleUserByIdAsync(Guid id, bool complete = false)
         {
-            return await userQueryRepository.GetSingleUserByIdAsync(id, complete);
+            var user = await userQueryRepository.GetSingleUserByIdAsync(id, complete);
+            user?.Success = user != null;
+            return user;
         }
 
         public async Task<IEnumerable<UserModel>> GetAllUsersAsync()

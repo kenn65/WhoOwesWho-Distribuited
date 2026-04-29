@@ -46,16 +46,18 @@ namespace WhoOwesWho.EventService.Services
                     user! 
                 }
             };
-            var response = await eventQueryRepository.GetEventsAsync();
-            foreach(var item in response)
+            var allEvents = await eventQueryRepository.GetEventsAsync();
+            var filteredEvents = allEvents.Where(e => e.CreatedBy == user!.FullName).ToList();
+
+            foreach (var item in filteredEvents)
             {
-                if (item.Users is null || !item.Users.Any())
+                if (item.Users == null || !item.Users.Any())
                 {
                     item.Users = users;
-                }    
+                }
             }
-            return response;
-            
+
+            return filteredEvents;
         }
 
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active)

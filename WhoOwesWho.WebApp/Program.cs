@@ -5,6 +5,7 @@ using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.Infrastructure.Account;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
 using WhoOwesWho.WebApp.Infrastructure.Events;
+using WhoOwesWho.WebApp.Infrastructure.Payments;
 using WhoOwesWho.WebApp.Infrastructure.Protection;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.StateHandlers;
@@ -14,6 +15,8 @@ using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Currencies.PluginInterfaces;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces;
+using WhoOwesWho.WebApp.UseCases.Payments;
+using WhoOwesWho.WebApp.UseCases.Payments.PluginInterfaces;
 using WhoOwesWho.WebApp.UseCases.Protection;
 using WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces;
 
@@ -42,6 +45,8 @@ builder.Services.AddTransient<IEventsUseCase, EventsUseCase>();
 builder.Services.AddTransient<IEventsPlugin, EventsPlugin>();
 builder.Services.AddTransient<ICurrenciesUseCase, CurrenciesUseCase>();
 builder.Services.AddTransient<ICurrencyPlugin, CurrencyPlugin>();
+builder.Services.AddTransient<IPaymentsUseCase, PaymentsUseCase>();
+builder.Services.AddTransient<IPaymentsPlugin, PaymentsPlugin>();
 
 var app = builder.Build();
 

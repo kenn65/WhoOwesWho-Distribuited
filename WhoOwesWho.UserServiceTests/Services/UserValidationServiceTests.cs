@@ -168,7 +168,7 @@ namespace WhoOwesWho.UserServiceTests.Services
                 .ReturnsAsync((UserModel?)null);
 
             //Act
-            var result = await sut.VerifyUserEmailAddress(email);
+            var result = await sut.VerifyUserEmailAddressAsync(email);
 
             //Assert
             result.Should().BeNull();
@@ -193,7 +193,7 @@ namespace WhoOwesWho.UserServiceTests.Services
                 .ReturnsAsync(user);
 
             //Act
-            var result = await sut.VerifyUserEmailAddress(email);
+            var result = await sut.VerifyUserEmailAddressAsync(email);
 
             //Assert
             result.Should().NotBeNull();
@@ -207,7 +207,7 @@ namespace WhoOwesWho.UserServiceTests.Services
         {
             request.EventId = null;
 
-            var result = await sut.VerifyUpdate(request);
+            var result = await sut.VerifyUpdateAsync(request);
 
             result.Success.Should().BeTrue();
         }
@@ -243,7 +243,7 @@ namespace WhoOwesWho.UserServiceTests.Services
                 .ReturnsAsync(adminUser);
 
             //Act
-            var result = await sut.VerifyUpdate(request);
+            var result = await sut.VerifyUpdateAsync(request);
 
             //Assert
             result.Success.Should().BeFalse();
@@ -280,7 +280,7 @@ namespace WhoOwesWho.UserServiceTests.Services
                 .ReturnsAsync(user);
 
             //Act
-            var result = await sut.VerifyUpdate(request);
+            var result = await sut.VerifyUpdateAsync(request);
 
             //Assert
             result.Success.Should().BeTrue();
@@ -297,7 +297,7 @@ namespace WhoOwesWho.UserServiceTests.Services
                 .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
                 .ThrowsAsync(new Exception());
 
-            var result = await sut.VerifyUpdate(request);
+            var result = await sut.VerifyUpdateAsync(request);
 
             result.Success.Should().BeFalse();
         }

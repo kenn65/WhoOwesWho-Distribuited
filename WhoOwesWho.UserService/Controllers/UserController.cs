@@ -115,7 +115,7 @@ namespace WhoOwesWho.UserService.Controllers
             try
             {
                 request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-                var response = await userValidationService.VerifyUserEmailAddress(request.EmailAddress!);
+                var response = await userValidationService.VerifyUserEmailAddressAsync(request.EmailAddress!);
                 if (response!.Success)
                 {
                     var entity = response.Adapt<UserMessageRequestModel>();

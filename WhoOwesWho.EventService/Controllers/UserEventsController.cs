@@ -55,8 +55,8 @@ namespace WhoOwesWho.EventService.Controllers
                 try
                 {
                     var id = await eventSecurityService.UnprotectAsync(userId);
-                    var allEvents = (await eventLookupService.GetEventsAsync(userId)).ToList();
-                    return Ok(allEvents.Where(e => e.Users!.Any(u => u.Id == Guid.Parse(id))));
+                    return Ok(await eventLookupService.GetEventsAsync(userId));
+                    //return Ok(allEvents.Where(e => e.Users!.Any(u => u.Id == Guid.Parse(id))));
                 }
                 catch (Exception e)
                 {

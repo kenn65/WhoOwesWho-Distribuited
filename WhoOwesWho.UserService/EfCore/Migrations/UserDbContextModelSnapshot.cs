@@ -17,7 +17,7 @@ namespace WhoOwesWho.UserService.EfCore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.13")
+                .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -75,7 +75,11 @@ namespace WhoOwesWho.UserService.EfCore.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EmailAddress");
+                    b.HasIndex("EmailAddress")
+                        .IsUnique();
+
+                    b.HasIndex("FullName")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

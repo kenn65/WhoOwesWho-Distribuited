@@ -21,8 +21,9 @@ else
         <br />
         <EditForm method="post" Model="@UserProfileResponseModel" OnValidSubmit="HandleSubmit" FormName="myprofile" Enhance>
             <DataAnnotationsValidator />
-            <TextElement Id="fullname"
-                         Caption="Full Name:"
+            <TextElement Id="   name"
+                         Caption="Name:"
+                         Placeholder="Your first and last name or some other unique nickname"
                          Value="@UserProfileResponseModel!.FullName"
                          ValueChanged="@(v => UserProfileResponseModel.FullName = v)"
                          ValueExpression="@(() => UserProfileResponseModel.FullName)" />
@@ -30,16 +31,17 @@ else
             <br />
             <TextElement Id="mobile"
                          Caption="Mobile phone number:"
+                         Placeholder="Your mobile phone number"
                          Value="@UserProfileResponseModel.MobilePhoneNumber"
                          ValueChanged="@(v => UserProfileResponseModel.MobilePhoneNumber = v)"
                          ValueExpression="@(() => UserProfileResponseModel.MobilePhoneNumber)" />
             <br />
             <br />
-            <TextElement Value="@UserProfileResponseModel.EmailAddress"
+            <TextElement Id="mobile"
+                         Caption="Email address:"
+                         Value="@UserProfileResponseModel.EmailAddress"
                          ValueChanged="@(v => UserProfileResponseModel.EmailAddress = v)"
                          ValueExpression="@(() => UserProfileResponseModel.EmailAddress)"
-                         Id="mobile"
-                         Caption="Email address:"
                          readonly />
             <br />
             <br />

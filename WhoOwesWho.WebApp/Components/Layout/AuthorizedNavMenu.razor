@@ -1,12 +1,6 @@
 ﻿<div class="top-row navbar navbar-dark bg-dark navbar-expand-lg" style="background-color: cornflowerblue !important">
     <div class="container-fluid">
-
-        <!-- Brand -->
-        @* <a class="navbar-brand" href="">Who Owes Who</a> *@
-
-        <!-- Menu -->
         <div class="navbar-nav">
-
             <NavLink class="nav-link" href="/me" Match="NavLinkMatch.All">
                 Who Owes Who
             </NavLink>
@@ -18,7 +12,7 @@
             <NavLink class="nav-link" href="/me/profile">
                 My profile
             </NavLink>
-            
+
             <NavLink class="nav-link" href="/me/workspace">
                 My workspace
             </NavLink>
@@ -30,19 +24,22 @@
             <NavLink class="nav-link" href="/me/settlements">
                 Settlements
             </NavLink>
+        </div>
+        <div class="navbar-nav ms-auto">
             <NavLink class="nav-link" href="#" @onclick="HandleSignOut">
                 Sign out
             </NavLink>
-
         </div>
 
-        @*   <!-- Right side -->
+    </div>
+
+    @*   <!-- Right side -->
         <div class="ms-auto">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="nav-link text-white">
                 About
             </a>
         </div> *@
-    </div>
-        
 </div>
+
+
 

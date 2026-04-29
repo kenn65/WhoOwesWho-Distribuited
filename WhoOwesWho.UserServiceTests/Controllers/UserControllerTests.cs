@@ -216,7 +216,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
                 .ReturnsAsync(unprotectedEmail);
 
             validationMock
-                .Setup(x => x.VerifyUserEmailAddress(unprotectedEmail))
+                .Setup(x => x.VerifyUserEmailAddressAsync(unprotectedEmail))
                 .ReturnsAsync(response);
 
             var sut = new UserController(
@@ -262,7 +262,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
                 .ReturnsAsync(unprotectedEmail);
 
             validationMock
-                .Setup(x => x.VerifyUserEmailAddress(unprotectedEmail))
+                .Setup(x => x.VerifyUserEmailAddressAsync(unprotectedEmail))
                 .ReturnsAsync(response);
 
             var sut = new UserController(

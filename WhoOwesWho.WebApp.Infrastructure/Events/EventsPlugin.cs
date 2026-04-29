@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.Infrastructure.Base;
+using WhoOwesWho.WebApp.Infrastructure.Extensions;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
 using WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces;
 
@@ -14,7 +15,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetUserEventsBassAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, string.Empty);
+            var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
             return await GetAsync<IEnumerable<EventResponseModel>>(
                 endpoint, 
                 apiKey, 
@@ -26,11 +27,19 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
                 jwtToken);
         }
 
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active, string jwtToken)
+        {
+            var apiKey = await GetApiKeyAsync();
+            var baseAddress = await GetEventsBaseAddressAsync();
+            var endpoint = await baseAddress.ToEndpointAsync($"{active}");
+            return await GetAsync<IEnumerable<EventResponseModel>>(endpoint, apiKey, true, null, jwtToken);
+        }
+
         public async Task<EventResponseModel> CreateEventAsync(EventRequestModel request, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, string.Empty);
+            var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
             return await PutAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
         }
 
@@ -38,7 +47,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, $"{id}");
+            var endpoint = await baseAddress.ToEndpointAsync($"{id}");
             return await DeleteAsync<EventResponseModel>(endpoint, apiKey, true, null, jwtToken);
         }
 
@@ -46,7 +55,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, $"{eventId}/{active}");
+            var endpoint = await baseAddress.ToEndpointAsync($"{eventId}/{active}");
             return await GetAsync<EventResponseModel>(endpoint, apiKey, true, null, jwtToken);
         }
 
@@ -54,34 +63,42 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, "update");
+            var endpoint = await baseAddress.ToEndpointAsync("update");
             return await PatchAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
         }
 
-        public async Task<EventAssignmentResponseModel> GetUserAssignmentAsync(string userId, string jwtToken)
+        public async Task<EventUserAssignmentResponseModel> GetUserAssignmentAsync(string userId, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventUsersBaseAddressAsync();
-            var endpoint = await CreateEndpointAsync(baseAddress, $"{userId}");
-            return await GetAsync<EventAssignmentResponseModel>(endpoint, apiKey, true, null, jwtToken);
+            var endpoint = await baseAddress.ToEndpointAsync($"{userId}");
+            return await GetAsync<EventUserAssignmentResponseModel>(endpoint, apiKey, true, null, jwtToken);
+        }
+
+        public async Task<EventAssignmentResponseModel> AssignToEventAsync(EventAssignmentRequestModel request, string jwtToken)
+        {
+            var apiKey = await GetApiKeyAsync();
+            var baseAddress = await GetEventUsersBaseAddressAsync();
+            var endpoint = await baseAddress.ToEndpointAsync("assign");
+            return await PostAsync<EventAssignmentResponseModel, EventAssignmentRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+        }
+
+        public async Task<EventUnassignmentResponseModel> UnassignFromEventAsync(EventUnassignmentRequestModel request, string jwtToken)
+        {
+            var apiKey = await GetApiKeyAsync();
+            var baseAddress = await GetEventUsersBaseAddressAsync();
+            var endpoint = await baseAddress.ToEndpointAsync("unassign");
+            return await PostAsync<EventUnassignmentResponseModel, EventUnassignmentRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
         }
 
         private async Task<string> GetEventsBaseAddressAsync() => appSettings.EventMicroserviceEventsBaseAddress!;
         private async Task<string> GetEventUsersBaseAddressAsync() => appSettings.EventMicroserviceEventUsersBaseAddress!;
         private async Task<string> GetUserEventsBassAddressAsync() => appSettings.EventMicroserviceUserEventsBaseAddress!;
-
         private async Task<string> GetApiKeyAsync() => appSettings.EventMicroserviceApiKey!;
 
-        private async Task<string> CreateEndpointAsync(string baseAddress, string trailingPath)
-        {
-            if (string.IsNullOrWhiteSpace(trailingPath))
-            {
-                return baseAddress;
-            }
-            return $"{baseAddress}/{trailingPath}";
-        }
-
         
+
+       
     }
 }
     

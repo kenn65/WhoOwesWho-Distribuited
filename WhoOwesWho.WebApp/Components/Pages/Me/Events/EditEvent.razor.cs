@@ -22,7 +22,7 @@ public partial class EditEvent(
     private Guid EventId;
     private bool IsProcessing = false;
     private CookiesResponseModel? Cookies = null;
-    private string minDate = DateTime.Today.ToString("yyyy-MM-dd");
+    private string minDate = DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
     private Dictionary<string, object> _dateAttributes => new()
     {
         { "min", minDate }

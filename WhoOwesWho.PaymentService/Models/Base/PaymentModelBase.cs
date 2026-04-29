@@ -7,10 +7,10 @@ namespace WhoOwesWho.PaymentService.Models.Base
     public class PaymentModelBase : ModelBase
     {
         [JsonProperty("amount")]
-        public decimal Amount { get; set; }
+        public decimal? Amount { get; set; }
 
-        [JsonProperty("formattedAmount")]
-        public string FormattedAmount => Amount.FormatAmount();
+        //[JsonProperty("formattedAmount")]
+        //public string FormattedAmount => Amount.FormatAmount();
 
         [JsonProperty("currency")]
         public string? Currency { get; set; }
