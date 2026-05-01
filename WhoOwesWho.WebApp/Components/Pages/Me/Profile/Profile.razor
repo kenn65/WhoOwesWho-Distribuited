@@ -50,11 +50,21 @@ else
             <InputCheckbox id="administrator" @bind-Value="UserProfileResponseModel.Admin" class="tshadow border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
             <br />
             <br />
-            <SubmitButton Text="Submit" ProcessingText="Processing..." IsProcessing="IsProcessing" />
-            &nbsp;&nbsp;&nbsp;
-            <NavigationButton Text="Change password" ProcessingText="Navigating..." NavigationUrl="/me/profile/password" />
-            &nbsp;&nbsp;&nbsp;
-            <ActionButton Text="Cancel" ProcessingText="Cancellig..." NavigationUrl="/me" ForceLoad="true" />
+            <span class="p-2">
+                <SubmitButton Text="Submit"
+                              ProcessingText="Processing..."
+                              IsProcessing="IsProcessing" />
+            </span>
+            <span class="p-2">
+                <NavigationButton Text="Change password"
+                                  ProcessingText="Navigating..."
+                                  NavigationUrl="/me/profile/password" />
+            </span>
+            <span class="p-2">
+                <ActionButton Text="Cancel"
+                              ProcessingText="Cancellig..."
+                              NavigationUrl="/me" ForceLoad="true" />
+            </span>
         </EditForm>
     </div>
 }

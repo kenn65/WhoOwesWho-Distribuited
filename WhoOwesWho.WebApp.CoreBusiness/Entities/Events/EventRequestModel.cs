@@ -21,7 +21,7 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
 
         public string CurrencySymbol { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Please select the event start date")]
+        //[Required(ErrorMessage = "Please select the event start date")]
         public string? StartDate {get;set;} = string.Empty;
 
         [Required]
@@ -31,7 +31,7 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
         
         public bool Settled { get; set; }
 
-        [Required]
+        //[Required]
         public string UserId { get; set; } = string.Empty;
         
         public bool AutoAssign { get; set; }

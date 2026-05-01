@@ -7,22 +7,19 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Payments
     {
         public Guid PaymentId { get; set; }
 
-        [Required]
         public string EventId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please enter the total amount.")]
         public decimal? TotalAmount { get; set; } 
-
-        [Required]
+                
         public string CreditorId { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Please all users that gained for this payment")]
         public string DebitorId { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Please check users")]
+        [MinLength(2, ErrorMessage = "Please chcek at least two users")]
         public IEnumerable<string>? UserIds { get; set; }
 
-        [Required]
         public bool CreditorIncluded { get; set; }
                 
         public string Token { get; set; } = string.Empty;

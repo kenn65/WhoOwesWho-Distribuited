@@ -1,51 +1,71 @@
-using Microsoft.AspNetCore.Components;
-using System.Linq.Expressions;
-using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
+    using Microsoft.AspNetCore.Components;
+    using Microsoft.AspNetCore.Components.Forms;
+    using System.Linq.Expressions;
+    using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
+    using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 
-namespace WhoOwesWho.WebApp.Components.Common.Controls;
-public partial class PaymentUsersElement
-{
-    [Parameter] public IEnumerable<UserModel> Users { get; set; } = Enumerable.Empty<UserModel>();
-    [Parameter] public UserModel? You { get; set; }
-    [Parameter] public string Id { get; set; } = string.Empty;
-    [Parameter] public string Caption { get; set; } = string.Empty;
-    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
-    [Parameter] public Expression<Func<string?>> ValueExpression { get; set; } = default!;
-    [Parameter] public EventCallback<IEnumerable<string>> HandleUsers { get; set; }
+    namespace WhoOwesWho.WebApp.Components.Common.Controls;
 
-    private HashSet<string> SelectedUserIdsSet { get; } = new HashSet<string>();
-    private IEnumerable<string> SelectedUserIds => SelectedUserIdsSet;
-    private bool IsSelected(string id) => SelectedUserIdsSet.Contains(id);
-    private bool AllSelected = false;
-    
-    private async Task ToggleSelected(string id, bool isSelected)
+    public partial class PaymentUsersElement
     {
-        if (isSelected)
-        {
-            SelectedUserIdsSet.Add(id);
-        }
-        else
-        {
-            SelectedUserIdsSet.Remove(id);
-        }
-        await HandleUsers.InvokeAsync(SelectedUserIds);
-    }
+        [Parameter] public IEnumerable<UserModel> Users { get; set; } = Enumerable.Empty<UserModel>();
+        [Parameter] public UserModel? You { get; set; }
+        [Parameter] public string Id { get; set; } = string.Empty;
+        [Parameter] public string Caption { get; set; } = string.Empty;
+        [Parameter] public IEnumerable<string>? Value { get; set; }
+        [Parameter] public EventCallback<IEnumerable<string>> ValueChanged { get; set; }
+        [Parameter] public Expression<Func<IEnumerable<string>>>? ValueExpression { get; set; }
+        [Parameter] public EventCallback<IEnumerable<string>> HandleUsers { get; set; }
+        [CascadingParameter] private EditContext? EditContext { get; set; }
 
-    private async Task ToggleAll()
-    {
-        if (!AllSelected)
+
+        private HashSet<string> Selected = new();
+        private bool IsSelected(string id) => Selected.Contains(id);
+        private bool AllSelected = false;
+        private FieldIdentifier FieldIdentifier;
+
+        protected override void OnParametersSet()
         {
-            foreach (var user in Users)
+            Selected = Value != null
+                ? [.. Value]
+                : [];
+
+            FieldIdentifier = FieldIdentifier.Create(ValueExpression!);
+        }
+
+        private async Task ToggleSelected(string id, bool isSelected)
+        {
+            if (isSelected)
+                Selected.Add(id);
+            else
+                Selected.Remove(id);
+
+            var newValue = Selected.ToList();
+
+            await ValueChanged.InvokeAsync(newValue);
+            await HandleUsers.InvokeAsync(newValue);
+
+            EditContext?.NotifyFieldChanged(FieldIdentifier);
+        }
+
+        private async Task ToggleAll()
+        {
+            if (!AllSelected)
             {
-                SelectedUserIdsSet.Add(user.ProtectedId!);
+                Selected = Users.Select(u => u.ProtectedId!).ToHashSet();
+                AllSelected = true;
             }
-            AllSelected = true;
+            else
+            {
+                Selected.Clear();
+                AllSelected = false;
+            }
+
+            var newValue = Selected.ToList();
+
+            await ValueChanged.InvokeAsync(newValue);
+            await HandleUsers.InvokeAsync(newValue);
+
+            EditContext?.NotifyFieldChanged(FieldIdentifier);
         }
-        else
-        {
-            SelectedUserIdsSet.Clear();
-            AllSelected = false;
-        }
-        await HandleUsers.InvokeAsync(SelectedUserIds);
     }
-}

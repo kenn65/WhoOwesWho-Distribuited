@@ -152,7 +152,7 @@ public partial class Workspace(
         if (requestModel.TotalAmount == null)
         {
             await StopProcessing();
-            await alertService.Error("Please enter an payment amount");
+            await alertService.Error("Please enter a payment amount");
             return;
         }
         if (string.IsNullOrWhiteSpace(requestModel.Description))

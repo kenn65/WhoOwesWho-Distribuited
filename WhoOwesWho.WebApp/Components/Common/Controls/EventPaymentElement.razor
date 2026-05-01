@@ -43,13 +43,15 @@
     </p>
     <br />
     <br />
-    <EditForm method="post" Model="@CreatePaymentRequestModel" OnSubmit="HandlePaymentSubmit" FormName="eventpayment" Enhance>
+    <EditForm method="post" Model="@CreatePaymentRequestModel" OnValidSubmit="HandlePaymentSubmit" FormName="eventpayment" Enhance>
         <DataAnnotationsValidator />
         <PaymentUsersElement Id="paymentusers"
                              Caption="Check the users participating (yourself included if you gained from this payment):"
+                             Value="@CreatePaymentRequestModel!.UserIds"
+                             ValueChanged="@(v => CreatePaymentRequestModel.UserIds = v)"
+                             ValueExpression="@(() => CreatePaymentRequestModel.UserIds)"
                              Users="@EventResponseModel.Users"
-                             You="@CurrentUser"
-                             HandleUsers="@OnUsersSelected" />
+                             You="@CurrentUser" />
         <br />
         <br />
         <CurrencySelectElement Id="currency"
@@ -78,13 +80,16 @@
                      ValueExpression="@(() => CreatePaymentRequestModel.Description)" />
         <br />
         <br />
-        <SubmitButton IsProcessing="@IsProcessing"
-                      Text="Submit"
-                      ProcessingText="Processing..." />
-        &nbsp;&nbsp;&nbsp;
-        <ActionButton Text="Cancel"
-                      ProcessingText="Cancelling..."
-                      NavigationUrl="/me/workspace"
-                      ForceLoad="true" />
+        <span class="p-2">
+            <SubmitButton IsProcessing="@IsProcessing"
+                          Text="Submit"
+                          ProcessingText="Processing..." />
+        </span>
+        <span class="p-2">
+            <ActionButton Text="Cancel"
+                          ProcessingText="Cancelling..."
+                          NavigationUrl="/me/workspace"
+                          ForceLoad="true" />
+        </span>
     </EditForm>
 </div>
