@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using System.Globalization;
 using System.Linq.Expressions;
 using WhoOwesWho.WebApp.CoreBusiness.Extensions.WhoOwesWho.Shared.Extensions;
@@ -19,10 +20,12 @@ public partial class DecimalInputElement(IAlertService alertService)
     [Parameter] public int DecimalPlaces { get; set; } = 2;
     [Parameter] public CultureInfo? Culture { get; set; }
     [Parameter] public string CurrencySymbol { get; set; } = string.Empty;
+    [CascadingParameter] private EditContext? EditContext { get; set; }
 
     private CultureInfo ActiveCulture => Culture ?? CultureInfo.CurrentCulture;
     private string DisplayValue = string.Empty;
     private bool IsFocused;
+    private FieldIdentifier FieldIdentifier;
 
     protected override void OnParametersSet()
     {
@@ -30,6 +33,7 @@ public partial class DecimalInputElement(IAlertService alertService)
         {
             DisplayValue = FormatValue(Value);
         }
+        FieldIdentifier = FieldIdentifier.Create(ValueExpression!);
     }
 
     private void HandleFocus()
@@ -47,6 +51,8 @@ public partial class DecimalInputElement(IAlertService alertService)
             await alertService.Error("Invalid amount value. Please enter a valid number.");
         }
         DisplayValue = value;
+        await ValueChanged.InvokeAsync(parsed);
+        EditContext?.NotifyFieldChanged(FieldIdentifier);
     }
 
 
@@ -57,6 +63,7 @@ public partial class DecimalInputElement(IAlertService alertService)
         if (string.IsNullOrWhiteSpace(DisplayValue))
         {
             await ValueChanged.InvokeAsync(null);
+            //EditContext?.NotifyFieldChanged(FieldIdentifier);
             DisplayValue = string.Empty;
             return;
         }
@@ -67,6 +74,7 @@ public partial class DecimalInputElement(IAlertService alertService)
         if (decimal.TryParse(normalized, NumberStyles.Any, ActiveCulture, out var parsed))
         {
             await ValueChanged.InvokeAsync(parsed);
+            //EditContext?.NotifyFieldChanged(FieldIdentifier);
             DisplayValue = FormatValue(parsed);
         }
         else

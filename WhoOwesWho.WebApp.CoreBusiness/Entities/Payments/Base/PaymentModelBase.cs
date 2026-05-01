@@ -15,7 +15,7 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Payments.Base
         public string FormattedOriginalAmount => OriginalAmount.FormatAmount();
         public string OriginalCurrency { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Please enter a description")]
+        [Required(ErrorMessage = "Please write a description")]
         public string Description { get; set; } = string.Empty;
     }
 }

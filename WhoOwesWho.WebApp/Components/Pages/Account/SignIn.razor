@@ -53,14 +53,17 @@
                          ValueExpression="@(() => AuthenticationCodeRequestModel.Code)" />
             <br />
             <br />
-            <SubmitButton Text="OK"
-                          ProcessingText="Processing..."
-                          IsProcessing="IsProcessing" />
-            &nbsp;&nbsp;&nbsp;
-            <ActionButton Text="Cancel"
-                          ProcessingText="Cancelling..."
-                          NavigationUrl="/account/signin" 
-                          ForceLoad = "true"/>
+            <span class="p-2">
+                <SubmitButton Text="OK"
+                              ProcessingText="Processing..."
+                              IsProcessing="IsProcessing" />
+            </span>
+            <span class="p-2">
+                <ActionButton Text="Cancel"
+                              ProcessingText="Cancelling..."
+                              NavigationUrl="/account/signin"
+                              ForceLoad="true" />
+            </span>
         </EditForm>
     }
 </div>

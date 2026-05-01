@@ -80,10 +80,4 @@ public partial class EventPaymentElement(
             await HandlePayment.InvokeAsync(CreatePaymentRequestModel);
         }
     }
-
-    private async Task OnUsersSelected(IEnumerable<string> userIds)
-    {
-        CreatePaymentRequestModel!.UserIds = userIds;
-        var test = CreatePaymentRequestModel;
-    }
 }

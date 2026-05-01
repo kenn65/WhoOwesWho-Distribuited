@@ -32,55 +32,42 @@ else
         }
         <br />
         <br />
-        <table class="justify-center m-auto">
-            <thead>
-                <tr>
-                    <th class="p-6">Name</th>
-                    <th class="p-6">Location</th>
-                    <th class="p-6">Currency</th>
-                    <th class="p-6">Start Date</th>
-                    <th class="p-6">Created By</th>
-                    <th class="p-6">Active</th>
-                    @if (IsAdmin)
+        <QuickGrid Items="@EventList.AsQueryable()" class="m-auto">
+
+            <PropertyColumn Property="@(e => e.Name)" Title="Name" Class="p-6" />
+            <PropertyColumn Property="@(e => e.Location)" Title="Location" Class="p-6" />
+            <PropertyColumn Property="@(e => e.Currency)" Title="Currency" Class="p-6" />
+            <PropertyColumn Property="@(e => e.StartDateIso)" Title="Start Date" Class="p-6" />
+            <PropertyColumn Property="@(e => e.CreatedBy)" Title="Created By" Class="p-6" />
+
+            <!-- Active column -->
+            <TemplateColumn Title="Active" Class="p-6">
+                <span class="@(context.Settled ? "text-red-600" : "text-green-600")">
+                    @context.ActiveIcon
+                </span>
+            </TemplateColumn>
+
+            <!-- Actions -->
+            @if (IsAdmin)
+            {
+                <TemplateColumn Title="Actions" Class="p-2">
+                    @if (!context.Settled)
                     {
-                        <th class="p-6">Actions</th>
+                        <span class="p-2">
+                            <NavigationStateButton Text="Edit"
+                                                   ProcessingText="Navigating..."
+                                                   OnClick="() => EditEventAsync(context.Adapt<EventModel>())" />
+                        </span>
+                        <span class="p-2">
+                            <NavigationStateButton Text="Delete"
+                                                   ProcessingText="Navigating..."
+                                                   OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
+                        </span>
                     }
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (EventResponseModel item in EventList)
-                {
-                    <tr>
-                        <td class="p-6">@item.Name</td>
-                        <td class="p-6">@item.Location</td>
-                        <td class="p-6">@item.Currency</td>
-                        <td class="p-6">@item.StartDateIso </td>
-                        <td class="p-6">@item.CreatedBy </td>
-                        <td class="p-6">
-                            <span class="@(item.Settled ? "text-red-600" : "text-green-600")">
-                                @item.ActiveIcon
-                            </span>
-                        </td>
+                </TemplateColumn>
+            }
 
-                        @if (!item.Settled && IsAdmin)
-                        {
-                            <td class="p-2">
-                                <NavigationStateButton Text="Edit"
-                                                       ProcessingText="Navigating..."
-                                                       OnClick="() => EditEventAsync(item.Adapt<EventModel>())" />
-                            </td>
-
-                            <td class="p-2">
-                                <NavigationStateButton Text="Delete"
-                                                       ProcessingText="Navigating..."
-                                                       OnClick="() => DeleteEventAsync(item.Adapt<EventModel>())" />
-                            </td>
-                        }
-                    </tr>
-                }
-            </tbody>
-        </table>
+        </QuickGrid>
         <br />
         <br />
     </div>
