@@ -66,7 +66,7 @@ namespace WhoOwesWho.UserServiceTests.Services
             var exception = await act.Should().ThrowAsync<Exception>();
 
             exception.Which.Message.Should()
-                .Contain("An error occurred while sending the account confirmation message");
+                .Contain("An error occurred while dispatching the user by service bus:");
 
             exception.Which.InnerException.Should().NotBeNull();
         }

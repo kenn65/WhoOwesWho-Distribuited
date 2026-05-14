@@ -1,6 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using WhoOwesWho.Shared.Models;
-using WhoOwesWho.Shared.Models.Base;
+using WhoOwesWho.Shared.Models.Base.ServiceBus;
 
 namespace WhoOwesWho.UserService.Services.ServiceBus.Publishers
 {

@@ -7,10 +7,10 @@ namespace WhoOwesWho.PaymentService.Models
     public class PaymentDetailsModel : PaymentModelBase
     {
         [JsonProperty("paymentId")]
-        public string? PaymentId { get; set; }
+        public Guid PaymentId { get; set; }
 
         [JsonProperty("eventId")]
-        public string? EventId { get; set; }
+        public Guid EventId { get; set; }
 
         [JsonProperty("totalAmount")]
         public decimal TotalAmount { get; set; }

@@ -4,7 +4,7 @@ using WhoOwesWho.WebApp.CoreBusiness.Extensions.WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Payments.Base
 {
-    public class PaymentModelBase : RequestModelBase
+    public class PaymentRequestModelBase : RequestModelBase
     {
         public decimal Amount { get; set; }
         public string FormattedAmount => Amount.FormatAmount();

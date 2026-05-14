@@ -19,8 +19,8 @@ namespace WhoOwesWho.PaymentService.Repositories
 
         public async Task<IEnumerable<UserPaymentResponseModel>> GetUserPaymentsAsync(UserBalanceRequestModel request, bool isCreditor)
         {
-            var eventId = Guid.Parse(request.EventId!);
-            var userId = Guid.Parse(request.UserId!);
+            var eventId = request.EventId!;
+            var userId = request.UserId!;
 
             var payments = await context.Payments
                 .Join(context.PaymentUsers,
@@ -39,7 +39,7 @@ namespace WhoOwesWho.PaymentService.Repositories
 
         public async Task<IEnumerable<UserPaymentResponseModel>> GetPaymentsAsync(PaymentsRequestModel request)
         {
-            var eventId = Guid.Parse(request.EventId!);
+            var eventId = request.EventId;
 
             var rows = await context.Payments
                 .Join(context.PaymentUsers,
@@ -67,7 +67,7 @@ namespace WhoOwesWho.PaymentService.Repositories
 
             foreach (var row in rows)
             {
-                var authorizedUser = await redisDatabaseRepository.GetUserByIdAsync(row.UserId.ToString());
+                var authorizedUser = await redisDatabaseRepository.GetUserByIdAsync(row.UserId);
 
                 if (row.IsCreditor)
                 {
@@ -99,7 +99,7 @@ namespace WhoOwesWho.PaymentService.Repositories
 
         public async Task<PaymentDetailsModel> GetPaymentDetailsAsync(PaymentDetailsPageRequestModel request)
         {
-            var paymentId = Guid.Parse(request.PaymentId!);
+            var paymentId = request.PaymentId;
 
             var rows = await context.Payments
             .Join(context.PaymentUsers,
@@ -131,7 +131,7 @@ namespace WhoOwesWho.PaymentService.Repositories
                 rows.Select(async row =>
                 {
                     
-                    var user = await redisDatabaseRepository.GetUserByIdAsync(row.UserId.ToString());
+                    var user = await redisDatabaseRepository.GetUserByIdAsync(row.UserId);
 
                     return new
                     {
@@ -150,8 +150,8 @@ namespace WhoOwesWho.PaymentService.Repositories
 
                 if (row.IsCreditor)
                 {
-                    response.PaymentId = row.Id.ToString();
-                    response.EventId = row.EventId.ToString();
+                    response.PaymentId = row.Id;
+                    response.EventId = row.EventId;
                     response.Amount = row.Amount;
                     response.Currency = row.Currency;
                     response.OriginalAmount = row.OriginalAmount;

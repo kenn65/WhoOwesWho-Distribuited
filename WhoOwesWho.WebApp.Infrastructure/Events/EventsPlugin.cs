@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Extensions;
@@ -11,15 +12,12 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
     {
         private readonly AppSettings appSettings = new(configuration);
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string userId, string jwtToken)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(Guid userId, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetUserEventsBassAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
-            return await GetAsync<IEnumerable<EventResponseModel>>(
-                endpoint, 
-                apiKey, 
-                true, 
+            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>>(endpoint, apiKey,  false, 
                 new Dictionary<string, dynamic>
                 {
                     { "userId", userId}
@@ -27,12 +25,12 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
                 jwtToken);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active, string jwtToken)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(bool active, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{active}");
-            return await GetAsync<IEnumerable<EventResponseModel>>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>>(endpoint, apiKey, true, null, jwtToken);
         }
 
         public async Task<EventResponseModel> CreateEventAsync(EventRequestModel request, string jwtToken)
@@ -43,7 +41,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
             return await PutAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
         }
 
-        public async Task<EventResponseModel> DeleteEventAsync(string id, string jwtToken)
+        public async Task<EventResponseModel> DeleteEventAsync(Guid id, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
@@ -51,7 +49,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
             return await DeleteAsync<EventResponseModel>(endpoint, apiKey, true, null, jwtToken);
         }
 
-        public async Task<EventResponseModel> GetEventAsync(string eventId, bool active, string jwtToken)
+        public async Task<EventResponseModel> GetEventAsync(Guid eventId, bool active, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
@@ -67,7 +65,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
             return await PatchAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
         }
 
-        public async Task<EventUserAssignmentResponseModel> GetUserAssignmentAsync(string userId, string jwtToken)
+        public async Task<EventUserAssignmentResponseModel> GetUserAssignmentAsync(Guid userId, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventUsersBaseAddressAsync();

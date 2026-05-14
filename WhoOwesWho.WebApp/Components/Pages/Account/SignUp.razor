@@ -5,6 +5,7 @@
     <br />
     <br />
     <EditForm method="post" Model="@UserModel" OnValidSubmit="HandleSubmit" FormName="signup" Enhance>
+        <DataAnnotationsValidator />
         <TextElement Id="name"
                      Caption="Name:"
                      Placeholder="Your first and last name or some other unique nickname"

@@ -2,13 +2,15 @@ using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Account;
+using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Account.Password;
 public partial class ChangePassword(
     NavigationManager nav, 
     IUserUseCase userUseCase, 
     IAlertService alertService, 
-    ICookiesMasterService cookiesMasterService)
+    ICookiesMasterService cookiesMasterService,
+    IProtectionUseCase protectionUseCase)
 {
     [SupplyParameterFromForm]
     private ChangePasswordRequestModel? ChangePasswordRequestModel { get; set; }
@@ -24,7 +26,7 @@ public partial class ChangePassword(
     {
         IsProcessing = true;
         var cookies = await cookiesMasterService.GetAsync();
-        ChangePasswordRequestModel!.EmailAddress = cookies!.UserEmailAddressValue;
+        ChangePasswordRequestModel!.EmailAddress = await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserEmailAddressValue);
         var response = await userUseCase.ExecuteAsync(cookies.TokenValue, ChangePasswordRequestModel!);
         await StopProcessing();
         if (!response.Success)

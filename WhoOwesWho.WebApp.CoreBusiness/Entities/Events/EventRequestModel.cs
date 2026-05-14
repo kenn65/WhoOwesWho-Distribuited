@@ -22,18 +22,19 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
         public string CurrencySymbol { get; set; } = string.Empty;
 
         //[Required(ErrorMessage = "Please select the event start date")]
-        public string? StartDate {get;set;} = string.Empty;
+        public string? StartDate { get; set; } = string.Empty;
 
         [Required]
         public DateTime StartDateDate { get; set; }
-        
+
         public long StartDateTicks => StartDateDate.Ticks;
-        
+
         public bool Settled { get; set; }
 
-        //[Required]
-        public string UserId { get; set; } = string.Empty;
-        
+        public Guid UserId { get; set; }
+
         public bool AutoAssign { get; set; }
+
+        public string Token { get; set; } = string.Empty;
     }
 }

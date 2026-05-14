@@ -1,4 +1,5 @@
-﻿using WhoOwesWho.Shared.Models;
+﻿using WhoOwesWho.Shared.Auxiliaries;
+using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
@@ -36,7 +37,7 @@ namespace WhoOwesWho.UserService.Services
             }
             catch (Exception e)
             {
-                throw new Exception($"An error occurred while sending the account confirmation message: {e.Message}",
+                throw new Exception($"{Constants.UserCreationErrorMessages.SendAccountConfirmationException} {e.Message}",
                     e);
             }
         }

@@ -10,11 +10,11 @@ namespace WhoOwesWho.WebApp.UseCases.Account
     {
         Task<UserModel> ExecuteAsync(SignUpRequestModel request);
         Task<UserModel> ExecuteAsync(VerificationRequestModel request);
-        Task<UserModel> ExecuteAsync(string id, string jwtToken, bool includePassword = true);
+        Task<UserModel> ExecuteAsync(Guid id, string jwtToken, bool includePassword = true);
         Task<ForgotPasswordResponseModel> ExecuteAsync(ForgotPasswordRequestModel request);
         Task<ResetPasswordResponseModel> ExecuteAsync(string emailAddress, string forgotPasswordToken);
         Task<ResetPasswordResponseModel> ExecuteAsync(ResetPasswordRequestModel request);
-        Task<UserModel> ExecuteAsync(string userId, string jwtToken, UserUpdateRequestModel request);
+        Task<UserModel> ExecuteAsync(Guid userId, string jwtToken, UserUpdateRequestModel request);
         Task<ChangePasswordResponseModel> ExecuteAsync(string jwtToken, ChangePasswordRequestModel request);
     }
 
@@ -23,7 +23,6 @@ namespace WhoOwesWho.WebApp.UseCases.Account
         public async Task<UserModel> ExecuteAsync(SignUpRequestModel request)
         {
             request.Entity!.Password = await protectionUseCase.ExecuteProtectAsync(request.Entity.Password!);
-            request.Entity.EmailAddress = await protectionUseCase.ExecuteProtectAsync(request.Entity.EmailAddress!);
             return await userPlugin.SignUp(request);
         }
 
@@ -32,14 +31,13 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             return await userPlugin.VerifyAccountAsync(request);
         }
 
-        public async Task<UserModel> ExecuteAsync(string id, string jwtToken, bool includePassword = true)
+        public async Task<UserModel> ExecuteAsync(Guid id, string jwtToken, bool includePassword = true)
         {
             return await userPlugin.GetUserByIdAsync(id, jwtToken, includePassword);
         }
 
         public async Task<ForgotPasswordResponseModel> ExecuteAsync(ForgotPasswordRequestModel request)
         {
-            request.EmailAddress = await protectionUseCase.ExecuteProtectAsync(request.EmailAddress);
             return await userPlugin.ForgotPasswordAsync(request);
         }
 
@@ -55,9 +53,8 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             return await userPlugin.ResetPasswordAsync(request);
         }
 
-        public async Task<UserModel> ExecuteAsync(string userId, string jwtToken, UserUpdateRequestModel request)
+        public async Task<UserModel> ExecuteAsync(Guid userId, string jwtToken, UserUpdateRequestModel request)
         {
-            request.EventId = await protectionUseCase.ExecuteProtectAsync(request.EventId);
             return await userPlugin.UpdateUserAsync(userId, jwtToken, request);
         }
 

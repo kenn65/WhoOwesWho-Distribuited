@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,7 @@ using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.EventService.Services.ServiceBus.Publishers;
+using WhoOwesWho.EventService.Validators;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +54,11 @@ builder.Services.AddScoped<IEventQueryRepository, EventQueryRepository>();
 builder.Services.AddScoped<IEventCacheRepository, EventCacheRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateEventRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EventAssignmentRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EventUnassignmentRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateEventRequestValidator>();
+
 builder.Services.AddControllers();
 
 // 🔐 Authentication (JWT)

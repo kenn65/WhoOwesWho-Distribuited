@@ -14,17 +14,13 @@ namespace WhoOwesWho.UserService.Repositories
         Task<ForgotPasswordTokenModel> GetForgotPasswordTokenAsync(Guid userId);
         Task<bool> GetUserEmailExists(string emailAddress);
         Task<bool> GetUserFullNameExists(string fullName);
-
-
     }
 
     public class UserQueryRepository(UserDbContext context) : IUserQueryRepository
     {
         public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
         {
-            var model = await context.Users
-                .ProjectToType<UserModel>().ToListAsync();
-            return model;
+            return await context.Users.ProjectToType<UserModel>().ToListAsync();
         }
 
         public async Task<ForgotPasswordTokenModel> GetForgotPasswordTokenAsync(Guid userId)

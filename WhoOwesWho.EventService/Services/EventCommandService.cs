@@ -2,8 +2,8 @@
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services.Base;
-using WhoOwesWho.EventService.Services.Gateways;
 using WhoOwesWho.PaymentService.Models;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Services
@@ -13,161 +13,144 @@ namespace WhoOwesWho.EventService.Services
         Task<AssignmentResponseModel> AssignAsync(AssignmentRequestModel request);
         Task<EventResponseModel?> CreateEventAsync(EventRequestModel request);
         Task<UpdateResponseModel> UpdateEventAsync(EventRequestModel request);
-        Task<DeleteEventResponseModel> DeleteEventAsync(string id);
+        Task<DeleteEventResponseModel> DeleteEventAsync(Guid id);
         Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request);
         Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request);
-        Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request);
+        Task<SettleEventResponseModel> SettleEventAsync(Guid eventId);
     }
 
     public class EventCommandService(IConfiguration configuration,
         IEventLookupService eventLookupService,
-        IEventSecurityService eventSecurityService,
         IEventMutationRepository eventMutationRepository,
         IEventCacheRepository eventCacheRepository,
         IEventPublishingService eventPublishingService
         ) : ServiceBase(configuration), IEventCommandService
     {
-
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
-            var response = await eventMutationRepository.CreateEventAsync(request);
-            if (response!.Success)
+            try
             {
+                var response = await eventMutationRepository.CreateEventAsync(request);
                 if (request.AutoAssign)
                 {
-                    if (!Guid.TryParse(request.UserId, out var _))
-                    {
-                        request.UserId = await eventSecurityService.UnprotectAsync(request.UserId!);
-                    }
-                    var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId!);
+                    var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString()!);
                     await AssignAsync(new AssignmentRequestModel
                     {
-                        EventId = response.Id.ToString(),
+                        EventId = response!.Id,
                         UserId = request.UserId,
                         User = creationUser
                     });
                 }
-                response.Message = "Event created successfully.";
+                response!.Message = Constants.EventErrorMessages.EventCreationSucceeded;
                 return response;
             }
-            return new EventResponseModel
+            catch
             {
-                Message = $"An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
         }
 
         public async Task<UpdateResponseModel> UpdateEventAsync(EventRequestModel request)
         {
-            var response = await eventMutationRepository.UpdateEventAsync(request);
-            if (response.Success)
+            try
             {
-                response.Message = "Event updated successfully.";
+                var response = await eventMutationRepository.UpdateEventAsync(request);
+                response.Message = Constants.EventErrorMessages.EventModificationSucceeded;
                 return response;
             }
-            return new UpdateResponseModel
+            catch
             {
-                Message = "An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
         }
 
-        public async Task<DeleteEventResponseModel> DeleteEventAsync(string id)
+        public async Task<DeleteEventResponseModel> DeleteEventAsync(Guid id)
         {
-            var unprotectedId = await eventSecurityService.UnprotectAsync(id);
-            var response = await eventMutationRepository.DeleteEventAsync(Guid.Parse(unprotectedId));
-            if (response.Success)
+            try
             {
-                response.Message = "Event deleted successfully.";
+                var response = await eventMutationRepository.DeleteEventAsync(id);
+                response.Message = Constants.EventErrorMessages.EventDeletionSucceeded;
                 return response;
             }
-            return new DeleteEventResponseModel
+            catch
             {
-                Message = "An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
         }
 
         public async Task<AssignmentResponseModel> AssignAsync(AssignmentRequestModel request)
         {
-            var userId = string.Empty;
-            if (!Guid.TryParse(request.UserId, out var _))
+            try
             {
-                userId = await eventSecurityService.UnprotectAsync(request.UserId!);
-            }
-            var you = await eventCacheRepository.GetUserByIdAsync(userId);
-            var users = (await eventLookupService.GetEventUsersAsync(request.EventId!)).ToList();
-            if (users.Any(u => u.Admin) && you!.Admin)
-            {
-                return new AssignmentResponseModel
+                var you = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString());
+                var users = (await eventLookupService.GetEventUsersAsync(request.EventId)).ToList();
+                if (users.Any(u => u.Admin) && you!.Admin)
                 {
-                    Message = "You cannot assign to this event as an administrator, because an event administrator already exists."
-                };
-            }
-            
-            var response = await AssignToEventAsync(request);
-            if (response.Success)
-            {
-                response.Message = "Successfully assigned your user to event.";
+                    return new AssignmentResponseModel
+                    {
+                        Message = Constants.EventErrorMessages.UserAssignmentInvalid
+                    };
+                }
+                var response = await AssignToEventAsync(request);
+                response.Message = Constants.EventErrorMessages.UserAssignmentSucceeded;
                 return response;
             }
-            return new AssignmentResponseModel
+            catch
             {
-                Message = "An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
         }
 
         public async Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request)
         {
-            var response = await eventMutationRepository.AssignToEventAsync(request);
-            if (response.Success)
+            try
             {
+                var response = await eventMutationRepository.AssignToEventAsync(request);
                 var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
                 var publishingItems = evt.Adapt<EventMessageRequestModel>();
                 publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItems);
-                response.Message = "Successfully assigned user to event.";
+                response.Message = Constants.EventErrorMessages.UserAssignmentSucceeded;
                 return response;
             }
-            return new AssignmentResponseModel
+            catch
             {
-                Message = "An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
         }
 
         public async Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request)
         {
-            var response = await eventMutationRepository.UnassignFromEventAsync(request);
-            if (response.Success)
+            try
             {
+                var response = await eventMutationRepository.UnassignFromEventAsync(request);
                 var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
                 var publishingItem = evt.Adapt<EventMessageRequestModel>();
                 publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
                 await eventPublishingService.SendEventAsync(publishingItem);
-                response.Message = "Successfully unassigned user from event.";
+                response.Message = Constants.EventErrorMessages.UserUnassignmentSucceeded;
                 return response;
             }
-            return new UnassignmentResponseModel
+            catch
             {
-                Message = "An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
         }
 
-        public async Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request)
+        public async Task<SettleEventResponseModel> SettleEventAsync(Guid eventId)
         {
-            request.EventId = await eventSecurityService.UnprotectAsync(request.EventId!);
-            var response = await eventMutationRepository.SettleEventAsync(request);
-            if (response.Success)
-            {   
-                await eventCacheRepository.DeleteActiveEventAsync(request.EventId!);
-                response.Message = "The event was successfully settled.";
+            try
+            {
+                var response = await eventMutationRepository.SettleEventAsync(eventId);
+                await eventCacheRepository.DeleteActiveEventAsync(eventId.ToString());
+                response.Message = Constants.EventErrorMessages.EventSettlmentSucceeded;
                 return response;
             }
-            return new SettleEventResponseModel
+            catch
             {
-                Message = "An unexpected error occurred. Please, try again."
-            };
+                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
+            }
+
         }
-
-       
-
-       
     }
 }

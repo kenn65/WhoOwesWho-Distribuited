@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.PaymentService.Controllers
@@ -13,7 +15,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         [HttpGet]
         [Route("{eventId}/{active}")]
         [Authorize]     
-        public async Task<IActionResult> GetSettlementsAsync(string eventId, bool active)
+        public async Task<IActionResult> GetSettlementsAsync(Guid eventId, bool active)
         {
             try
             {
@@ -36,10 +38,17 @@ namespace WhoOwesWho.PaymentService.Controllers
         [HttpGet]
         [Route("{paymentId}")]
         [Authorize]
-        public async Task<IActionResult> GetSettlementAsync(string paymentId)
+        public async Task<IActionResult> GetSettlementAsync(Guid paymentId)
         {
             try
             {
+                if (paymentId == Guid.Empty)
+                {
+                    return BadRequest(new PaymentDetailsPageResponseModel{
+                         Message = Constants.RequestArgumentErrorMessages.PaymentIdArgumentError
+                    });
+                }
+
                 var requestModel = new SettlementDetailsRequestModel
                 {
                     PaymentId = paymentId,
@@ -47,10 +56,13 @@ namespace WhoOwesWho.PaymentService.Controllers
                 };
                 return Ok(await paymentLookupService.GetSettlementDetailsAsync(requestModel));
             }
-            catch
+            catch(Exception e)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new PaymentDetailsPageResponseModel
+                {
+                    Message = e.Message
+                });
+                    
             }
         }
     }

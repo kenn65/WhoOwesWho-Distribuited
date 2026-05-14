@@ -9,7 +9,7 @@ namespace WhoOwesWho.PaymentService.EfCore.DataModels
 
         [Required]
         public Guid EventId { get; set; }
-
+        
         [Required]
         public Decimal Amount { get; set; }
 

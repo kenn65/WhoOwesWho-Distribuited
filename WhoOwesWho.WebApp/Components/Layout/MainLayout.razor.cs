@@ -10,7 +10,8 @@ public partial class MainLayout(IAlertService alertService, IJSRuntime JS, ICook
     protected override async Task OnInitializedAsync()
     {
         alertService.OnShow += HandleAlert;
-        isAuthorized = await cookiesMasterService.IsAuthorizedAsync();
+        var cookies = await cookiesMasterService.GetAsync();
+        isAuthorized = await cookiesMasterService.IsAuthorizedAsync(cookies!);
     }
 
     private async Task HandleAlert(AlertRequestModel request)

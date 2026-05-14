@@ -7,8 +7,10 @@ using WhoOwesWho.WebApp.StateHandlers;
 using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Events;
+using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Events;
+
 public partial class EditEvent(
     NavigationManager nav,
     IEventsUseCase eventsUseCase,
@@ -16,13 +18,15 @@ public partial class EditEvent(
     ICookiesMasterService cookiesMasterService,
     IUserUseCase userUseCase,
     ICurrenciesUseCase currenciesUseCase,
-    IStateHandler<EventModel> eventState)
+    IStateHandler<EventModel> eventState,
+    IProtectionUseCase protectionUseCase)
 {
     private IEnumerable<CurrencyResponseModel> CurrencyList = new List<CurrencyResponseModel>();
     private Guid EventId;
     private bool IsProcessing = false;
     private CookiesResponseModel? Cookies = null;
     private string minDate = DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
+    private Guid UserId { get; set; }
     private Dictionary<string, object> _dateAttributes => new()
     {
         { "min", minDate }
@@ -34,6 +38,7 @@ public partial class EditEvent(
     protected override async Task OnInitializedAsync()
     {
         Cookies = await cookiesMasterService.GetAsync();
+        UserId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(Cookies!.UserIdValue));
         EventId = eventState.SelectedItem!.Id;
         EventResponseModel = await GetEventAsync();
         EventResponseModel.StartDateDate = new DateTime(EventResponseModel.StartDate);
@@ -43,12 +48,12 @@ public partial class EditEvent(
 
     private async Task<EventResponseModel> GetEventAsync()
     {
-        return await eventsUseCase.ExecuteAsync(EventId.ToString(), true, Cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventAsync(EventId, true, Cookies!.TokenValue);
     }
 
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {
-        return await currenciesUseCase.GetCurrenciesAsync(Cookies!.TokenValue);
+        return (await currenciesUseCase.ExecuteAsync(Cookies!.TokenValue))?.Data!;
     }
 
     private async Task HandleSubmit()
@@ -61,10 +66,11 @@ public partial class EditEvent(
             Location = EventResponseModel.Location,
             Currency = EventResponseModel.Currency,
             StartDate = EventResponseModel.StartDateDate.ToString("yyyy-MM-dd"),
-            CreatedBy = EventResponseModel.CreatedBy
+            CreatedBy = EventResponseModel.CreatedBy,
+            Token = Cookies!.TokenValue
         };
 
-        var response = await eventsUseCase.ExecuteAsync(requestModel, Cookies!.TokenValue, false);
+        var response = await eventsUseCase.ExecuteUpdateEventAsync(requestModel, Cookies!.TokenValue);
         await StopProcessing();
         if (!response.Success)
         {
@@ -77,10 +83,7 @@ public partial class EditEvent(
 
     private async Task<string> GetUserAsync()
     {
-        var response = await userUseCase.ExecuteAsync(
-                 Cookies!.UserIdValue,
-                 Cookies.TokenValue,
-                 false);
+        var response = await userUseCase.ExecuteAsync(UserId, Cookies!.TokenValue);
         return response!.FullName!;
     }
 

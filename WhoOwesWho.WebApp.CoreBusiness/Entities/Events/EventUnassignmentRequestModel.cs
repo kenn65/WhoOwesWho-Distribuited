@@ -4,7 +4,9 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
 {
     public class EventUnassignmentRequestModel : RequestModelBase
     {
-        public string EventId { get; set; } = string.Empty;
-        public string? UserId { get; set; } = string.Empty;
+        public Guid EventId => Guid.Parse(EventIdString);   
+        public Guid UserId => Guid.Parse(UserIdString);
+        public string EventIdString { get; set; } = string.Empty;
+        public string UserIdString { get; set; } = string.Empty;
     }
 }

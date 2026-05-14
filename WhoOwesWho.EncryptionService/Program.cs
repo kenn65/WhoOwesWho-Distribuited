@@ -1,7 +1,9 @@
+using FluentValidation;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using WhoOwesWho.EncryptionService.Middleware;
 using WhoOwesWho.EncryptionService.Services;
+using WhoOwesWho.EncryptionService.Validators;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +12,7 @@ builder.AddServiceDefaults();
 
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IEncryptionSecurityService, EncryptionSecurityService>();
+builder.Services.AddValidatorsFromAssemblyContaining<ProtectCookiesRequestValidator>();
 
 builder.Services.AddControllers();
 

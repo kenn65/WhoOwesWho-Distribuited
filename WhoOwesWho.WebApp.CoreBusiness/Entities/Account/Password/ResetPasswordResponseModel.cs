@@ -6,3 +6,4 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password
     {
     }
 }
+ 

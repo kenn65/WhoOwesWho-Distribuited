@@ -4,6 +4,6 @@ namespace WhoOwesWho.UserService.Models
 {
     public class UpdateUserVerificationModel : ModelBase
     {
-        public bool NoAdmin { get; set; }
+        public bool AdministratorNonExisting { get; set; }
     }
 }

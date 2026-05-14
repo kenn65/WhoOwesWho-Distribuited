@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.Net;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
@@ -26,7 +27,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
             return await PostAsync<UserModel, VerificationRequestModel>(endpoint, request, apiKey, true);
         }
 
-        public async Task<UserModel> GetUserByIdAsync(string id, string jwtToken, bool includePassword = true)
+        public async Task<UserModel> GetUserByIdAsync(Guid id, string jwtToken, bool includePassword = true)
         {
             var apiKey = await GetApiKeyAsync();
             var complete = includePassword.ToString().ToLowerInvariant();
@@ -53,7 +54,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
             var endpoint = await CreateEndpoint("password/reset");
             return await PostAsync<ResetPasswordResponseModel, ResetPasswordRequestModel>(endpoint, request, apiKey, true);
         }
-        public async Task<UserModel> UpdateUserAsync(string userId, string jwtToken, UserUpdateRequestModel? requst)
+        public async Task<UserModel> UpdateUserAsync(Guid userId, string jwtToken, UserUpdateRequestModel? requst)
         {
             var apiKey = await GetApiKeyAsync();
             var endpoint = await CreateEndpoint($"{userId}");

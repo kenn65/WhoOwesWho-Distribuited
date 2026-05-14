@@ -5,8 +5,8 @@ namespace WhoOwesWho.Shared.Models
 {
     public class UserModel : ModelBase
     {
-        [JsonProperty("protectedId")]
-        public string? ProtectedId { get; set; }
+        //[JsonProperty("protectedId")]
+        //public string? ProtectedId { get; set; }
 
         [JsonProperty("id")]
         public Guid Id { get; set; } = Guid.Empty;
@@ -28,8 +28,5 @@ namespace WhoOwesWho.Shared.Models
 
         [JsonProperty("emailAddressVerified")]
         public bool EmailAddressVerified { get; set; }
-
-        [JsonIgnore]
-        public decimal Balance { get; set; } = 0;
     }
 }

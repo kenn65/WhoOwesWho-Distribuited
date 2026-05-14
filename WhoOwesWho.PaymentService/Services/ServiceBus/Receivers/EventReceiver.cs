@@ -2,7 +2,7 @@
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services.ServiceBus.Resolvers;
 using WhoOwesWho.Shared.Models;
-using WhoOwesWho.Shared.Models.Base;
+using WhoOwesWho.Shared.Models.Base.ServiceBus;
 using static WhoOwesWho.Shared.Models.Base.ServiceBus.ObservabilityRecords;
 
 namespace WhoOwesWho.PaymentService.Services.ServiceBus.Receivers

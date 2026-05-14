@@ -12,8 +12,7 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
             {
                 var endpoint = await BuildEndpoint(baseEndpoint, encode, parameters);
                 using var client = GetClient(endpoint, apiKey, token);
-                var response = await client.Request().GetJsonAsync<T>();
-                return response;
+                return await client.Request().GetJsonAsync<T>();
             }
             catch (Exception e)
             {
@@ -23,14 +22,21 @@ namespace WhoOwesWho.AuthorizationService.Services.Base
 
         public async Task<T> Post<T, TR>(string baseEndpoint, TR request, string apiKey, bool encode, IDictionary<string, dynamic>? parameters = null, string? token = null) where T : class where TR : class
         {
-            var endpoint = await BuildEndpoint(baseEndpoint, encode, parameters);
-            using var client = GetClient(endpoint, apiKey, token);
-            var response = await client.Request().PostJsonAsync(request);
-            if (typeof(T) == typeof(IFlurlResponse))
+            try
             {
-                return (T)response;
+                var endpoint = await BuildEndpoint(baseEndpoint, encode, parameters);
+                using var client = GetClient(endpoint, apiKey, token);
+                var response = await client.Request().PostJsonAsync(request);
+                if (typeof(T) == typeof(IFlurlResponse))
+                {
+                    return (T)response;
+                }
+                return await response.GetJsonAsync<T>();
             }
-            return await response.GetJsonAsync<T>();
+            catch (Exception e) 
+            { 
+                throw new Exception(e.Message);
+            }
         }
 
         public async Task<string> BuildEndpoint(string baseEndpoint, bool encode, IDictionary<string, dynamic>? parameters)

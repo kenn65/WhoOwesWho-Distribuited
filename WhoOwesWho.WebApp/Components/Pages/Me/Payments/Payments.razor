@@ -1,0 +1,20 @@
+﻿@page "/me/payments"
+
+@if (payments is null)
+{
+    <div class="flex justify-center items-center h-40">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
+    </div>
+}
+else
+{
+    <div class="text-center mb-3">
+        <br />
+        <h1 class="text-4xl">Payments owerview</h1>
+        <br />
+        <br />
+        <PaymentsDataOverwiev PaymentsData="@payments" />
+    </div>
+}
+
+

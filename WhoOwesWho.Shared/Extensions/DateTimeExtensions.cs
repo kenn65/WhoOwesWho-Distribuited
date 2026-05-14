@@ -4,7 +4,7 @@ namespace WhoOwesWho.Shared.Extensions
 {
     public static class DateTimeExtensions
     {
-        public static CultureInfo CultureInfo => new CultureInfo("da-DK");
+        public static CultureInfo CultureInfo => CultureInfo.CurrentCulture;
 
         public static string ToIsoDateTimeFormat(this DateTime value)
         {
@@ -13,17 +13,13 @@ namespace WhoOwesWho.Shared.Extensions
 
         public static string ToDisplayDateTimeFormat(this DateTime value)
         {
-            return value.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo);
+            return value.ToString(CultureInfo);
         }
 
         public static string ToDisplayDateFormat(this DateTime value)
         {
-            return value.ToString("dd-MM-yyyy", CultureInfo);
-        }
-
-        public static string ToIsoDateFormat(this DateTime value)
-        {
-            return value.ToString("yyyy-MM-dd", CultureInfo);
+            var formattedDateParts = value.ToString(CultureInfo).Split(' ');
+            return formattedDateParts[0];
         }
     }
 }

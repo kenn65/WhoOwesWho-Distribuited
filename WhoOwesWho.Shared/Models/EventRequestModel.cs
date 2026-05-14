@@ -21,7 +21,7 @@ namespace WhoOwesWho.Shared.Models
         public string? Currency { get; set; }
 
         [JsonProperty("currencySymbol")]
-        public string? CurrencySymbol { get; set; }
+        public string? CurrencySymbol { get; set; } 
 
         [JsonProperty("startDate")]
         public string? StartDate { get; set; }
@@ -32,7 +32,7 @@ namespace WhoOwesWho.Shared.Models
         public bool Settled { get; set; }
         
         [JsonProperty("userId")]
-        public string? UserId { get; set; }
+        public Guid UserId { get; set; }
 
         [JsonIgnore]
         public string? Token { get; set; }

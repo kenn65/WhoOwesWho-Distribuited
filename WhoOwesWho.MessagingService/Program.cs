@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -9,6 +10,7 @@ using WhoOwesWho.MessagingService.Services;
 using WhoOwesWho.MessagingService.Services.Gateways;
 using WhoOwesWho.MessagingService.Services.ServiceBus.Handling;
 using WhoOwesWho.MessagingService.Services.ServiceBus.Receivers;
+using WhoOwesWho.MessagingService.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,11 +25,11 @@ builder.Services.AddSingleton(provider =>
 
 builder.Services.AddSingleton<MessagingReceiver>();
 builder.Services.AddHostedService<MessagingReceiverStartupService>();
-
 builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
 builder.Services.AddScoped<IMessagingSecurityService, MessagingSecurityService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddScoped<IMessageResolverService, MessageResolverService>();
+builder.Services.AddValidatorsFromAssemblyContaining<MessagingRequestValidator>();
 
 builder.Services.AddControllers();
 

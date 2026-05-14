@@ -20,11 +20,5 @@ namespace WhoOwesWho.PaymentService.Models
         
         [JsonProperty("created")]
         public string? Created { get; set; }
-
-        [JsonProperty("protectedPaymentId")]
-        public string? ProtectedPaymentId { get; set; }
-
-        [JsonProperty("protectedCreditUserId")]
-        public string? ProtectedCreditUserId { get; set; }
     }
 }

@@ -1,7 +1,4 @@
-﻿using System.Globalization;
-using WhoOwesWho.Shared.Extensions;
-using WhoOwesWho.Shared.Models;
-using WhoOwesWho.UserService.Auxiliaries;
+﻿using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
@@ -10,199 +7,50 @@ namespace WhoOwesWho.UserService.Services
 {
     public interface IUserValidationService
     {
-        Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password);
-        Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool shouldExist);
-        Task<(bool isValid, string errorMessage)> ValidateFullNameAsync(string fullName, bool shouldExist);
         Task<UserModel?> VerifyUserEmailAddressAsync(string emailAddress);
-        Task<UpdateUserVerificationModel> VerifyUpdateAsync(UserUpdateRequestModel request);
+        Task<UpdateUserVerificationModel> ValidateUpdateAsync(UserUpdateRequestModel request);
+        Task<bool> IsFullNameUniqueAsync(string fullName);
+        Task<bool> DoesFullNameExistAsync(string fullName);
+        Task<bool> IsEmailAddressUniqueAsync(string emailAddress);
+        Task<bool> DoesEmailAddressExistAsync(string emailAddress);
     }
     public class UserValidationService(
         IConfiguration configuration,
         IUserQueryRepository userQueryRepository,
         IUserMutationRepository userMutationRepository,
-        IUserSecurityService userSecurityService,
-        IUserCacheRepository userCacheRepository
+        IUserUpdateValidationService userUpdateValidationService
         ) : ServiceBase(configuration), IUserValidationService
     {
-        public async Task<(bool isValid, string errorMessage)> ValidatePasswordAsync(string? password)
-        {
-            var errorMessage = string.Empty;
-            var isValidPassword = password!.IsValid(AppSettings.PasswordLengthRequired, AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
-            if (!isValidPassword)
-            {
-                errorMessage = string.Format(CultureInfo.InvariantCulture,
-                    Constants.CredentialsErrorMessages.PasswordRequirements, AppSettings.PasswordLengthRequired,
-                    AppSettings.PasswordUppercaseRequired, AppSettings.PasswordDigitsRequired);
-            }
-            return (isValidPassword, errorMessage);
-        }
-
-        public async Task<(bool isValid, string errorMessage)> ValidateEmailAsync(string emailAddress, bool shouldExist)
-        {
-            try
-            {
-                if (!emailAddress.IsValid())
-                {
-                    return (false, Constants.CredentialsErrorMessages.EmailAddressInvalidValid);
-                }
-
-                switch (shouldExist)
-                {
-                    case false:
-                        {
-                            var any = await ValidateEmailExists(emailAddress);
-                            if (any.isValid)
-                            {
-                                return (false, Constants.CredentialsErrorMessages.EmailAddressAlreadyExists);
-                            }
-                            return (true, string.Empty);
-                        }
-                    case true:
-                        {
-                            var any = await ValidateEmailExists(emailAddress);
-                            if (!any.isValid)
-                            {
-                               return (false, Constants.CredentialsErrorMessages.EmailAdddressDoesNotExist);
-                            }
-                            break;
-                        }
-                }
-
-                return (true, string.Empty);
-            }
-            catch
-            {
-                return (false, Constants.CredentialsErrorMessages.EmailAddressInvalidValid);
-            }
-        }
-        
-        public async Task<(bool isValid, string errorMessage)> ValidateFullNameAsync(string fullName, bool shouldExist)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(fullName))
-                {
-                    return (false, Constants.CredentialsErrorMessages.FullNameInValid);
-                }
-
-                switch (shouldExist)
-                {
-                    case false:
-                        {
-                            var any = await ValidateFullNameExists(fullName);
-                            if (any.isValid)
-                            {
-                                return (false, Constants.CredentialsErrorMessages.FullNameAlreadyExists);
-                            }
-                            return (true, string.Empty);
-                        }
-                    case true:
-                        {
-                            var any = await ValidateFullNameExists(fullName);
-                            if (!any.isValid)
-                            {
-                                return (false, Constants.CredentialsErrorMessages.FullNameDoesNotExist);
-                            }
-                            break;
-                        }
-                }
-
-                return (true, string.Empty);
-            }
-            catch
-            {
-                return (false, Constants.CredentialsErrorMessages.EmailAddressInvalidValid);
-            }
-        }
-
-
-
         public async Task<UserModel?> VerifyUserEmailAddressAsync(string emailAddress)
         {
             var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, true);
-            if (user is null)
-            {
-                return null;
-            }
-            user.EmailAddressVerified = true;
-            return await userMutationRepository.UpdateUserAsync(user);
+            user?.EmailAddressVerified = true;
+            return await userMutationRepository.UpdateUserAsync(user!);
         }
 
-        
-
-        public async Task<UpdateUserVerificationModel> VerifyUpdateAsync(UserUpdateRequestModel request)
+        public async Task<UpdateUserVerificationModel> ValidateUpdateAsync(UserUpdateRequestModel request)
         {
-            try
-            {
-                if (request.EventId is null)
-                {
-                    return await CreateResponse(true);
-                }
-                request.EventId = await userSecurityService.UnprotectAsync(request.EventId);
-                if (request.EventId == Guid.Empty.ToString())
-                {
-                    return await CreateResponse(true);
-                }
-                var evt = await userCacheRepository.GetActiveEventByIdAsync(request.EventId);
-                var eventUsers = await GetEventUsersAsync(evt!);
-                var id = await userSecurityService.UnprotectAsync(request.ProtectedId!);
-                var existingAdmin = eventUsers.SingleOrDefault(u => u.Admin);
-                if (existingAdmin is null && request.Admin)
-                {
-                    return await CreateResponse(true);
-                }
-                if (request.Admin && existingAdmin is not null && existingAdmin.Id != Guid.Parse(id))
-                {
-                    return await CreateResponse(false);
-                }
-                if (existingAdmin is null && !request.Admin)
-                {
-                    return await CreateResponse(true, true);
-                }
-                return await CreateResponse(true);
-            }
-            catch
-            {
-                return await CreateResponse(false);
-            }
+            return await userUpdateValidationService.ValidateUpdateAsync(request);
         }
 
-        private async Task<(bool isValid, string errorMessage)> ValidateEmailExists(string emailAddress)
+        public async Task<bool> IsFullNameUniqueAsync(string fullName)
         {
-            var check = await userQueryRepository.GetUserEmailExists(emailAddress);
-            if (check)
-            {
-                return (true, string.Empty);
-            }
-            return (false, string.Empty);
+            return !(await userQueryRepository.GetUserFullNameExists(fullName));
         }
 
-        private async Task<(bool isValid, string errorMessage)> ValidateFullNameExists(string fullName)
+        public async Task<bool> DoesFullNameExistAsync(string fullName)
         {
-            var check = await userQueryRepository.GetUserFullNameExists(fullName);
-            if (check)
-            {
-                return (true, string.Empty);
-            }
-            return (false, string.Empty);
+            return await userQueryRepository.GetUserFullNameExists(fullName);
         }
 
-        private async Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(EventMessageResponseModel evt)
+        public async Task<bool> IsEmailAddressUniqueAsync(string emailAddress)
         {
-            return (await Task.WhenAll(
-                   evt.UserIds!.Select(async id =>
-                   await userCacheRepository.GetUserByIdAsync(id.ToString())
-                   ?? new UserMessageResponseModel()
-                   ))).ToList();
+            return !(await userQueryRepository.GetUserEmailExists(emailAddress));
         }
 
-        private static async Task<UpdateUserVerificationModel> CreateResponse(bool success, bool noAdmin = false)
+        public async Task<bool> DoesEmailAddressExistAsync(string emailAddress)
         {
-            return new UpdateUserVerificationModel
-            {
-                Success = success,
-                NoAdmin = noAdmin
-            };
+            return (await userQueryRepository.GetUserEmailExists(emailAddress));
         }
     }
 }

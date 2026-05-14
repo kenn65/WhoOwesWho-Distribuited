@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,7 @@ using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using WhoOwesWho.UserService.Services.Gateways;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
+using WhoOwesWho.UserService.Validators;
 using static WhoOwesWho.UserService.Repositories.IUserCacheRepository;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,7 +50,7 @@ builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
 builder.Services.AddSingleton<IUserPublisher, UserPublisher>();
 
 // Services
-builder.Services.AddScoped<IUserPublishingServicee, UserPublishingService>();
+builder.Services.AddScoped<IUserPublishingService, UserPublishingService>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
 builder.Services.AddScoped<IUserLookupService, UserLookupService>();
 builder.Services.AddScoped<IUserQueryRepository, UserQueryRepository>();
@@ -63,6 +65,13 @@ builder.Services.AddScoped<IUserNotificationService, UserNotificationService>();
 builder.Services.AddScoped<IUserSecurityService, UserSecurityService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
 builder.Services.AddScoped<IEventGatewayService, EventGatewayService>();
+builder.Services.AddScoped<IEmailValidationService, EmailValidationService>();
+builder.Services.AddScoped<IUserUpdateValidationService, UserUpdateValidationService>();
+builder.Services.AddValidatorsFromAssemblyContaining<SignUpRequestValidatior>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequestValidator>();
 
 builder.Services.AddControllers();
 

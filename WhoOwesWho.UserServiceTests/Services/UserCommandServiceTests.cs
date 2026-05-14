@@ -1,173 +1,316 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using Xunit;
 
-namespace WhoOwesWho.UserServiceTests.Services
+namespace WhoOwesWho.UserService.Tests.Services
 {
     public class UserCommandServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task CreateUserAsync_ReturnsError_WhenRepositoryReturnsNull(
+        [Theory, AutoData]
+        public async Task CreateUserAsync_ReturnsError_WhenUserCreationFails(
             UserModel request,
-            string host,
-            [Frozen] Mock<IUserMutationRepository> mutationRepo,
-        UserCommandService sut)
+            string host)
         {
-            mutationRepo
+            // Arrange
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
+
+            mutationRepositoryMock
                 .Setup(x => x.CreateUserAsync(request))
                 .ReturnsAsync((UserModel?)null);
 
+            var sut = CreateUserCommandService(
+                mutationRepositoryMock: mutationRepositoryMock);
+
+            // Act
             var result = await sut.CreateUserAsync(request, host);
 
+            // Assert
             result.Should().NotBeNull();
+
             result!.Success.Should().BeFalse();
-            result.Message.Should().Be("An error occurred while creating the user. Please, try again.");
+
+            result.Message.Should()
+                .Be(Constants.UserCreationErrorMessages.UserLoadingUnsuccessful);
         }
 
-        [Theory, AutoMoqData]
-        public async Task CreateUserAsync_SendsConfirmation_AndReturnsUser(
-           UserModel request,
-           UserModel createdUser,
-           UserModel queriedUser,
-           string host,
-           [Frozen] Mock<IUserMutationRepository> mutationRepo,
-           [Frozen] Mock<IUserQueryRepository> queryRepo,
-           [Frozen] Mock<IUserNotificationService> notificationService,
-           UserCommandService sut)
+        [Theory, AutoData]
+        public async Task CreateUserAsync_ReturnsUser_WhenSuccessful(
+            UserModel request,
+            UserModel createdUser,
+            UserModel loadedUser,
+            string host)
         {
-            mutationRepo
+            // Arrange
+            createdUser.EmailAddress = request.EmailAddress;
+
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
+            var notificationServiceMock = new Mock<IUserNotificationService>();
+            var publishingServiceMock = new Mock<IUserPublishingService>();
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            mutationRepositoryMock
                 .Setup(x => x.CreateUserAsync(request))
                 .ReturnsAsync(createdUser);
 
-            queryRepo
+            queryRepositoryMock
                 .Setup(x => x.GetSingleUserByEmailAddressAsync(createdUser.EmailAddress, true))
-                .ReturnsAsync(queriedUser);
+                .ReturnsAsync(loadedUser);
 
+            publishingServiceMock
+                .Setup(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()))
+                .Returns(Task.CompletedTask);
+
+            notificationServiceMock
+                .Setup(x => x.SendAccountConfirmationMessage(
+                    It.IsAny<UserMessageRequestModel>(),
+                    host))
+                .Returns(Task.CompletedTask);
+
+            var sut = CreateUserCommandService(
+                mutationRepositoryMock: mutationRepositoryMock,
+                notificationServiceMock: notificationServiceMock,
+                publishingServiceMock: publishingServiceMock,
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
             var result = await sut.CreateUserAsync(request, host);
 
-            notificationService.Verify(
-                x => x.SendAccountConfirmationMessage(It.IsAny<UserMessageRequestModel>(), host),
+            // Assert
+            result.Should().Be(loadedUser);
+
+            publishingServiceMock.Verify(
+                x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()),
                 Times.Once);
 
-            result.Should().Be(queriedUser);
+            notificationServiceMock.Verify(
+                x => x.SendAccountConfirmationMessage(
+                    It.IsAny<UserMessageRequestModel>(),
+                    host),
+                Times.Once);
         }
 
-        [Theory, AutoMoqData]
-        public async Task UpdateUserAsync_ReturnsError_WhenAdminAlreadyExists(
-           UserUpdateRequestModel request,
-           [Frozen] Mock<IUserValidationService> validationService,
-           UserCommandService sut)
+        [Theory, AutoData]
+        public async Task UpdateUserAsync_ReturnsAdministratorAlreadyExisting_WhenValidationFails(
+            UserUpdateRequestModel request,
+            UserModel user)
         {
-            validationService
-                .Setup(x => x.VerifyUpdateAsync(request))
+            // Arrange
+            request.IsPasswordUpdating = false;
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var validationServiceMock = new Mock<IUserValidationService>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id))
+                .ReturnsAsync(user);
+
+            validationServiceMock
+                .Setup(x => x.ValidateUpdateAsync(request))
                 .ReturnsAsync(new UpdateUserVerificationModel
                 {
                     Success = false,
-                    NoAdmin = false
+                    AdministratorNonExisting = false
                 });
 
+            var sut = CreateUserCommandService(
+                queryRepositoryMock: queryRepositoryMock,
+                validationServiceMock: validationServiceMock);
+
+            // Act
             var result = await sut.UpdateUserAsync(request);
 
+            // Assert
             result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("The event you have assigned to already has an administrator.");
+
+            result!.Message.Should()
+                .Be(Constants.UserUpdatingErrorMessages.AdministratorAlreadyExisting);
         }
 
-        [Theory, AutoMoqData]
-        public async Task UpdateUserAsync_UpdatesProfileSuccessfully(
+        [Theory, AutoData]
+        public async Task UpdateUserAsync_ReturnsNoAdministratorExisting_WhenValidationSucceeds(
             UserUpdateRequestModel request,
             UserModel existingUser,
-            UserModel updatedUser,
-            Guid userId,
-            [Frozen] Mock<IUserValidationService> validationService,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserQueryRepository> queryRepo,
-            [Frozen] Mock<IUserMutationRepository> mutationRepo,
-            [Frozen] Mock<IUserPublishingServicee> publishingService,
-        UserCommandService sut)
+            UserModel updatedUser)
         {
+            // Arrange
             request.IsPasswordUpdating = false;
 
-            validationService.Setup(x => x.ValidateFullNameAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((true, string.Empty));
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var validationServiceMock = new Mock<IUserValidationService>();
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
+            var publishingServiceMock = new Mock<IUserPublishingService>();
 
-            validationService
-                .Setup(x => x.VerifyUpdateAsync(request))
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id))
+                .ReturnsAsync(existingUser);
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id, true))
+                .ReturnsAsync(existingUser);
+
+            validationServiceMock
+                .Setup(x => x.ValidateUpdateAsync(request))
                 .ReturnsAsync(new UpdateUserVerificationModel
                 {
                     Success = true,
-                    NoAdmin = false
+                    AdministratorNonExisting = true
                 });
 
-            securityService
-                .Setup(x => x.UnprotectAsync(request.ProtectedId!, false))
-                .ReturnsAsync(userId.ToString());
-
-            queryRepo
-                .Setup(x => x.GetSingleUserByIdAsync(userId, true))
-                .ReturnsAsync(existingUser);
-
-            mutationRepo
+            mutationRepositoryMock
                 .Setup(x => x.UpdateUserAsync(existingUser))
                 .ReturnsAsync(updatedUser);
 
+            publishingServiceMock
+                .Setup(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()))
+                .Returns(Task.CompletedTask);
+
+            var sut = CreateUserCommandService(
+                queryRepositoryMock: queryRepositoryMock,
+                validationServiceMock: validationServiceMock,
+                mutationRepositoryMock: mutationRepositoryMock,
+                publishingServiceMock: publishingServiceMock);
+
+            // Act
             var result = await sut.UpdateUserAsync(request);
 
+            // Assert
             result.Should().NotBeNull();
-            result!.Success.Should().BeTrue();
-            result.Message.Should().Be("Profile updated successfully.");
 
-            publishingService.Verify(
+            result!.Success.Should().BeTrue();
+
+            result.Message.Should()
+                .Be(Constants.UserUpdatingErrorMessages.NoAdministratorExisting);
+
+            publishingServiceMock.Verify(
                 x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()),
                 Times.Once);
         }
 
-        [Theory, AutoMoqData]
-        public async Task UpdateUserAsync_ReturnsWarning_WhenEventHasNoAdmin(
+        [Theory, AutoData]
+        public async Task UpdateUserAsync_ReturnsUpdatedUser_WhenSuccessful(
             UserUpdateRequestModel request,
             UserModel existingUser,
-            UserModel updatedUser,
-            Guid userId,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserQueryRepository> queryRepo,
-            [Frozen] Mock<IUserMutationRepository> mutationRepo,
-            [Frozen] Mock<IUserPublishingServicee> publishingService,
-            [Frozen] Mock<IUserValidationService> validationService,
-            UserCommandService sut)
+            UserModel updatedUser)
         {
-            request.IsPasswordUpdating = true;
+            // Arrange
+            request.IsPasswordUpdating = false;
 
-            securityService
-                .Setup(x => x.UnprotectAsync(request.ProtectedId!, false))
-                .ReturnsAsync(userId.ToString());
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var validationServiceMock = new Mock<IUserValidationService>();
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
+            var publishingServiceMock = new Mock<IUserPublishingService>();
 
-            validationService .Setup(x => x.ValidateFullNameAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((true, string.Empty));
-
-            queryRepo
-                .Setup(x => x.GetSingleUserByIdAsync(userId, true))
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id))
                 .ReturnsAsync(existingUser);
 
-            mutationRepo
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id, true))
+                .ReturnsAsync(existingUser);
+
+            validationServiceMock
+                .Setup(x => x.ValidateUpdateAsync(request))
+                .ReturnsAsync(new UpdateUserVerificationModel
+                {
+                    Success = true,
+                    AdministratorNonExisting = false
+                });
+
+            mutationRepositoryMock
                 .Setup(x => x.UpdateUserAsync(existingUser))
                 .ReturnsAsync(updatedUser);
 
+            publishingServiceMock
+                .Setup(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()))
+                .Returns(Task.CompletedTask);
+
+            var sut = CreateUserCommandService(
+                queryRepositoryMock: queryRepositoryMock,
+                validationServiceMock: validationServiceMock,
+                mutationRepositoryMock: mutationRepositoryMock,
+                publishingServiceMock: publishingServiceMock);
+
+            // Act
             var result = await sut.UpdateUserAsync(request);
 
+            // Assert
             result.Should().NotBeNull();
-            result!.Success.Should().BeTrue();
-            result.Message.Should().Contain("no administrator");
 
-            publishingService.Verify(
+            result!.Success.Should().BeTrue();
+
+            result.Message.Should()
+                .Be(Constants.UserUpdatingErrorMessages.UpdateSucceeded);
+
+            publishingServiceMock.Verify(
                 x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()),
                 Times.Once);
         }
 
+        [Theory, AutoData]
+        public async Task UpdateUserAsync_UpdatesPassword_WhenPasswordUpdating(
+            UserUpdateRequestModel request,
+            UserModel existingUser,
+            UserModel updatedUser)
+        {
+            // Arrange
+            request.IsPasswordUpdating = true;
+            request.Password = "NewPassword";
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id))
+                .ReturnsAsync(existingUser);
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id, true))
+                .ReturnsAsync(existingUser);
+
+            mutationRepositoryMock
+                .Setup(x => x.UpdateUserAsync(existingUser))
+                .ReturnsAsync(updatedUser);
+
+            var sut = CreateUserCommandService(
+                queryRepositoryMock: queryRepositoryMock,
+                mutationRepositoryMock: mutationRepositoryMock);
+
+            // Act
+            await sut.UpdateUserAsync(request);
+
+            // Assert
+            existingUser.Password.Should().Be(request.Password);
+        }
+
+        private static UserCommandService CreateUserCommandService(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IUserNotificationService>? notificationServiceMock = null,
+            Mock<IUserQueryRepository>? queryRepositoryMock = null,
+            Mock<IUserMutationRepository>? mutationRepositoryMock = null,
+            Mock<IUserPublishingService>? publishingServiceMock = null,
+            Mock<IUserValidationService>? validationServiceMock = null)
+        {
+            configurationMock ??= new();
+            notificationServiceMock ??= new();
+            queryRepositoryMock ??= new();
+            mutationRepositoryMock ??= new();
+            publishingServiceMock ??= new();
+            validationServiceMock ??= new();
+
+            return new UserCommandService(
+                configurationMock.Object,
+                notificationServiceMock.Object,
+                queryRepositoryMock.Object,
+                mutationRepositoryMock.Object,
+                publishingServiceMock.Object,
+                validationServiceMock.Object);
+        }
     }
 }

@@ -5,7 +5,7 @@ namespace WhoOwesWho.PaymentService.Models
     public class PaymentsRequestModel
     {
         [JsonProperty("eventId")]
-        public string? EventId { get; set; }
+        public Guid EventId { get; set; }
         
         [JsonProperty("active")]
         public bool Active { get; set; }

@@ -20,8 +20,4 @@
     <ProjectReference Include="..\WhoOwesWho.WebApp.UseCases\WhoOwesWho.WebApp.UseCases.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Components\Pages\Me\Payments\" />
-  </ItemGroup>
-
 </Project>

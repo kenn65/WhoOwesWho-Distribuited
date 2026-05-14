@@ -9,8 +9,8 @@ namespace WhoOwesWho.PaymentService.Models.Base
         [JsonProperty("amount")]
         public decimal? Amount { get; set; }
 
-        //[JsonProperty("formattedAmount")]
-        //public string FormattedAmount => Amount.FormatAmount();
+        [JsonProperty("formattedAmount")]
+        public string FormattedAmount => Amount!.Value.FormatAmount();
 
         [JsonProperty("currency")]
         public string? Currency { get; set; }

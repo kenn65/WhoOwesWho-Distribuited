@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.MessagingService.Services;
+using WhoOwesWho.MessagingService.Validators;
 using WhoOwesWho.Shared.Models;
-
 
 namespace WhoOwesWho.MessagingService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MessagingController(IEmailMessagingService messagingService) : ControllerBase
+    public class MessagingController(IEmailMessagingService messagingService, MessagingRequestValidator validator) : ControllerBase
     {
         [HttpPost]
         [Route("sendemail")]
@@ -15,12 +15,24 @@ namespace WhoOwesWho.MessagingService.Controllers
         {
             try
             {
+                var validationResult = await validator.ValidateAsync(request);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new MessagingResponseErrorMessagesModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
+
                 var response = await messagingService.SendEmailAsync(request);
                 return Ok(response);
             }
             catch (Exception e)
             {
-                return BadRequest($"An error occurred while sending the email: {e.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new MessagingResponseErrorMessagesModel
+                {
+                    Message = e.Message
+                });
             }
         }
 

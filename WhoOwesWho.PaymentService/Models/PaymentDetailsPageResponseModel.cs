@@ -1,9 +1,10 @@
 ﻿using Newtonsoft.Json;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Models
 {
-    public class PaymentDetailsPageResponseModel 
+    public class PaymentDetailsPageResponseModel : ModelBase
     {
         [JsonProperty("paymentDetails")]
         public PaymentDetailsModel? PaymentDetails { get; set; }

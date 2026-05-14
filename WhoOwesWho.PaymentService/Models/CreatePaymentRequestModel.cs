@@ -9,16 +9,16 @@ namespace WhoOwesWho.PaymentService.Models
         public Guid PaymentId { get; set; }
 
         [JsonProperty("eventId")]
-        public string? EventId { get; set; }
+        public Guid EventId { get; set; }
         
         [JsonProperty("totalAmount")]
         public decimal TotalAmount { get; set; }
         
         [JsonProperty("creditorId")]
-        public string? CreditorId { get; set; }
+        public Guid CreditorId { get; set; }
 
         [JsonProperty("debitorId")]
-        public string? DebitorId{ get; set; }
+        public Guid DebitorId{ get; set; }
 
         [JsonProperty("userIds")]
         public IEnumerable<string>? UserIds { get; set; }
