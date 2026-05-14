@@ -5,7 +5,6 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users
 {
     public class UserModel : ResponseModelBase
     {
-        public string? ProtectedId { get; set; }
         public Guid Id { get; set; } = Guid.Empty;
 
         [Required(ErrorMessage = "Please enter your full name")]

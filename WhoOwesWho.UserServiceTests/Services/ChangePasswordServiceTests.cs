@@ -1,117 +1,220 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using Xunit;
 
-namespace WhoOwesWho.UserServiceTests.Services
+namespace WhoOwesWho.UserService.Tests.Services
 {
     public class ChangePasswordServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task ChangePassword_ShouldReturnError_WhenEmailInvalid(
-            ChangePasswordRequestModel request,
-            [Frozen] Mock<IUserValidationService> validation,
-            ChangePasswordService service)
+       [Theory, AutoData]
+        public async Task ChangePasswordAsync_ReturnsError_WhenNewPasswordsDoNotMatch(
+            ChangePasswordRequestModel request)
         {
-            validation
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-                .ReturnsAsync((false, "Invalid email"));
+            // Arrange
+            request.NewPassword1 = "Password1";
+            request.NewPassword2 = "Password2";
 
-            var result = await service.ChangePasswordAsync(request);
+            var sut = CreateChangePasswordService();
+                                    
+            // Act
+            Func<Task> act = async () =>
+                await sut.ChangePasswordAsync(request);
 
-
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("Invalid email");
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.ChangePasswordErrorMessages.NewPasswordsDoNotMatch);
         }
+        
 
-        [Theory, AutoMoqData]
-        public async Task ChangePassword_ShouldFail_WhenPasswordsDoNotMatch(
-            ChangePasswordRequestModel request,
-            [Frozen] Mock<IUserSecurityService> security,
-            [Frozen] Mock<IUserValidationService> validation,
-            ChangePasswordService service)
+        [Theory, AutoData]
+        public async Task ChangePasswordAsync_ReturnsError_WhenUserDoesNotExist(
+            ChangePasswordRequestModel request)
         {
-            security.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("oldPass")
-                .ReturnsAsync("newPass1")
-                .ReturnsAsync("newPass2");
+            // Arrange
+            request.NewPassword1 = "Password1";
+            request.NewPassword2 = "Password1";
 
-            validation.Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-                .ReturnsAsync((true, ""));
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
 
-            validation.Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
-                .ReturnsAsync((true, ""));
-
-            var result = await service.ChangePasswordAsync(request);
-
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("The passwords does not match!");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ChangePassword_ShouldFail_WhenUserNotFound(
-            ChangePasswordRequestModel request,
-            [Frozen] Mock<IUserQueryRepository> repository,
-            [Frozen] Mock<IUserValidationService> validation,
-            ChangePasswordService service)
-        {
-            repository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync(It.IsAny<string>(), true))
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync((UserModel?)null);
 
-            validation.Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-               .ReturnsAsync((true, ""));
+            var sut = CreateChangePasswordService(
+                queryRepositoryMock: queryRepositoryMock);
 
-            validation.Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
-                .ReturnsAsync((true, ""));
+            // Act
+            Func<Task> act = async () =>
+                await sut.ChangePasswordAsync(request);
 
-            var result = await service.ChangePasswordAsync(request);
-
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Contain("User not found");
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.ChangePasswordErrorMessages.UserNotFound);
         }
 
-        [Theory, AutoMoqData]
-        public async Task ChangePassword_ShouldSucceed_WhenPasswordUpdated(
+        [Theory, AutoData]
+        public async Task ChangePasswordAsync_ReturnsError_WhenExistingPasswordIsInvalid(
             ChangePasswordRequestModel request,
-            [Frozen] Mock<IUserQueryRepository> repository,
-            [Frozen] Mock<IUserValidationService> validation,
-            [Frozen] Mock<IUserCommandService> commandService,
-            [Frozen] Mock<IUserSecurityService> security,
-            ChangePasswordService service)
+            UserModel user)
         {
-            var user = new UserModel { 
-                Id = Guid.NewGuid(),
-                Password = request.Password
-            };
+            // Arrange
+            request.Password = "WrongPassword";
+            request.NewPassword1 = "NewPassword";
+            request.NewPassword2 = "NewPassword";
 
-            validation.Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-               .ReturnsAsync((true, ""));
+            user.Password = "CorrectPassword";
 
-            validation.Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
-                .ReturnsAsync((true, ""));
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
 
-            repository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync(It.IsAny<string>(), true))
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync(user);
 
-            security.Setup(x => x.ProtectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("protectedId");
+            var sut = CreateChangePasswordService(
+                queryRepositoryMock: queryRepositoryMock);
 
-            commandService
+            // Act
+            Func<Task> act = async () =>
+                await sut.ChangePasswordAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.ChangePasswordErrorMessages.ExistingPasswordInvalid);
+        }
+
+        [Theory, AutoData]
+        public async Task ChangePasswordAsync_ReturnsSuccess_WhenPasswordIsChanged(
+            ChangePasswordRequestModel request,
+            UserModel user,
+            UserModel updatedUser)
+        {
+            // Arrange
+            request.Password = "OldPassword";
+            request.NewPassword1 = "NewPassword";
+            request.NewPassword2 = "NewPassword";
+
+            user.Password = "OldPassword";
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var commandServiceMock = new Mock<IUserCommandService>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
+                .ReturnsAsync(user);
+
+            commandServiceMock
                 .Setup(x => x.UpdateUserAsync(It.IsAny<UserUpdateRequestModel>()))
-                .ReturnsAsync(user);
+                .ReturnsAsync(updatedUser);
 
-            var result = await service.ChangePasswordAsync(request);
+            var sut = CreateChangePasswordService(
+                queryRepositoryMock: queryRepositoryMock,
+                commandServiceMock: commandServiceMock);
+
+            // Act
+            var result = await sut.ChangePasswordAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
 
             result!.Success.Should().BeTrue();
-            result.Message.Should().Contain("Your password was successfully changed.");
+
+            result.Message.Should()
+                .Be(Constants.ChangePasswordErrorMessages.SuccessfullyChanged);
+
+            user.Password.Should().Be(request.NewPassword1);
+        }
+
+        [Theory, AutoData]
+        public async Task ChangePasswordAsync_Throws_WhenUpdateFails(
+            ChangePasswordRequestModel request,
+            UserModel user)
+        {
+            // Arrange
+            request.Password = "OldPassword";
+            request.NewPassword1 = "NewPassword";
+            request.NewPassword2 = "NewPassword";
+
+            user.Password = "OldPassword";
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var commandServiceMock = new Mock<IUserCommandService>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
+                .ReturnsAsync(user);
+
+            commandServiceMock
+                .Setup(x => x.UpdateUserAsync(It.IsAny<UserUpdateRequestModel>()))
+                .ReturnsAsync((UserModel?)null);
+
+            var sut = CreateChangePasswordService(
+                queryRepositoryMock: queryRepositoryMock,
+                commandServiceMock: commandServiceMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.ChangePasswordAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.UserCreationErrorMessages.UserLoadingUnsuccessful);
+        }
+
+        [Theory, AutoData]
+        public async Task ChangePasswordAsync_Throws_WhenRepositoryThrows(
+            ChangePasswordRequestModel request)
+        {
+            // Arrange
+            request.NewPassword1 = "NewPassword";
+            request.NewPassword2 = "NewPassword";
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
+                .ThrowsAsync(new Exception(Constants.GlobalErrorMessages.UnexpectedError));
+
+            var sut = CreateChangePasswordService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.ChangePasswordAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        private static ChangePasswordService CreateChangePasswordService(
+           Mock<IConfiguration>? configurationMock = null,
+           Mock<IUserQueryRepository>? queryRepositoryMock = null,
+           Mock<IUserCommandService>? commandServiceMock = null,
+           Mock<IUserSecurityService>? userSecurityServiceMock = null)
+        {
+            configurationMock ??= new();
+            queryRepositoryMock ??= new();
+            commandServiceMock ??= new();
+            userSecurityServiceMock ??= new();
+
+            return new ChangePasswordService(
+                configurationMock.Object,
+                userSecurityServiceMock.Object,
+                queryRepositoryMock.Object,
+                commandServiceMock.Object
+               );
         }
     }
 }

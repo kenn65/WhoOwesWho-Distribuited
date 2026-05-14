@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.Shared.Extensions;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
+using WhoOwesWho.PaymentService.Validators;
+using WhoOwesWho.Shared.Auxiliaries;
+using WhoOwesWho.Shared.Extensions;
 
 namespace WhoOwesWho.PaymentService.Controllers
 {
@@ -10,7 +13,9 @@ namespace WhoOwesWho.PaymentService.Controllers
     [ApiController]
     public class PaymentsController(
         IPaymentLookupService paymentLookupService,
-        IPaymentCommandService paymentCommandService
+        IPaymentCommandService paymentCommandService,
+        CreatePaymentRequestValidator createPaymentRequestValidator,
+        UpdatePaymentRequestValidator updatePaymentRequestValidator
         ) : ControllerBase
     {
         [HttpPut]
@@ -20,22 +25,39 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
+                var validationResult = createPaymentRequestValidator.Validate(request);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new CreatePaymentResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
                 return Ok(await paymentCommandService.CreatePaymentAsync(request));
             }
-            catch
+            catch(Exception e)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new CreatePaymentResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
-
 
         [HttpGet]
         [Route("{eventId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetPaymentsAsync(string eventId, bool active)
+        public async Task<IActionResult> GetPaymentsAsync(Guid eventId, bool active)
         {
             try
             {
+                if (eventId == Guid.Empty)
+                {
+                    return BadRequest(new PaymentPageResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.EventIdArgumentError
+                    });
+                }
                 var requestModel = new PaymentsRequestModel
                 {
                     EventId = eventId,
@@ -43,20 +65,38 @@ namespace WhoOwesWho.PaymentService.Controllers
                 };
                 return Ok(await paymentLookupService.GetPaymentsPageDataAsync(requestModel));
             }
-            catch
+            catch (Exception e)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new PaymentPageResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
         [HttpGet]
         [Route("{eventId}/{userId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetUserPaymentsAsync(string eventId, string userId, bool active)
+        public async Task<IActionResult> GetUserPaymentsAsync(Guid eventId, Guid userId, bool active)
         {
             try
             {
+                if (userId == Guid.Empty)
+                {
+                    return BadRequest(new UserBalanceResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
+                    });
+                }
+                if (eventId == Guid.Empty)
+                {
+                    {
+                        return BadRequest(new UserBalanceResponseModel
+                        {
+                            Message = Constants.RequestArgumentErrorMessages.EventIdArgumentError
+                        });
+                    }
+                }
                 var requestModel = new UserPaymentsRequestModel
                 {
                     EventId = eventId,
@@ -65,10 +105,12 @@ namespace WhoOwesWho.PaymentService.Controllers
                 };
                 return Ok(await paymentLookupService.GetUserPaymentsAsync(requestModel));
             }
-            catch
+            catch (Exception e)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new UserPaymentResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
@@ -76,21 +118,32 @@ namespace WhoOwesWho.PaymentService.Controllers
         [HttpGet]
         [Route("{paymentId}")]
         [Authorize]
-        public async Task<IActionResult> GetPaymentAsync(string paymentId)
+        public async Task<IActionResult> GetPaymentAsync(Guid paymentId)
         {
             try
             {
+                if (paymentId == Guid.Empty)
+                {
+                    return BadRequest(new PaymentDetailsPageResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.PaymentIdArgumentError
+                    });
+                }
+
                 var requestModel = new PaymentDetailsPageRequestModel
                 {
                     PaymentId = paymentId,
                     Token = HttpContext.ToTokenValue()
                 };
+                
                 return Ok(await paymentLookupService.GetPaymentDetailsAsync(requestModel));
-            }
-            catch
+            } 
+            catch (Exception e)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new PaymentDetailsPageResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
@@ -101,29 +154,50 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
+                var validationResult = updatePaymentRequestValidator.Validate(request);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new UpdatePaymentResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
+
                 var response = await paymentCommandService.UpdatePaymentDetailsAsync(request);
                 return Ok(response);
             }
-            catch
+            catch (Exception e)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new UpdatePaymentResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
         [HttpDelete]
         [Route("delete/{paymentId}")]
         [Authorize]
-        public async Task<IActionResult> RemovePaymentAsync(string paymentId)
+        public async Task<IActionResult> RemovePaymentAsync(Guid paymentId)
         {
             try
             {
+                if (paymentId == Guid.Empty)
+                {
+                    return BadRequest(new DeletePaymentResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.PaymentIdArgumentError
+                    });
+                }
                 return Ok(await paymentCommandService.DeletePaymentAsync(paymentId));
             }
-            catch
+            catch (Exception e)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "An error occurred while processing your request.");
+                    new DeletePaymentResponseModel
+                    {
+                        Message = e.Message
+                    });
             }
         }
     }

@@ -1,26 +1,44 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services;
+using WhoOwesWho.EventService.Validators;
+using WhoOwesWho.Shared.Auxiliaries;
+using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventUsersController(IEventLookupService eventLookupService, IEventCommandService eventCommandService) : ControllerBase
+    public class EventUsersController(
+        IEventLookupService eventLookupService, 
+        IEventCommandService eventCommandService,
+        EventAssignmentRequestValidator eventAssignmentValidator,
+        EventUnassignmentRequestValidator eventUnassignmentValidator) : ControllerBase
     {
         [HttpGet]
         [Route("{eventId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetEventUsersAsync(string eventId, bool active = true)
+        public async Task<IActionResult> GetEventUsersAsync(Guid eventId, bool active = true)
         {
             try
             {
+                if (eventId == Guid.Empty)
+                {
+                    return BadRequest(new UserMessageResponseModel
+                    {
+                        Message = Constants.EventErrorMessages.EventIdMissing
+                    });
+                }
                 return Ok(await eventLookupService.GetEventUsersAsync(eventId, active));
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new UserMessageResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
@@ -28,15 +46,25 @@ namespace WhoOwesWho.EventService.Controllers
         [HttpGet]
         [Route("{userId}")]
         [Authorize]
-        public async Task<IActionResult> GetUserAssignmentAsync(string userId)
+        public async Task<IActionResult> GetUserAssignmentAsync(Guid userId)
         {
             try
             {
+                if (userId == Guid.Empty)
+                {
+                    return BadRequest(new EventAssignmentModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
+                    });
+                }
                 return Ok(await eventLookupService.GetAssignmentAsync(userId!, true));
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new EventAssignmentModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
@@ -47,14 +75,25 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
+                var validationResult = await eventAssignmentValidator.ValidateAsync(request);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new AssignmentResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
+
                 return Ok(await eventCommandService.AssignAsync(request));
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new AssignmentResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
-
 
         [HttpPost]
         [Route("unassign")]
@@ -63,11 +102,22 @@ namespace WhoOwesWho.EventService.Controllers
         {
             try
             {
+                var validationResult = await eventUnassignmentValidator.ValidateAsync(request);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new UnassignmentResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
                 return Ok(await eventCommandService.UnassignFromEventAsync(request));
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new UnassignmentResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
     }

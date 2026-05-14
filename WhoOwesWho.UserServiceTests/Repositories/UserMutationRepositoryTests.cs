@@ -36,18 +36,19 @@ namespace WhoOwesWho.UserServiceTests.Repositories
         }
 
         [Fact]
-        public async Task CreateUserAsync_ShouldReturnErrorModel_WhenExceptionOccurs()
+        public async Task CreateUserAsync_ShouldThrow_WhenEntityIsNull()
         {
-            //Arrange
+            // Arrange
             var context = DbContextFactory.CreateContext(out var connection);
             var sut = new UserMutationRepository(context);
 
-            //Act
-            var result = await sut.CreateUserAsync(null!);
+            // Act
+            Func<Task> act = async () =>
+                await sut.CreateUserAsync(null!);
 
-            //Assert
-            result.Should().NotBeNull();
-            result!.Message.Should().Contain("error");
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -92,18 +93,19 @@ namespace WhoOwesWho.UserServiceTests.Repositories
         }
 
         [Fact]
-        public async Task UpdateUserAsync_ShouldReturnEmptyModel_WhenExceptionOccurs()
+        public async Task UpdateUserAsync_ShouldThrow_WhenEntityIsNull()
         {
-            //Arrange
+            // Arrange
             var context = DbContextFactory.CreateContext(out var connection);
             var sut = new UserMutationRepository(context);
 
-            //Act
-            var result = await sut.UpdateUserAsync(null!);
+            // Act
+            Func<Task> act = async () =>
+                await sut.UpdateUserAsync((UserModel)null!);
 
-            //Assert
-            result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -129,17 +131,19 @@ namespace WhoOwesWho.UserServiceTests.Repositories
         }
 
         [Fact]
-        public async Task CreateForgotPasswordTokenAsync_ShouldReturnFalse_WhenExceptionOccurs()
+        public async Task CreateForgotPasswordTokenAsync_ShouldThrow_WhenModelIsNull()
         {
-            //Arrange
+            // Arrange
             var context = DbContextFactory.CreateContext(out var connection);
             var sut = new UserMutationRepository(context);
 
-            //Act
-            var result = await sut.CreateForgotPasswordTokenAsync(null!);
+            // Act
+            Func<Task> act = async () =>
+                await sut.CreateForgotPasswordTokenAsync(null!);
 
-            //Assert
-            result.Should().BeFalse();
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -169,18 +173,21 @@ namespace WhoOwesWho.UserServiceTests.Repositories
         }
 
         [Fact]
-        public async Task DeleteForgotPasswordTokenAsync_ShouldReturnFalse_WhenExceptionOccurs()
+        public async Task DeleteForgotPasswordTokenAsync_ShouldThrow_WhenExceptionOccurs()
         {
-            //Arrange
+            // Arrange
             var context = DbContextFactory.CreateContext(out var connection);
             var sut = new UserMutationRepository(context);
 
-            //Act
             context.Dispose();
-            var result = await sut.DeleteForgotPasswordTokenAsync(Guid.NewGuid());
 
-            //Assert
-            result.Should().BeFalse();
+            // Act
+            Func<Task> act = async () =>
+                await sut.DeleteForgotPasswordTokenAsync(Guid.NewGuid());
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<ObjectDisposedException>();
         }
     }
 }

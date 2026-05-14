@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using System.Security.Cryptography;
 using System.Text;
-using WhoOwesWho.EncryptionService.Models;
 using WhoOwesWho.EncryptionService.Services.Base;
+using WhoOwesWho.EncryptionService.Validators;
 using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EncryptionService.Services
@@ -13,11 +14,10 @@ namespace WhoOwesWho.EncryptionService.Services
         Task<ProtectionResponseModel> Encrypt(string plainText);
         Task<ProtectionResponseModel> Decrypt(string cipherText);
         Task<EncryptedCookiesResponseModel> EncryptCookies(CookiesRequestModel request);
-
-        Task<DecryptedCookiesModel> DecryptCookies(string userId, string userEmailAddress, string admin);
     }
 
-    public class EncryptionService(IConfiguration configuration) : ServiceBase(configuration), IEncryptionService
+    public class EncryptionService(IConfiguration configuration)
+        : ServiceBase(configuration), IEncryptionService
     {
         public async Task<ProtectionResponseModel> Encrypt(string plainText)
         {
@@ -42,10 +42,11 @@ namespace WhoOwesWho.EncryptionService.Services
                     array = memoryStream.ToArray();
                 }
             }
-           
+
             return new ProtectionResponseModel
             {
-                ProtectedValue = WebEncoders.Base64UrlEncode(array)
+                ProtectedValue = WebEncoders.Base64UrlEncode(array),
+                Success = true
             };
         }
 
@@ -53,8 +54,6 @@ namespace WhoOwesWho.EncryptionService.Services
         {
             var iv = new byte[16];
             var buffer = WebEncoders.Base64UrlDecode(cipherText);
-            //var buffer = Convert.FromBase64String(cipherText);
-
             using var aes = Aes.Create();
             aes.Key = Encoding.UTF8.GetBytes(AppSettings.EncryptionKey);
             aes.IV = iv;
@@ -66,31 +65,24 @@ namespace WhoOwesWho.EncryptionService.Services
             var response = await streamReader.ReadToEndAsync();
             return new ProtectionResponseModel
             {
-                UnprotectedValue = response
+                UnprotectedValue = response,
+                Success = true
             };
         }
 
-        public async Task<EncryptedCookiesResponseModel> EncryptCookies(CookiesRequestModel request)
+        public async Task<EncryptedCookiesResponseModel> EncryptCookies([FromBody] CookiesRequestModel request)
         {
+
             var idResponse = await Encrypt(request.User?.Id.ToString()!);
-            var emailResponse =  await Encrypt(request.User?.EmailAddress!);
+            var emailResponse = await Encrypt(request.User?.EmailAddress!);
             var adminResponse = await Encrypt(request.User?.Admin.ToString()!);
-            
+
             return new EncryptedCookiesResponseModel
             {
                 UserIdValue = idResponse.ProtectedValue,
                 UserEmailAddressValue = emailResponse.ProtectedValue,
-                AdminValue = adminResponse.ProtectedValue
-            };
-        }
-
-        public async Task<DecryptedCookiesModel> DecryptCookies(string userId, string userEmailAddress, string admin)
-        {
-            return new DecryptedCookiesModel
-            {
-                UserIdValue = Guid.Parse((await Decrypt(userId)).UnprotectedValue!),
-                UserEmailAddressValue = (await Decrypt(userEmailAddress)).UnprotectedValue,
-                AdminValue = bool.Parse((await Decrypt(admin)).UnprotectedValue!)
+                AdminValue = adminResponse.ProtectedValue,
+                Success = true
             };
         }
     }

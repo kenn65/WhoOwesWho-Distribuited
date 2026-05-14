@@ -1,20 +1,21 @@
 ﻿using WhoOwesWho.PaymentService.Services.Base;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.PaymentService.Services.Gateways
 {
     public interface ICurrencyGatewayService
     {
-        Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync(string token);
+        Task<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>> GetCurrenciesAsync(string token);
         Task<string> GetCurrencySymbolAsync(string currencyIso, string token);
         Task<ExchangeRateResponseModel> GetExchangeRateAsync(string paymentCurrencyIso, string eventCurrencyIso, string token);
     }
 
     public class CurrencyGatewayService(IConfiguration configuration) : GatewayServiceBase(configuration), ICurrencyGatewayService
     {
-        public async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync(string token)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>> GetCurrenciesAsync(string token)
         {
-            return await Get<IEnumerable<CurrencyResponseModel>>(
+            return await Get<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>>(
                 $"{AppSettings.CurrencyMicroServiceBaseAddress}", 
                 AppSettings.CurrencyMicroServiceApiKey!, 
                 false, 

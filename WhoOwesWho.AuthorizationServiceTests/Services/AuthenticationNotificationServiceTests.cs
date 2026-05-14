@@ -1,200 +1,180 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
-using WhoOwesWho.AuthorizationService.Settings;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using Xunit;
 
-
-namespace WhoOwesWho.AuthorizationServiceTests.Services
+namespace WhoOwesWho.AuthorizationService.Tests.Services
 {
     public class AuthenticationNotificationServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task SendAuthenticationMessage_ReturnsError_WhenEmailIsMissing(
-              AuthenticationNotificationService sut,
-              AuthenticationRequestModel request)
+        private static AuthenticationNotificationService CreateSut(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IAuthorizationCacheRepository>? cacheRepositoryMock = null,
+            Mock<IMessagingPublisher>? messagingPublisherMock = null)
         {
-            // Arrange
-            request.EmailAddress = null;
-            request.Password = "password";
+            configurationMock ??= new();
+            cacheRepositoryMock ??= new();
+            messagingPublisherMock ??= new();
 
-            // Act
-            var result = await sut.SendAuthenticationMessageAsync(request);
-
-            // Assert
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("E-mail address or password was not provided");
+            return new AuthenticationNotificationService(
+                configurationMock.Object,
+                cacheRepositoryMock.Object,
+                messagingPublisherMock.Object);
         }
 
-        [Theory, AutoMoqData]
-        public async Task SendAuthenticationMessage_ReturnsError_WhenPasswordIsMissing(
-            AuthenticationNotificationService sut,
-            AuthenticationRequestModel request)
-        {
-            // Arrange
-            request.EmailAddress = "test@test.com";
-            request.Password = null;
-
-            // Act
-            var result = await sut.SendAuthenticationMessageAsync(request);
-
-            // Assert
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("E-mail address or password was not provided");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendAuthenticationMessage_ReturnsError_WhenCredentialsInvalid(
-            [Frozen] Mock<IAuthorizationSecurityService> securityService,
-            [Frozen] Mock<IAuthenticationValidationService> validationService,
-            AuthenticationNotificationService sut,
-            AuthenticationRequestModel request)
-        {
-            // Arrange
-            request.EmailAddress = "test@test.com";
-            request.Password = "password";
-
-            securityService
-                .Setup(x => x.UnprotectAsync(request.EmailAddress))
-                .ReturnsAsync(request.EmailAddress);
-
-            securityService
-                .Setup(x => x.UnprotectAsync(request.Password))
-                .ReturnsAsync(request.Password);
-
-            validationService
-                .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(AuthenticationValidationTypes.UserCredentialsInvalid);
-
-            // Act
-            var result = await sut.SendAuthenticationMessageAsync(request);
-
-            // Assert
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("Invalid e-mail and/or password entered.");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendAuthenticationMessage_ReturnsError_WhenUserNotFound(
-            [Frozen] Mock<IAuthorizationSecurityService> securityService,
-            [Frozen] Mock<IAuthenticationValidationService> validationService,
-            AuthenticationNotificationService sut,
-            AuthenticationRequestModel request)
-        {
-            // Arrange
-            request.EmailAddress = "encrypted@test.com";
-            request.Password = "Password11";
-            
-            securityService
-                .Setup(x => x.UnprotectAsync(request.EmailAddress))
-                .ReturnsAsync(request.EmailAddress);
-
-            securityService
-                .Setup(x => x.UnprotectAsync(request.Password))
-                .ReturnsAsync(request.Password);
-            
-            validationService
-                .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(AuthenticationValidationTypes.UserInvalid);
-
-            // Act
-            var result = await sut.SendAuthenticationMessageAsync(request);
-
-            // Assert
-            result.Success.Should().BeFalse();
-            result.Message.Should().Contain("was not found");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendAuthenticationMessage_SendsMessage_AndReturnsSuccess(
-            [Frozen] Mock<IAuthenticationValidationService> validationService,
-            [Frozen] Mock<IAuthorizationSecurityService> securityService,
-            [Frozen] Mock<IAuthorizationCacheRepository> repository,
-            [Frozen] Mock<IMessagingPublisher> messagingPublisher,
-            AuthenticationNotificationService sut,
+        [Theory, AutoData]
+        public async Task SendAuthenticationMessageAsync_ReturnsSuccess_WhenMessageIsSent(
             AuthenticationRequestModel request,
             UserMessageResponseModel user)
         {
             // Arrange
-            request.EmailAddress = "encrypted@test.com";
-            request.Password = "password";
+            request.EmailAddress = "john@test.com";
+            request.Host = "localhost";
 
-            validationService
-                .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(AuthenticationValidationTypes.UserCredentialsValid);
+            var cacheRepositoryMock =
+                new Mock<IAuthorizationCacheRepository>();
 
-            securityService
-                .Setup(x => x.UnprotectAsync(request.EmailAddress))
-                .ReturnsAsync("decrypted@test.com");
+            var messagingPublisherMock =
+                new Mock<IMessagingPublisher>();
 
-            repository
-                .Setup(x => x.GetUserAsync("decrypted@test.com"))
+            cacheRepositoryMock
+                .Setup(x => x.GetUserAsync(request.EmailAddress))
                 .ReturnsAsync(user);
 
-            MessagingRequestModel? capturedRequest = null;
-
-            messagingPublisher
+            messagingPublisherMock
                 .Setup(x => x.DispatchAsync(It.IsAny<MessagingRequestModel>()))
-                .Callback<MessagingRequestModel>(req => capturedRequest = req)
                 .Returns(Task.CompletedTask);
 
+            var sut = CreateSut(
+                cacheRepositoryMock: cacheRepositoryMock,
+                messagingPublisherMock: messagingPublisherMock);
+
             // Act
             var result = await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
+            result.Should().NotBeNull();
+
             result.Success.Should().BeTrue();
-            result.Message.Should().Be("An authentication code was sent to your e-mail address");
-            result.Code.Should().NotBeNullOrEmpty();
 
-            messagingPublisher.Verify(x => x.DispatchAsync(It.IsAny<MessagingRequestModel>()), Times.Once);
+            result.Message.Should()
+                .Be(Constants.AuthenticationErrorMessages.AuthenticationCodeSent);
 
-            capturedRequest.Should().NotBeNull();
-            capturedRequest!.Type.Should().Be("Authentication");
-            capturedRequest.Code.Should().Be(result.Code);
+            result.Code.Should().NotBeNullOrWhiteSpace();
+
+            messagingPublisherMock.Verify(
+                x => x.DispatchAsync(
+                    It.Is<MessagingRequestModel>(m =>
+                        m.Host == request.Host &&
+                        m.Type == "Authentication" &&
+                        m.User != null &&
+                        !string.IsNullOrWhiteSpace(m.Code))),
+                Times.Once);
         }
 
-        [Theory, AutoMoqData]
-        public async Task SendAuthenticationMessage_ThrowsWrappedException_WhenPublisherFails(
-            [Frozen] Mock<IAuthenticationValidationService> validationService,
-            [Frozen] Mock<IAuthorizationSecurityService> securityService,
-            [Frozen] Mock<IAuthorizationCacheRepository> repository,
-            [Frozen] Mock<IMessagingPublisher> messagingPublisher,
-            AuthenticationNotificationService sut,
-            AuthenticationRequestModel request,
-            UserMessageResponseModel user)
+        [Theory, AutoData]
+        public async Task SendAuthenticationMessageAsync_Throws_WhenUserLookupFails(
+            AuthenticationRequestModel request)
         {
             // Arrange
-            request.EmailAddress = "encrypted@test.com";
-            request.Password = "password";
+            var cacheRepositoryMock =
+                new Mock<IAuthorizationCacheRepository>();
 
-            validationService
-                .Setup(x => x.ValidateUserCredentialsAsync(request.EmailAddress, request.Password))
-                .ReturnsAsync(AuthenticationValidationTypes.UserCredentialsValid);
+            cacheRepositoryMock
+                .Setup(x => x.GetUserAsync(request.EmailAddress!))
+                .ThrowsAsync(new Exception(Constants.GlobalErrorMessages.UnexpectedError));
 
-            securityService
-                .Setup(x => x.UnprotectAsync(request.EmailAddress))
-                .ReturnsAsync("decrypted@test.com");
-
-            repository
-                .Setup(x => x.GetUserAsync("decrypted@test.com"))
-                .ReturnsAsync(user);
-
-            messagingPublisher
-                .Setup(x => x.DispatchAsync(It.IsAny<MessagingRequestModel>()))
-                .ThrowsAsync(new Exception("Boom"));
+            var sut = CreateSut(
+                cacheRepositoryMock: cacheRepositoryMock);
 
             // Act
-            Func<Task> act = async () => await sut.SendAuthenticationMessageAsync(request);
+            Func<Task> act = async () =>
+                await sut.SendAuthenticationMessageAsync(request);
 
             // Assert
             await act.Should()
                 .ThrowAsync<Exception>()
-                .WithMessage("*An error occurred while sending the account confirmation message*");
+                .WithMessage(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        [Theory, AutoData]
+        public async Task SendAuthenticationMessageAsync_Throws_WhenDispatchFails(
+            AuthenticationRequestModel request,
+            UserMessageResponseModel user)
+        {
+            // Arrange
+            var cacheRepositoryMock =
+                new Mock<IAuthorizationCacheRepository>();
+
+            var messagingPublisherMock =
+                new Mock<IMessagingPublisher>();
+
+            cacheRepositoryMock
+                .Setup(x => x.GetUserAsync(request.EmailAddress!))
+                .ReturnsAsync(user);
+
+            messagingPublisherMock
+                .Setup(x => x.DispatchAsync(It.IsAny<MessagingRequestModel>()))
+                .ThrowsAsync(new Exception(Constants.GlobalErrorMessages.UnexpectedError));
+
+            var sut = CreateSut(
+                cacheRepositoryMock: cacheRepositoryMock,
+                messagingPublisherMock: messagingPublisherMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.SendAuthenticationMessageAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        [Theory, AutoData]
+        public async Task SendAuthenticationMessageAsync_GeneratesAuthenticationCode(
+            AuthenticationRequestModel request,
+            UserMessageResponseModel user)
+        {
+            // Arrange
+            MessagingRequestModel? dispatchedRequest = null;
+
+            var cacheRepositoryMock =
+                new Mock<IAuthorizationCacheRepository>();
+
+            var messagingPublisherMock =
+                new Mock<IMessagingPublisher>();
+
+            cacheRepositoryMock
+                .Setup(x => x.GetUserAsync(request.EmailAddress!))
+                .ReturnsAsync(user);
+
+            messagingPublisherMock
+                .Setup(x => x.DispatchAsync(It.IsAny<MessagingRequestModel>()))
+                .Callback<MessagingRequestModel>(x => dispatchedRequest = x)
+                .Returns(Task.CompletedTask);
+
+            var sut = CreateSut(
+                cacheRepositoryMock: cacheRepositoryMock,
+                messagingPublisherMock: messagingPublisherMock);
+
+            // Act
+            await sut.SendAuthenticationMessageAsync(request);
+
+            // Assert
+            dispatchedRequest.Should().NotBeNull();
+
+            dispatchedRequest!.Code.Should()
+                .NotBeNullOrWhiteSpace();
+
+            dispatchedRequest.Code.Should()
+                .MatchRegex(@"^\d{5,6}$");
         }
     }
 }

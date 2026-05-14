@@ -27,10 +27,9 @@ namespace WhoOwesWho.UserService.Repositories
                 await context.SaveChangesAsync();
                 return true;
             }
-            catch (Exception e)
+            catch 
             {
-                Console.WriteLine($"An error occurred while creating the forgot password token: {e.Message}");
-                return false;
+                throw;
             }
         }
 
@@ -43,12 +42,9 @@ namespace WhoOwesWho.UserService.Repositories
                 await context.SaveChangesAsync();
                 return userEntity.Adapt<UserModel>();
             }
-            catch (Exception e)
+            catch 
             {
-                return new UserModel
-                {
-                    Message = $"An error occurred while creating the user: {e.Message}"
-                };  
+                throw;
             }
         }
 
@@ -62,10 +58,9 @@ namespace WhoOwesWho.UserService.Repositories
 
                 return true;
             }
-            catch (Exception e)
+            catch 
             {
-                Console.WriteLine($"An error occurred while deleting the forgot password token: {e.Message}");
-                return false;
+               throw;
             }
         }
 
@@ -92,7 +87,7 @@ namespace WhoOwesWho.UserService.Repositories
             }
             catch 
             {
-                return new UserModel();
+                throw;
             }
         }
     }

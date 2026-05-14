@@ -1,222 +1,318 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using Xunit;
 
-namespace WhoOwesWho.UserServiceTests.Services
+namespace WhoOwesWho.UserService.Tests.Services
 {
     public class ResetPasswordServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task ResetPasswordAsync_ReturnsError_WhenPasswordsDoNotMatch(
-           ResetPasswordRequestModel request,
-           [Frozen] Mock<IUserSecurityService> securityService,
-           ResetPasswordService sut)
+        [Theory, AutoData]
+        public async Task ResetPasswordAsync_Throws_WhenUserDoesNotExist(
+            ResetPasswordRequestModel request)
         {
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("password1")
-                .ReturnsAsync("password2");
+            // Arrange
+            request.EmailAddress = "john@test.com";
+            request.NewPassword = "Password1";
+            request.NewPasswordRepeat = "Password1";
 
-            var result = await sut.ResetPasswordAsync(request);
+            var lookupServiceMock = new Mock<IUserLookupService>();
 
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("The passwords does not match!");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ResetPasswordAsync_ReturnsError_WhenUserDoesNotExist(
-           ResetPasswordRequestModel request,
-           [Frozen] Mock<IUserSecurityService> securityService,
-           [Frozen] Mock<IUserLookupService> userLookupService,
-           ResetPasswordService sut)
-        {
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("password")
-                .ReturnsAsync("password");
-
-            userLookupService
-                .Setup(x => x.GetSingleUserByEmailAddressAsync("email@test.com", true))
+            lookupServiceMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync((UserModel?)null);
 
-            var result = await sut.ResetPasswordAsync(request);
+            var sut = CreateResetPasswordService(
+                lookupServiceMock: lookupServiceMock);
 
-            result!.Success!.Should().BeFalse();
-            result.Message.Should().Contain("Could not find the account");
+            // Act
+            Func<Task> act = async () =>
+                await sut.ResetPasswordAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage($"{Constants.ResetPasswordErrorMessages.UserAccountNotFound} {request.EmailAddress}");
         }
 
-        [Theory, AutoMoqData]
-        public async Task ResetPasswordAsync_ReturnsError_WhenNewPasswordEqualsOldPassword(
-           ResetPasswordRequestModel request,
-           UserModel user,
-           [Frozen] Mock<IUserSecurityService> securityService,
-           [Frozen] Mock<IUserLookupService> userLookupService,
-           ResetPasswordService sut)
+        [Theory, AutoData]
+        public async Task ResetPasswordAsync_ReturnsError_WhenPasswordMatchesExistingPassword(
+            ResetPasswordRequestModel request,
+            UserModel user)
         {
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("password")
-                .ReturnsAsync("password")
-                .ReturnsAsync("password");
+            // Arrange
+            request.EmailAddress = "john@test.com";
+            request.NewPassword = "Password1";
+            request.NewPasswordRepeat = "Password1";
 
-            user.Password = "protectedPassword";
+            user.Password = "ProtectedPassword";
 
-            userLookupService
-                .Setup(x => x.GetSingleUserByEmailAddressAsync("email@test.com", true))
+            var lookupServiceMock = new Mock<IUserLookupService>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            lookupServiceMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync(user);
 
+            securityServiceMock
+                .Setup(x => x.UnprotectAsync(user.Password, false))
+                .ReturnsAsync(request.NewPassword);
+
+            var sut = CreateResetPasswordService(
+                lookupServiceMock: lookupServiceMock,
+                securityServiceMock: securityServiceMock);
+
+            // Act
             var result = await sut.ResetPasswordAsync(request);
 
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("The new password cannot be the same as the existing password.");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ResetPasswordAsync_ReturnsError_WhenPasswordValidationFails(
-           ResetPasswordRequestModel request,
-           UserModel user,
-           [Frozen] Mock<IUserSecurityService> securityService,
-           [Frozen] Mock<IUserLookupService> userLookupService,
-           [Frozen] Mock<IUserValidationService> validationService,
-           ResetPasswordService sut)
-        {
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("newpassword")
-                .ReturnsAsync("newpassword")
-                .ReturnsAsync("oldpassword");
-
-            userLookupService
-                .Setup(x => x.GetSingleUserByEmailAddressAsync("email@test.com", true))
-                .ReturnsAsync(user);
-
-            validationService
-                .Setup(x => x.ValidatePasswordAsync("newpassword"))
-                .ReturnsAsync((false, "Password invalid"));
-
-            var result = await sut.ResetPasswordAsync(request);
+            // Assert
+            result.Should().NotBeNull();
 
             result!.Success.Should().BeFalse();
-            result.Message.Should().Contain("Password invalid");
+
+            result.Message.Should()
+                .Be(Constants.ResetPasswordErrorMessages.NewPasswordSameAsExisting);
         }
 
-        [Theory, AutoMoqData]
-        public async Task ResetPasswordAsync_ReturnsSuccess_WhenPasswordUpdated(
+        [Theory, AutoData]
+        public async Task ResetPasswordAsync_ReturnsSuccess_WhenPasswordResetSucceeds(
             ResetPasswordRequestModel request,
             UserModel user,
-            UserModel updatedUser,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserLookupService> userLookupService,
-            [Frozen] Mock<IUserValidationService> validationService,
-            [Frozen] Mock<IUserCommandService> commandService,
-            ResetPasswordService sut)
+            UserModel updatedUser)
         {
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("newpassword")
-                .ReturnsAsync("newpassword")
-                .ReturnsAsync("oldpassword");
+            // Arrange
+            request.EmailAddress = "john@test.com";
+            request.NewPassword = "NewPassword";
+            request.NewPasswordRepeat = "NewPassword";
 
-            securityService
-                .Setup(x => x.ProtectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("protectedId");
+            user.Password = "ProtectedPassword";
 
-            userLookupService
-                .Setup(x => x.GetSingleUserByEmailAddressAsync("email@test.com", true))
+            var lookupServiceMock = new Mock<IUserLookupService>();
+            var commandServiceMock = new Mock<IUserCommandService>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            lookupServiceMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync(user);
 
-            validationService
-                .Setup(x => x.ValidatePasswordAsync("newpassword"))
-                .ReturnsAsync((true, ""));
+            securityServiceMock
+                .Setup(x => x.UnprotectAsync(user.Password, false))
+                .ReturnsAsync("OldPassword");
 
-            commandService
+            commandServiceMock
                 .Setup(x => x.UpdateUserAsync(It.IsAny<UserUpdateRequestModel>()))
                 .ReturnsAsync(updatedUser);
 
+            var sut = CreateResetPasswordService(
+                lookupServiceMock: lookupServiceMock,
+                commandServiceMock: commandServiceMock,
+                securityServiceMock: securityServiceMock);
+
+            // Act
             var result = await sut.ResetPasswordAsync(request);
-            
+
+            // Assert
+            result.Should().NotBeNull();
+
             result!.Success.Should().BeTrue();
-            result.Message.Should().Be("Your password was succesfully reset.");
+
+            result.Message.Should()
+                .Be(Constants.ResetPasswordErrorMessages.ResetSucceeded);
         }
 
-        [Theory, AutoMoqData]
-        public async Task VerifyResetPassword_ReturnsSuccess_WhenTokenValid(
-            UserModel user,
-            ForgotPasswordTokenModel token,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            ResetPasswordService sut)
+        [Theory, AutoData]
+        public async Task ResetPasswordAsync_Throws_WhenUpdateFails(
+            ResetPasswordRequestModel request,
+            UserModel user)
         {
-            token.ForgotPasswordToken = "protectedToken";
-            token.ExpirationTime = DateTime.Now.AddMinutes(10).Ticks;
+            // Arrange
+            request.EmailAddress = "john@test.com";
+            request.NewPassword = "NewPassword";
+            request.NewPasswordRepeat = "NewPassword";
 
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("token")
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("token");
+            user.Password = "ProtectedPassword";
 
-            queryRepository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync("email@test.com", true))
+            var lookupServiceMock = new Mock<IUserLookupService>();
+            var commandServiceMock = new Mock<IUserCommandService>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            lookupServiceMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync(user);
 
-            queryRepository
-                .Setup(x => x.GetForgotPasswordTokenAsync(user.Id))
+            securityServiceMock
+                .Setup(x => x.UnprotectAsync(user.Password, false))
+                .ReturnsAsync("OldPassword");
+
+            commandServiceMock
+                .Setup(x => x.UpdateUserAsync(It.IsAny<UserUpdateRequestModel>()))
+                .ReturnsAsync((UserModel?)null);
+
+            var sut = CreateResetPasswordService(
+                lookupServiceMock: lookupServiceMock,
+                commandServiceMock: commandServiceMock,
+                securityServiceMock: securityServiceMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.ResetPasswordAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage($"{Constants.ResetPasswordErrorMessages.UserAccountNotFound} {request.EmailAddress}");
+        }
+
+        [Theory, AutoData]
+        public async Task VerifyResetPassword_ReturnsSuccess_WhenTokenIsValid(
+            string emailAddress,
+            string token,
+            UserModel user,
+            ForgotPasswordTokenModel tokenResponse)
+        {
+            // Arrange
+            user.Id = Guid.NewGuid();
+
+            tokenResponse.ForgotPasswordToken = token;
+            tokenResponse.ExpirationTime = DateTime.Now.AddHours(1).Ticks;
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            securityServiceMock
+                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
                 .ReturnsAsync(token);
 
-            var result = await sut.VerifyResetPassword("protectedEmail", "protectedToken");
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(emailAddress, true))
+                .ReturnsAsync(user);
+
+            queryRepositoryMock
+                .Setup(x => x.GetForgotPasswordTokenAsync(user.Id))
+                .ReturnsAsync(tokenResponse);
+
+            var sut = CreateResetPasswordService(
+                queryRepositoryMock: queryRepositoryMock,
+                securityServiceMock: securityServiceMock);
+
+            // Act
+            var result = await sut.VerifyResetPassword(emailAddress, token);
+
+            // Assert
+            result.Should().NotBeNull();
 
             result.Success.Should().BeTrue();
         }
 
-        [Theory, AutoMoqData]
-        public async Task VerifyResetPassword_ReturnsError_WhenTokenInvalid(
-           UserModel user,
-           ForgotPasswordTokenModel token,
-           [Frozen] Mock<IUserSecurityService> securityService,
-           [Frozen] Mock<IUserQueryRepository> queryRepository,
-           ResetPasswordService sut)
+        [Theory, AutoData]
+        public async Task VerifyResetPassword_Throws_WhenTokenDoesNotMatch(
+            string emailAddress,
+            string token,
+            UserModel user,
+            ForgotPasswordTokenModel tokenResponse)
         {
-            token.ForgotPasswordToken = "protectedToken";
-            token.ExpirationTime = DateTime.Now.AddMinutes(-10).Ticks;
+            // Arrange
+            user.Id = Guid.NewGuid();
 
-            securityService.SetupSequence(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("token")
-                .ReturnsAsync("email@test.com")
-                .ReturnsAsync("token");
+            tokenResponse.ForgotPasswordToken = "DifferentToken";
+            tokenResponse.ExpirationTime = DateTime.Now.AddHours(1).Ticks;
 
-            queryRepository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync("email@test.com", true))
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            securityServiceMock
+                .SetupSequence(x => x.UnprotectAsync(tokenResponse.ForgotPasswordToken))
+                .ReturnsAsync("AnotherToken");
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(emailAddress, true))
                 .ReturnsAsync(user);
 
-            queryRepository
+            queryRepositoryMock
                 .Setup(x => x.GetForgotPasswordTokenAsync(user.Id))
-                .ReturnsAsync(token);
+                .ReturnsAsync(tokenResponse);
 
-            var result = await sut.VerifyResetPassword("protectedEmail", "protectedToken");
+            var sut = CreateResetPasswordService(
+                queryRepositoryMock: queryRepositoryMock,
+                securityServiceMock: securityServiceMock);
 
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("Your reset password link is invalid or expired.");
+            // Act
+            Func<Task> act = async () =>
+                await sut.VerifyResetPassword(emailAddress, token);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.ResetPasswordErrorMessages.ResetPasswordTokenInvalid);
         }
 
-        [Theory, AutoMoqData]
-        public async Task VerifyResetPassword_ReturnsError_WhenExceptionOccurs(
-        [Frozen] Mock<IUserSecurityService> securityService,
-        ResetPasswordService sut)
+        [Theory, AutoData]
+        public async Task VerifyResetPassword_Throws_WhenTokenExpired(
+            string emailAddress,
+            string token,
+            UserModel user,
+            ForgotPasswordTokenModel tokenResponse)
         {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ThrowsAsync(new Exception());
+            // Arrange
+            user.Id = Guid.NewGuid();
 
-            var result = await sut.VerifyResetPassword("email", "token");
+            tokenResponse.ForgotPasswordToken = token;
+            tokenResponse.ExpirationTime = DateTime.Now.AddHours(-1).Ticks;
 
-            result.Success!.Should().BeFalse();
-            result.Message.Should().Be("An error occurred while verifying reset password link.");
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            securityServiceMock
+                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
+                .ReturnsAsync(token);
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(emailAddress, true))
+                .ReturnsAsync(user);
+
+            queryRepositoryMock
+                .Setup(x => x.GetForgotPasswordTokenAsync(user.Id))
+                .ReturnsAsync(tokenResponse);
+
+            var sut = CreateResetPasswordService(
+                queryRepositoryMock: queryRepositoryMock,
+                securityServiceMock: securityServiceMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.VerifyResetPassword(emailAddress, token);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.ResetPasswordErrorMessages.ResetPasswordTokenInvalid);
+        }
+
+        private static ResetPasswordService CreateResetPasswordService(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IUserLookupService>? lookupServiceMock = null,
+            Mock<IUserQueryRepository>? queryRepositoryMock = null,
+            Mock<IUserCommandService>? commandServiceMock = null,
+            Mock<IUserSecurityService>? securityServiceMock = null)
+        {
+            configurationMock ??= new();
+            lookupServiceMock ??= new();
+            queryRepositoryMock ??= new();
+            commandServiceMock ??= new();
+            securityServiceMock ??= new();
+
+            return new ResetPasswordService(
+                configurationMock.Object,
+                lookupServiceMock.Object,
+                queryRepositoryMock.Object,
+                commandServiceMock.Object,
+                securityServiceMock.Object);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.AuthorizationService.Services;
+using WhoOwesWho.AuthorizationService.Validators;
 using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Controllers
@@ -8,7 +9,10 @@ namespace WhoOwesWho.AuthorizationService.Controllers
     [ApiController]
     public class AuthorizationController(
         IAuthorizationService authorizationService,
-        IAuthenticationNotificationService authenticationNotificationService
+        IAuthenticationNotificationService authenticationNotificationService,
+        IAuthorizationSecurityService authorizationSecurityService,
+        AuthenticationRequestValidatior authenticationValidator,
+        AuthorizationRequestValidator authorizationValidator
         ) : ControllerBase
     {
         [HttpPost]
@@ -17,14 +21,27 @@ namespace WhoOwesWho.AuthorizationService.Controllers
         {
             try
             {
+                request.Password = await authorizationSecurityService.UnprotectAsync(request.Password!);
+                var validationResult =
+                    await authenticationValidator.ValidateAsync(request!);
+
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new AuthenticationResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
                 return Ok(await authenticationNotificationService.SendAuthenticationMessageAsync(request));
             }
             catch (Exception e)
             {
-                return BadRequest(e.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, new AuthenticationResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
-
 
         [HttpPost]
         [Route("authorize")]
@@ -32,11 +49,24 @@ namespace WhoOwesWho.AuthorizationService.Controllers
         {
             try
             {
+                var validationResult =
+                    await authorizationValidator.ValidateAsync(request!);
+
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new AuthorizationResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
                 return Ok(await authorizationService.AuthorizeAsync(request));
             }
             catch (Exception e)
             {
-                return BadRequest(e.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, new AuthorizationResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 

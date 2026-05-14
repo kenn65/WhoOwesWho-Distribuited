@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Extensions;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
@@ -10,12 +11,12 @@ namespace WhoOwesWho.WebApp.Infrastructure.Currencies
     {
         private readonly AppSettings appSettings = new(configuration);
                 
-        public async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync(string jwtToken)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>> GetCurrenciesAsync(string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
-            return await GetAsync<IEnumerable<CurrencyResponseModel>>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>>(endpoint, apiKey, true, null, jwtToken);
         }
 
         private async Task<string> GetBaseAddressAsync() => appSettings.CurrencyMicroserviceBaseAddress!;

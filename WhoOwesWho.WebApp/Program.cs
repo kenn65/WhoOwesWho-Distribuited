@@ -2,6 +2,7 @@
 using WhoOwesWho.WebApp.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 using WhoOwesWho.WebApp.Infrastructure.Account;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
 using WhoOwesWho.WebApp.Infrastructure.Events;
@@ -38,7 +39,7 @@ builder.Services.AddTransient<IProtectionPlugin, ProtectionPlugin>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<ICookiesMasterService, CookiesMasterService>();
 builder.Services.AddScoped<IHostNameService, HostNameService>();
-builder.Services.AddScoped<IStateHandler<EventModel>, StateHandler<EventModel>>();
+builder.Services.AddSingleton<IStateHandler<EventModel>, StateHandler<EventModel>>();
 builder.Services.AddTransient<IUserUseCase, UserUseCase>();
 builder.Services.AddTransient<IUserPlugin, UserPlugin>();
 builder.Services.AddTransient<IEventsUseCase, EventsUseCase>();
@@ -47,6 +48,7 @@ builder.Services.AddTransient<ICurrenciesUseCase, CurrenciesUseCase>();
 builder.Services.AddTransient<ICurrencyPlugin, CurrencyPlugin>();
 builder.Services.AddTransient<IPaymentsUseCase, PaymentsUseCase>();
 builder.Services.AddTransient<IPaymentsPlugin, PaymentsPlugin>();
+builder.Services.AddSingleton<IStateHandler<PaymentStateModel>, StateHandler<PaymentStateModel>>();
 
 var app = builder.Build();
 

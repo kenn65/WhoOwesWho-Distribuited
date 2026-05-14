@@ -9,7 +9,7 @@ namespace WhoOwesWho.PaymentService.EfCore.DataModels
 
         [Required]
         public Guid UserId { get; set; }
-
+        
         [Required]
         public bool IsCreditor { get; set; }
 

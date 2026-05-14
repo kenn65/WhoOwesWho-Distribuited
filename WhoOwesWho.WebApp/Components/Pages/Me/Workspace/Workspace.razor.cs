@@ -7,6 +7,7 @@ using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Payments;
+using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Workspace;
 
@@ -16,95 +17,99 @@ public partial class Workspace(
     ICookiesMasterService cookiesMasterService,
     IAlertService alertService,
     ICurrenciesUseCase currenciesUseCase,
-    IPaymentsUseCase paymentsUseCase)
+    IPaymentsUseCase paymentsUseCase,
+    IProtectionUseCase protectionUseCase)
 {
-    private IEnumerable<EventResponseModel>? EventResponseModels { get; set; }
-    private EventResponseModel? EventResponseModel { get; set; }
-    private EventUserAssignmentResponseModel? EventUserAssignmentResponseModel { get; set; }
-    private IEnumerable<CurrencyResponseModel>? Currencies { get; set; }
-    private UserBalanceResponseModel? UserBalanceResponseModel { get; set; }
-
-    private CookiesResponseModel? Cookies = null;
-    private bool HasAssignment = false;
-    private bool HasPayments = false;
-    private bool IsProcessing = false;
-
+    private IEnumerable<EventResponseModel>? eventResponseModels; 
+    private EventResponseModel? eventResponseModel; 
+    private EventUserAssignmentResponseModel? eventUserAssignmentResponseModel; 
+    private IEnumerable<CurrencyResponseModel>? currencies;
+    private UserBalanceResponseModel? userBalanceResponseModel; 
+    private CookiesResponseModel? cookies = null;
+    private bool hasAssignment = false;
+    private bool hasPayments = false;
+    private bool isProcessing = false;
+    private Guid userId = Guid.Empty;
+    private bool isLoading = true;
+    
     protected override async Task OnInitializedAsync()
     {
-        Cookies = await cookiesMasterService.GetAsync();
-        EventUserAssignmentResponseModel = await GetEventAssignmentAsync();
-        HasAssignment = EventUserAssignmentResponseModel!.EventId != Guid.Empty;
-        if (!HasAssignment)
+        cookies = await cookiesMasterService.GetAsync();
+        userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
+        eventUserAssignmentResponseModel = await GetEventAssignmentAsync();
+        hasAssignment = eventUserAssignmentResponseModel!.EventId != Guid.Empty;
+        if (!hasAssignment)
         {
-            EventResponseModels = await GetEventsAsync();
+            eventResponseModels = await GetEventsAsync();
         }
         else
         {
-            HasPayments = await HasUserPaymentsAsync(EventUserAssignmentResponseModel!.EventId.ToString());
-            Currencies = await GetCurrenciesAsync();
-            EventResponseModel = await GetEventAsync(EventUserAssignmentResponseModel!.EventId);
-            UserBalanceResponseModel = await GetUserBalanceAsync(EventUserAssignmentResponseModel!.EventId.ToString());
+            hasPayments = await HasUserPaymentsAsync(eventUserAssignmentResponseModel!.EventId.ToString());
+            currencies = await GetCurrenciesAsync();
+            eventResponseModel = await GetEventAsync(eventUserAssignmentResponseModel!.EventId);
+            userBalanceResponseModel = await GetUserBalanceAsync(eventUserAssignmentResponseModel!.EventId.ToString());
         }
+        isLoading = false;
     }
 
     private async Task OnAssignAsync(EventAssignmentRequestModel requestModel)
     {
-        IsProcessing = true;
+        isProcessing = true;
         await HandleAssignAsync(requestModel);
     }
 
     private async Task OnUnassignAsync(EventUnassignmentRequestModel requestModel)
     {
-        IsProcessing = true;
+        isProcessing = true;
         await HandleUnassingAsync(requestModel);
     }
 
     private async Task OnPaymentAsync(CreatePaymentRequestModel requestModel)
     {
-        IsProcessing = true;
+        isProcessing = true;
         await HandlePaymentAsync(requestModel);
     }
 
     private async Task<IEnumerable<EventResponseModel>> GetEventsAsync()
     {
-        return await eventsUseCase.ExecuteAsync(true, Cookies!.TokenValue);
+        return (await eventsUseCase.ExecuteGetEventsAsync(true, cookies!.TokenValue)).Data!;
     }
 
     private async Task<EventResponseModel> GetEventAsync(Guid eventId)
     {
-        return await eventsUseCase.ExecuteAsync(eventId.ToString(), true, Cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventAsync(eventId, true, cookies!.TokenValue);
     }
 
     private async Task<EventUserAssignmentResponseModel> GetEventAssignmentAsync()
     {
-        return await eventsUseCase.ExecuteAsync(Cookies!.UserIdValue, Cookies.TokenValue);
+        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, cookies!.TokenValue);
     }
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {
-        return await currenciesUseCase.GetCurrenciesAsync(Cookies!.TokenValue);
+        return (await currenciesUseCase.ExecuteAsync(cookies!.TokenValue))?.Data!;
     }
 
     private async Task<bool> HasUserPaymentsAsync(string eventId)
     {
-        var response = await paymentsUseCase.ExecuteAsync(eventId, Cookies!.UserIdValue, true, Cookies.TokenValue);
+        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), userId, true, cookies!.TokenValue);
         return response.Success;
     }
 
     private async Task<UserBalanceResponseModel> GetUserBalanceAsync(string eventId)
     {
-        return await paymentsUseCase.ExecuteAsync(Cookies!.UserIdValue, eventId, Cookies.TokenValue);
+        return await paymentsUseCase.ExecuteAsync(userId, Guid.Parse(eventId), cookies!.TokenValue);
     }
 
     private async Task HandleAssignAsync(EventAssignmentRequestModel requestModel)
     {
-        if (requestModel.EventId == null || requestModel.EventId == string.Empty)
+        if (string.IsNullOrWhiteSpace(requestModel.EventIdString) || string.IsNullOrWhiteSpace(requestModel.EventIdString))
         {
             await StopProcessing();
             await alertService.Error("Please select an event!");
             return;
         }
-        requestModel!.UserId = Cookies!.UserIdValue;
-        var response = await eventsUseCase.ExecuteAsync(requestModel, Cookies.TokenValue);
+        requestModel!.UserIdString = userId.ToString();
+        var response = await eventsUseCase.ExecuteAssignToEventAsync(requestModel, cookies!.TokenValue);
         await StopProcessing();
         if (!response.Success)
         {
@@ -114,17 +119,17 @@ public partial class Workspace(
         await alertService.Success(response.Message!);
         nav.NavigateTo("/me/workspace", true);
     }
-
+    
     private async Task HandleUnassingAsync(EventUnassignmentRequestModel requestModel)
     {
-        if (requestModel.EventId is null || requestModel.EventId == string.Empty)
+        if (requestModel.EventId == Guid.Empty)
         {
             await StopProcessing();
             await alertService.Error("An unexpected error occurred, please try again");
             return;
         }
-        requestModel.UserId = Cookies!.UserIdValue;
-        var response = await eventsUseCase.ExecuteAsync(requestModel, Cookies.TokenValue);
+        requestModel.UserIdString = userId.ToString();
+        var response = await eventsUseCase.ExecuteUnassignFromEventAsync(requestModel, cookies!.TokenValue);
         await StopProcessing();
         if (!response.Success)
         {
@@ -137,34 +142,10 @@ public partial class Workspace(
 
     private async Task HandlePaymentAsync(CreatePaymentRequestModel requestModel)
     {
-        if (requestModel.UserIds == null || !requestModel.UserIds.Any() || requestModel.UserIds.Count() < 2)
-        {
-            await StopProcessing();
-            await alertService.Error("Please select at least two users!");
-            return;
-        }
-        if (requestModel.EventId == null || requestModel.EventId == string.Empty)
-        {
-            await StopProcessing();
-            await alertService.Error("An unexpected error with the event ID occurred, please try again");
-            return;
-        }
-        if (requestModel.TotalAmount == null)
-        {
-            await StopProcessing();
-            await alertService.Error("Please enter a payment amount");
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(requestModel.Description))
-        {
-            await StopProcessing();
-            await alertService.Error("Please enter a description");
-            return;
-        }
-        requestModel.CreditorId = Cookies!.UserIdValue;
+        requestModel.CreditorId = userId;
         requestModel.OriginalAmount = requestModel.TotalAmount!.Value;
-        requestModel.Token = Cookies.TokenValue;
-        var responnse = await paymentsUseCase.ExecuteAsync(requestModel, Cookies!.TokenValue);
+        requestModel.Token = cookies!.TokenValue;
+        var responnse = await paymentsUseCase.ExecuteAsync(requestModel, cookies!.TokenValue);
         await StopProcessing();
         if (!responnse.Success)
         {
@@ -175,14 +156,9 @@ public partial class Workspace(
         nav.NavigateTo("/me/workspace", true);
     }
 
-
-
-
-
-
     private async Task StopProcessing()
     {
-        IsProcessing = false;
+        isProcessing = false;
         StateHasChanged();
         await Task.Yield();
     }

@@ -8,8 +8,8 @@ namespace WhoOwesWho.PaymentService.Repositories
 {
     public interface IPaymentCacheRepository
     {
-        Task<UserMessageResponseModel?> GetUserByIdAsync(string id);
-        Task<EventMessageResponseModel> GetEventByIdAsync(string id, bool active);
+        Task<UserMessageResponseModel?> GetUserByIdAsync(Guid id);
+        Task<EventMessageResponseModel> GetEventByIdAsync(Guid id, bool active);
         Task SaveActiveEventAsync(EventMessageRequestModel eventMessageRequestModel);
         Task SaveInactiveEventAsync(EventMessageRequestModel eventMessageRequestModel);
        
@@ -17,19 +17,19 @@ namespace WhoOwesWho.PaymentService.Repositories
     }
     public class PaymentCacheRepository(IDatabase db) : IPaymentCacheRepository
     {
-        public async Task<EventMessageResponseModel> GetEventByIdAsync(string id, bool active)
+        public async Task<EventMessageResponseModel> GetEventByIdAsync(Guid id, bool active)
         {
             if (active)
             {
-                return await GetActiveEventByIdAsync(id) ?? throw new KeyNotFoundException($"Active event with id {id} not found.");
+                return await GetActiveEventByIdAsync(id.ToString()) ?? throw new KeyNotFoundException($"Active event with id {id} not found.");
             }
             else
             {
-                return await GetInactiveEventByIdAsync(id) ?? throw new KeyNotFoundException($"Inactive event with id {id} not found.");
+                return await GetInactiveEventByIdAsync(id.ToString()) ?? throw new KeyNotFoundException($"Inactive event with id {id} not found.");
             }
         }
 
-        public async Task<UserMessageResponseModel?> GetUserByIdAsync(string id)
+        public async Task<UserMessageResponseModel?> GetUserByIdAsync(Guid id)
         {
             var value = await db.StringGetAsync($"user:{id}");
             return value.HasValue

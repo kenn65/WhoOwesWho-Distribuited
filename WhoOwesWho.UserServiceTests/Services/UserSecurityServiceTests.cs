@@ -114,8 +114,7 @@ namespace WhoOwesWho.UserServiceTests.Services
 
             // Assert
             var exception = await act.Should().ThrowAsync<Exception>();
-
-            exception.Which.Message.Should().Be("Invalid value entered");
+            exception.Which.Message.Should().Be("Security service has null value entered for protection");
         }
 
         [Theory, AutoMoqData]
@@ -179,7 +178,7 @@ namespace WhoOwesWho.UserServiceTests.Services
             // Assert
             var exception = await act.Should().ThrowAsync<Exception>();
 
-            exception.Which.Message.Should().Be("Invalid value entered");
+            exception.Which.Message.Should().Be("Security service has null value entered for unprotection");
         }
     }
 }

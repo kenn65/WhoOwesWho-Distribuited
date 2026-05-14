@@ -1,71 +1,98 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WhoOwesWho.EventService.Auxiliaries;
 using WhoOwesWho.EventService.Services;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.EventService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UserEventsController(
-        IEventLookupService eventLookupService,
-        IEventSecurityService eventSecurityService
+        IEventLookupService eventLookupService
         ) : ControllerBase
     {
         [HttpGet]
         [Route("{userId}/{active}")]
         [Authorize]
-        public async Task<IActionResult> GetUserEventAsync(string userId, bool active = true)
+        public async Task<IActionResult> GetUserEventAsync(Guid userId, bool active = true)
         {
-
             try
             {
+                if (userId == Guid.Empty)
+                {
+                    return BadRequest(new EventResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
+                    });
+                }
                 return Ok(await eventLookupService.GetEventByUserAsync(userId, active));
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new EventResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
         [HttpGet]
         [Route("{userId}")]
         [Authorize]
-        public async Task<IActionResult> GetUserEvents(string userId, [FromQuery] bool active = false)
+        public async Task<IActionResult> GetUserEvents(Guid userId, [FromQuery] bool active = false)
         {
             try
             {
-                var id = await eventSecurityService.UnprotectAsync(userId);
+                if (userId == Guid.Empty)
+                {
+                    return BadRequest(new EventResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
+                    });
+                }
                 var allEvents = (await eventLookupService.GetEventsAsync(active)).ToList();
-                return Ok(allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == Guid.Parse(id))));
+                var response = allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == userId));
+                return Ok(new EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>
+                {
+                    Data = response
+                });
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new EventResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetUserEvents([FromQuery] string userId)
+        public async Task<IActionResult> GetUserEvents([FromQuery] Guid userId)
         {
             try
             {
-                try
+               if (userId == Guid.Empty)
                 {
-                    var id = await eventSecurityService.UnprotectAsync(userId);
-                    return Ok(await eventLookupService.GetEventsAsync(userId));
-                    //return Ok(allEvents.Where(e => e.Users!.Any(u => u.Id == Guid.Parse(id))));
+                    return BadRequest(new EventResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
+                    });
                 }
-                catch (Exception e)
+               var response = await eventLookupService.GetEventsAsync(userId);
+                return Ok(new EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>
                 {
-                    return BadRequest(e.StackTrace);
-                }
+                    Data = response
+                });
             }
             catch (Exception e)
             {
-                return BadRequest(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError, new EventResponseModel
+                {
+                    Message = e.Message
+                });
             }
         }
     }

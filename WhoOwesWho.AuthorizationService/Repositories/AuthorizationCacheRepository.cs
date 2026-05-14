@@ -9,6 +9,7 @@ namespace WhoOwesWho.AuthorizationService.Repositories
     {
         Task SaveUserAsync(UserMessageRequestModel user);
         Task<UserMessageResponseModel?> GetUserAsync(string emailAddress);
+        Task<bool> GetUserExistAsync(string emailAddress);
         Task<UserMessageResponseModel?> GetUserByIdAsync(string id);
     }
 
@@ -28,6 +29,12 @@ namespace WhoOwesWho.AuthorizationService.Repositories
             return value.HasValue
                 ? JsonSerializer.Deserialize<UserMessageResponseModel>(value.ToString()!)
                 : null;
+        }
+
+        public async Task<bool> GetUserExistAsync(string emailAddress)
+        {
+            var value = await GetUserAsync(emailAddress);
+            return value != null;
         }
 
         public async Task SaveUserAsync(UserMessageRequestModel user)

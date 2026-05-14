@@ -37,6 +37,6 @@ namespace WhoOwesWho.Shared.Models
         public bool Settled { get; set; }
 
         [JsonProperty("userIds")]
-        public IEnumerable<string>? UserIds { get; set; }
+        public IEnumerable<Guid>? UserIds { get; set; }
     }
 }

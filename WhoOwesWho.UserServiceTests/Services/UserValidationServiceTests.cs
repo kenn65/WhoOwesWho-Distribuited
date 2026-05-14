@@ -2,304 +2,221 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using Xunit;
 
-namespace WhoOwesWho.UserServiceTests.Services
+namespace WhoOwesWho.UserService.Tests.Services
 {
     public class UserValidationServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task ValidatePasswordAsync_ReturnsValid_WhenPasswordIsValid(
-             [Frozen] Mock<IConfiguration> configurationMock,
-            UserValidationService sut)
-        {
-            //Arrange
-            configurationMock
-                .Setup(x => x["Password:Format:LenghtRequired"])
-                .Returns("8");
-
-            configurationMock
-                .Setup(x => x["Password:Format:UppercaseRequired"])
-                .Returns("1");
-
-            configurationMock
-                .Setup(x => x["Password:Format:DigitsRequired"])
-                .Returns("2");
-
-            var password = "Valid123";
-
-            //Act
-            var result = await sut.ValidatePasswordAsync(password);
-
-            //Assert
-            result.isValid.Should().BeTrue();
-            result.errorMessage.Should().BeEmpty();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidatePasswordAsync_ReturnsError_WhenPasswordIsInvalid(
-            [Frozen] Mock<IConfiguration> configurationMock,
-            UserValidationService sut)
-        {
-            //Arrange
-            configurationMock
-                .Setup(x => x["Password:Format:LenghtRequired"])
-                .Returns("8");
-
-            configurationMock
-                .Setup(x => x["Password:Format:UppercaseRequired"])
-                .Returns("1");
-
-            configurationMock
-                .Setup(x => x["Password:Format:DigitsRequired"])
-                .Returns("2");
-
-            var password = "x";
-
-            //Act
-            var result = await sut.ValidatePasswordAsync(password);
-
-            //Assert
-            result.isValid.Should().BeFalse();
-            result.errorMessage.Should().NotBeEmpty();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidateEmailAsync_ReturnsError_WhenEmailIsInvalid(
-            UserValidationService sut)
-        {
-            //Act
-            var result = await sut.ValidateEmailAsync(string.Empty, false);
-
-            //Assert
-            result.isValid.Should().BeFalse();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidateEmailAsync_ReturnsError_WhenEmailAlreadyExists(
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            UserValidationService sut)
-        {
-            //Arrange
-            var email = "test@test.com";
-
-            queryRepository
-                .Setup(x => x.GetUserEmailExists(email))
-                .ReturnsAsync(true);
-
-            //Act
-            var result = await sut.ValidateEmailAsync(email, false);
-
-            //Assert
-            result.isValid.Should().BeFalse();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidateEmailAsync_ReturnsValid_WhenEmailDoesNotExist(
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            UserValidationService sut)
-        {
-            //Arrange
-            var email = "test@test.com";
-
-            queryRepository
-                .Setup(x => x.GetUserEmailExists(email))
-                .ReturnsAsync(false);
-
-            //Act
-            var result = await sut.ValidateEmailAsync(email, false);
-
-            //Assert
-            result.isValid.Should().BeTrue();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidateEmailAsync_ReturnsError_WhenEmailDoesNotExist_ButShouldExist(
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            UserValidationService sut)
-        {
-            //Arrange
-            var email = "test@test.com";
-
-            queryRepository
-                .Setup(x => x.GetUserEmailExists(email))
-                .ReturnsAsync(false);
-
-            //Act
-            var result = await sut.ValidateEmailAsync(email, true);
-
-            //Assert
-            result.isValid.Should().BeFalse();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidateEmailAsync_ReturnsValid_WhenEmailExists_AndShouldExist(
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            UserValidationService sut)
-        {
-            //Arrange
-            var email = "test@test.com";
-
-            queryRepository
-                .Setup(x => x.GetUserEmailExists(email))
-                .ReturnsAsync(true);
-
-            //Act
-            var result = await sut.ValidateEmailAsync(email, true);
-
-            //Assert
-            result.isValid.Should().BeTrue();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task VerifyUserEmailAddress_ReturnsNull_WhenUserNotFound(
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            UserValidationService sut)
-        {
-            //Arrange
-            var email = "test@test.com";
-
-            queryRepository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync(email, true))
-                .ReturnsAsync((UserModel?)null);
-
-            //Act
-            var result = await sut.VerifyUserEmailAddressAsync(email);
-
-            //Assert
-            result.Should().BeNull();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task VerifyUserEmailAddress_UpdatesUser_WhenUserExists(
+        [Theory, AutoData]
+        public async Task VerifyUserEmailAddressAsync_ReturnsUpdatedUser_WhenSuccessful(
+            string email,
             UserModel user,
-            [Frozen] Mock<IUserQueryRepository> queryRepository,
-            [Frozen] Mock<IUserMutationRepository> mutationRepository,
-            UserValidationService sut)
+            UserModel updatedUser)
         {
-            //Arrange
-            var email = "test@test.com";
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
 
-            queryRepository
+            queryRepositoryMock
                 .Setup(x => x.GetSingleUserByEmailAddressAsync(email, true))
                 .ReturnsAsync(user);
 
-            mutationRepository
-                .Setup(x => x.UpdateUserAsync(It.IsAny<UserModel>()))
-                .ReturnsAsync(user);
+            mutationRepositoryMock
+                .Setup(x => x.UpdateUserAsync(user))
+                .ReturnsAsync(updatedUser);
 
-            //Act
+            var sut = CreateUserValidationService(
+                queryRepositoryMock: queryRepositoryMock,
+                mutationRepositoryMock: mutationRepositoryMock);
+
+            // Act
             var result = await sut.VerifyUserEmailAddressAsync(email);
 
-            //Assert
-            result.Should().NotBeNull();
-            result!.EmailAddressVerified.Should().BeTrue();
+            // Assert
+            result.Should().Be(updatedUser);
+            user.EmailAddressVerified.Should().BeTrue();
         }
 
-        [Theory, AutoMoqData]
-        public async Task VerifyUpdate_ReturnsSuccess_WhenEventIdIsNull(
-            UserUpdateRequestModel request,
-            UserValidationService sut)
+        [Theory, AutoData]
+        public async Task VerifyUserEmailAddressAsync_Throws_WhenRepositoryFails(
+            string email)
         {
-            request.EventId = null;
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
 
-            var result = await sut.VerifyUpdateAsync(request);
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(email, true))
+                .ThrowsAsync(new Exception(Constants.UserCreationErrorMessages.UserLoadingUnsuccessful));
 
-            result.Success.Should().BeTrue();
+            var sut = CreateUserValidationService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.VerifyUserEmailAddressAsync(email);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.UserCreationErrorMessages.UserLoadingUnsuccessful);
         }
 
-        [Theory, AutoMoqData]
-        public async Task VerifyUpdate_ReturnsFailure_WhenAnotherAdminExists(
+        [Theory, AutoData]
+        public async Task ValidateUpdateAsync_ReturnsVerificationModel_WhenSuccessful(
             UserUpdateRequestModel request,
-            EventMessageResponseModel evt,
-            UserMessageResponseModel adminUser,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserCacheRepository> cacheRepository,
-            UserValidationService sut)
+            UpdateUserVerificationModel verificationModel)
         {
-            //Arrange
-            request.Admin = true;
-            request.EventId = "event";
-            request.ProtectedId = "user";
+            // Arrange
+            var updateValidationMock =
+                new Mock<IUserUpdateValidationService>();
 
-            adminUser.Admin = true;
+            updateValidationMock
+                .Setup(x => x.ValidateUpdateAsync(request))
+                .ReturnsAsync(verificationModel);
 
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
-                .ReturnsAsync(Guid.NewGuid().ToString());
+            var sut = CreateUserValidationService(
+                updateValidationMock: updateValidationMock);
 
-            evt.UserIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            // Act
+            var result = await sut.ValidateUpdateAsync(request);
 
-            cacheRepository
-                .Setup(x => x.GetActiveEventByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync(evt);
-
-            cacheRepository
-                .Setup(x => x.GetUserByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync(adminUser);
-
-            //Act
-            var result = await sut.VerifyUpdateAsync(request);
-
-            //Assert
-            result.Success.Should().BeFalse();
+            // Assert
+            result.Should().Be(verificationModel);
         }
 
-        [Theory, AutoMoqData]
-        public async Task VerifyUpdate_ReturnsNoAdminWarning_WhenNoAdminExists(
-            UserUpdateRequestModel request,
-            EventMessageResponseModel evt,
-            UserMessageResponseModel user,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserCacheRepository> cacheRepository,
-            UserValidationService sut)
-                {
-            request.Admin = false;
-            request.EventId = "event";
-            request.ProtectedId = "user";
-
-            //Arrange
-            user.Admin = false;
-
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
-                .ReturnsAsync(Guid.NewGuid().ToString());
-
-            evt.UserIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
-
-            cacheRepository
-                .Setup(x => x.GetActiveEventByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync(evt);
-
-            cacheRepository
-                .Setup(x => x.GetUserByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            //Act
-            var result = await sut.VerifyUpdateAsync(request);
-
-            //Assert
-            result.Success.Should().BeTrue();
-            result.NoAdmin.Should().BeTrue();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task VerifyUpdate_ReturnsFailure_WhenExceptionOccurs(
-            UserUpdateRequestModel request,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            UserValidationService sut)
+        [Theory, AutoData]
+        public async Task ValidateUpdateAsync_Throws_WhenValidationFails(
+            UserUpdateRequestModel request)
         {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
-                .ThrowsAsync(new Exception());
+            // Arrange
+            var updateValidationMock =
+                new Mock<IUserUpdateValidationService>();
 
-            var result = await sut.VerifyUpdateAsync(request);
+            updateValidationMock
+                .Setup(x => x.ValidateUpdateAsync(request))
+                .ThrowsAsync(new Exception(Constants.GlobalErrorMessages.UnexpectedError));
 
-            result.Success.Should().BeFalse();
+            var sut = CreateUserValidationService(
+                updateValidationMock: updateValidationMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.ValidateUpdateAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        [Theory, AutoData]
+        public async Task IsFullNameUnique_ReturnsTrue_WhenFullNameDoesNotExist(
+            string fullName)
+        {
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetUserFullNameExists(fullName))
+                .ReturnsAsync(false);
+
+            var sut = CreateUserValidationService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            var result = await sut.IsFullNameUniqueAsync(fullName);
+
+            // Assert
+            result.Should().BeTrue();
+        }
+
+        [Theory, AutoData]
+        public async Task IsFullNameUnique_ReturnsFalse_WhenFullNameExists(
+            string fullName)
+        {
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetUserFullNameExists(fullName))
+                .ReturnsAsync(true);
+
+            var sut = CreateUserValidationService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            var result = await sut.IsFullNameUniqueAsync(fullName);
+
+            // Assert
+            result.Should().BeFalse();
+        }
+
+        [Theory, AutoData]
+        public async Task IsEmailAddressUnique_ReturnsTrue_WhenEmailDoesNotExist(
+            string protectedEmail,
+            string unprotectedEmail)
+        {
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetUserEmailExists(unprotectedEmail))
+                .ReturnsAsync(false);
+
+            var sut = CreateUserValidationService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            var result = await sut.IsEmailAddressUniqueAsync(protectedEmail);
+
+            // Assert
+            result.Should().BeTrue();
+        }
+
+        [Theory, AutoData]
+        public async Task IsEmailAddressUnique_ReturnsFalse_WhenEmailExists(
+            string email
+            )
+        {
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetUserEmailExists(It.IsAny<string>()))
+                .ReturnsAsync(true);
+
+            var sut = CreateUserValidationService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            var result = await sut.IsEmailAddressUniqueAsync(email);
+
+            // Assert
+            result.Should().BeFalse();
+        }
+
+        private static UserValidationService CreateUserValidationService(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IUserQueryRepository>? queryRepositoryMock = null,
+            Mock<IUserMutationRepository>? mutationRepositoryMock = null,
+            Mock<IUserUpdateValidationService>? updateValidationMock = null)
+        {
+            configurationMock ??= new();
+            queryRepositoryMock ??= new();
+            mutationRepositoryMock ??= new();
+            updateValidationMock ??= new();
+
+            return new UserValidationService(
+                configurationMock.Object,
+                queryRepositoryMock.Object,
+                mutationRepositoryMock.Object,
+                updateValidationMock.Object);
         }
     }
 }

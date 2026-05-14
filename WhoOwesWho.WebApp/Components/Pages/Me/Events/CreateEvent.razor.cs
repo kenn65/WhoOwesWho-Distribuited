@@ -6,6 +6,7 @@ using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Events;
+using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Events;
 public partial class CreateEvent(
@@ -14,7 +15,9 @@ public partial class CreateEvent(
     IAlertService alertService,
     ICookiesMasterService cookiesMasterService,
     IUserUseCase userUseCase,
-    ICurrenciesUseCase currenciesUseCase)
+    ICurrenciesUseCase currenciesUseCase,
+    IProtectionUseCase protectionUseCase
+    )
 {
     private string minDate = DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd");
     private IEnumerable<CurrencyResponseModel> CurrencyList = [];
@@ -24,7 +27,7 @@ public partial class CreateEvent(
     };
     private bool IsProcessing = false;
     private CookiesResponseModel? Cookies;
-    //private string DateFormat { get; set; } = "yyyy-MM-dd";
+    private Guid UserId { get; set; }
 
     [SupplyParameterFromForm]
     public EventRequestModel? EventRequestModel { get; set; }
@@ -32,23 +35,26 @@ public partial class CreateEvent(
     protected override async Task OnInitializedAsync()
     {
         Cookies = await cookiesMasterService.GetAsync();
+        UserId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(Cookies!.UserIdValue));
         EventRequestModel ??= new EventRequestModel();
         EventRequestModel.StartDateDate = DateTime.Today;
-        EventRequestModel.CreatedBy = await GetUserAsync();
         CurrencyList = await GetCurrenciesAsync();
+        EventRequestModel.CreatedBy = await GetUserAsync();
     }
 
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {
-        return await currenciesUseCase.GetCurrenciesAsync(Cookies!.TokenValue);
+        return (await currenciesUseCase.ExecuteAsync(Cookies!.TokenValue))?.Data!;
     }
 
     private async Task HandleSubmit()
     {
         IsProcessing = true;
         EventRequestModel!.StartDate = EventRequestModel!.StartDateDate.ToString("yyyy-MM-dd");
-        EventRequestModel.UserId = Cookies!.UserIdValue;
-        var response = await eventsUseCase.ExecuteAsync(EventRequestModel, Cookies!.TokenValue);
+        EventRequestModel.UserId = UserId;
+        EventRequestModel.Token = Cookies!.TokenValue;
+
+        var response = await eventsUseCase.ExecuteCreateEventAsync(EventRequestModel, Cookies!.TokenValue);
         await StopProcessing();
         if (!response.Success)
         {
@@ -61,10 +67,7 @@ public partial class CreateEvent(
 
     private async Task<string> GetUserAsync()
     {
-        var response = await userUseCase.ExecuteAsync(
-                Cookies!.UserIdValue,
-                Cookies.TokenValue,
-                false);
+        var response = await userUseCase.ExecuteAsync(UserId, Cookies!.TokenValue);
         return response!.FullName!;
     }
 

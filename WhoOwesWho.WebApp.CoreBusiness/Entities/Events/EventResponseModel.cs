@@ -8,7 +8,7 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Events
     public class EventResponseModel : ResponseModelBase
     {
         public Guid Id { get; set; }
-                        
+                       
         public string CreatedBy { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Event name is required")]

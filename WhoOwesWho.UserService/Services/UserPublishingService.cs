@@ -1,15 +1,16 @@
-﻿using WhoOwesWho.Shared.Models;
+﻿using WhoOwesWho.Shared.Auxiliaries;
+using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Services.Base;
 using WhoOwesWho.UserService.Services.ServiceBus.Publishers;
 using WhoOwesWho.UserService.Settings;
 
 namespace WhoOwesWho.UserService.Services
 {
-    public interface IUserPublishingServicee
+    public interface IUserPublishingService
     {
         Task SendUserAsync(UserMessageRequestModel user);
     }
-    public class UserPublishingService(IConfiguration configuration, IUserPublisher userPublisher) : ServiceBase(configuration), IUserPublishingServicee
+    public class UserPublishingService(IConfiguration configuration, IUserPublisher userPublisher) : ServiceBase(configuration), IUserPublishingService
     {
         public async Task SendUserAsync(UserMessageRequestModel user)
         {
@@ -20,7 +21,7 @@ namespace WhoOwesWho.UserService.Services
             }
             catch (Exception e)
             {
-                throw new Exception($"An error occurred while sending the account confirmation message: {e.Message}",
+                throw new Exception($"{Constants.UserCreationErrorMessages.DispatchUserException} {e.Message}",
                     e);
             }
         }

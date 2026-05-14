@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text;
 using WhoOwesWho.EncryptionService.Services;
+using WhoOwesWho.EncryptionService.Validators;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.EncryptionService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EncryptionController(IEncryptionService encryptionService)
+    public class EncryptionController(IEncryptionService encryptionService, ProtectCookiesRequestValidator validator)
         : ControllerBase
     {
         [HttpGet]
@@ -16,12 +17,24 @@ namespace WhoOwesWho.EncryptionService.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(text))
+                {
+                    return BadRequest(new ProtectionResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.TextArgumentError
+                    });
+                }
                 return Ok(await encryptionService.Encrypt(text)); //DataProtection is not used due to key ring issues
             }
             catch (Exception e)
             {
-                return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProtectionResponseModel
+                {
+                    Message = e.Message
+                });
             }
+            //    return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
+            //}
         }
 
         [HttpGet]
@@ -30,6 +43,13 @@ namespace WhoOwesWho.EncryptionService.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(text))
+                {
+                    return BadRequest(new ProtectionResponseModel
+                    {
+                        Message = Constants.RequestArgumentErrorMessages.TextArgumentError
+                    });
+                }
                 if (text.Contains(" "))
                 {
                     text = text.Replace(" ", "+");
@@ -38,7 +58,11 @@ namespace WhoOwesWho.EncryptionService.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProtectionResponseModel
+                {
+                    Message = e.Message
+                });
+                //return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
             }
         }
 
@@ -48,6 +72,15 @@ namespace WhoOwesWho.EncryptionService.Controllers
         {
             try
             {
+                var validationResult = await validator.ValidateAsync(request);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new EncryptedCookiesResponseModel
+                    {
+                        Message = validationResult.Errors.First().ErrorMessage
+                    });
+                }
+
                 return Ok(await encryptionService.EncryptCookies(request));
             }
             catch (Exception e)
@@ -55,7 +88,5 @@ namespace WhoOwesWho.EncryptionService.Controllers
                 return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
             }
         }
-
-
     }
 }

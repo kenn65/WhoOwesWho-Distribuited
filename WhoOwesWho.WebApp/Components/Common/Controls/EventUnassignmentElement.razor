@@ -1,0 +1,10 @@
+﻿@if (EventUnassignmentRequestModel != null)
+{
+    <EditForm method="post" Model="@EventUnassignmentRequestModel" OnValidSubmit="HandleSubmit" FormName="eventunassignment" Enhance>
+        <InputHidden id="eventId" @bind-Value="@EventUnassignmentRequestModel.EventIdString" />
+        <SubmitButton Text="Unassign"
+                      ProcessingText="Processing..."
+                      IsProcessing="IsProcessing" />
+    </EditForm>
+}
+

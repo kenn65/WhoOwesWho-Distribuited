@@ -3,6 +3,7 @@ using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services.Base;
+using WhoOwesWho.Shared.Auxiliaries;
 
 namespace WhoOwesWho.UserService.Services
 {
@@ -13,81 +14,42 @@ namespace WhoOwesWho.UserService.Services
     public class ChangePasswordService(
         IConfiguration configuration,
         IUserSecurityService userSecurityService,
-        IUserValidationService userValidationService,
         IUserQueryRepository userQueryRepository,
         IUserCommandService userCommandService
         ) : ServiceBase(configuration), IChangePasswordService
     {
         public async Task<ChangePasswordResponseModel?> ChangePasswordAsync(ChangePasswordRequestModel request)
         {
+
             var response = new ChangePasswordResponseModel();
 
-            request.EmailAddress = await userSecurityService.UnprotectAsync(request.EmailAddress!);
-            var password = await userSecurityService.UnprotectAsync(request.Password!);
-            var newPassword1 = await userSecurityService.UnprotectAsync(request.NewPassword1!);
-            var newPassword2 = await userSecurityService.UnprotectAsync(request.NewPassword2!);
-
-            var emailCheck = await userValidationService.ValidateEmailAsync(request.EmailAddress!, true);
-            if (!emailCheck.isValid)
+            if (request.NewPassword1 != request.NewPassword2)
             {
-                response.Message = emailCheck.errorMessage;
-                return response;
+                throw new Exception(Constants.ChangePasswordErrorMessages.NewPasswordsDoNotMatch);
             }
 
-            var passwordCheck = await userValidationService.ValidatePasswordAsync(password);
-            if (!passwordCheck.isValid)
-            {
-                response.Message = $"For existing password:{passwordCheck.errorMessage}";
-                return response;
-            }
-
-            passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword1);
-            if (!passwordCheck.isValid)
-            {
-                response.Message = $"For new password:{passwordCheck.errorMessage}";
-                return response;
-            }
-
-            passwordCheck = await userValidationService.ValidatePasswordAsync(newPassword2!);
-            if (!passwordCheck.isValid)
-            {
-                response.Message = $"For new password repeated:{passwordCheck.errorMessage}";
-                return response;
-            }
-
-            if (newPassword1 != newPassword2)
-            {
-                response.Message = "The passwords does not match!";
-                return response;
-            }
-            
             var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(request.EmailAddress, true);
             if (user is null)
             {
-                response.Message = "User not found with the provided email address. Please try again";
-                return response;
+                throw new Exception(Constants.ChangePasswordErrorMessages.UserNotFound);
             }
 
-           if (user.Password != request.Password)
+            if ((await userSecurityService.UnprotectAsync(user.Password!)) != request.Password)
             {
-                response.Message = "The existing password is incorrect.";
-                return response;
+                throw new Exception(Constants.ChangePasswordErrorMessages.ExistingPasswordInvalid);
             }
 
-            user.Password = request.NewPassword1;
+            user.Password = await userSecurityService.ProtectAsync(request.NewPassword1!, true);
             var requestModel = user.Adapt<UserUpdateRequestModel>();
-            requestModel.ProtectedId = await userSecurityService.ProtectAsync(user.Id.ToString());
             requestModel.IsPasswordUpdating = true;
-            var entity = await userCommandService.UpdateUserAsync(requestModel);
-            if (entity != null)
+            var userModel = await userCommandService.UpdateUserAsync(requestModel);
+            if (userModel != null)
             {
                 response.Success = true;
-                response.Message = "Your password was successfully changed.";
+                response.Message = Constants.ChangePasswordErrorMessages.SuccessfullyChanged;
                 return response;
             }
-
-            response.Message = "An error occurred while updating the user password. Please try again";
-            return response;
+            throw new Exception(Constants.UserCreationErrorMessages.UserLoadingUnsuccessful);
         }
     }
 }

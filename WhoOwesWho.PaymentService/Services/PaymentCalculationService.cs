@@ -39,7 +39,7 @@ namespace WhoOwesWho.PaymentService.Services
                 {
                     var userBalanceRequest = new UserBalanceRequestModel
                     {
-                        UserId = user.Id.ToString(),
+                        UserId = user.Id,
                         EventId = request.EventId
                     };
                     balances.Add(await userBalanceService.GetUserBalanceAsync(userBalanceRequest, request.Active));

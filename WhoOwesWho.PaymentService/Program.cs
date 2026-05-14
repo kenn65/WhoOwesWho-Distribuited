@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -14,6 +15,7 @@ using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.PaymentService.Services.Gateways;
 using WhoOwesWho.PaymentService.Services.ServiceBus.Receivers;
 using WhoOwesWho.PaymentService.Services.ServiceBus.Resolvers;
+using WhoOwesWho.PaymentService.Validators;
 using static WhoOwesWho.PaymentService.Services.IPaymentCalculationService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,8 +58,11 @@ builder.Services.AddScoped<IPaymentMutationRepository , PaymentMutationRepositor
 builder.Services.AddScoped<IPaymentCacheRepository, PaymentCacheRepository>();
 builder.Services.AddScoped<ICurrencyGatewayService, CurrencyGatewayService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePaymentRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdatePaymentRequestValidator>();
+
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+
 
 // 🔐 Authentication (JWT)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -8,7 +8,7 @@ public partial class EventAssignmentElement
     [Parameter] public IEnumerable<EventResponseModel>? EventList { get; set; }
     [Parameter] public EventCallback<EventAssignmentRequestModel> HandleAssign { get; set; }
 
-    [SupplyParameterFromForm]
+    [SupplyParameterFromForm(FormName = "eventassignment")]
     private EventAssignmentRequestModel? EventAssignmentRequestModel { get; set; }
 
     protected override async Task OnInitializedAsync()

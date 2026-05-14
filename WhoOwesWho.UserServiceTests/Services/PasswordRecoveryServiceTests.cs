@@ -1,161 +1,235 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
 using WhoOwesWho.UserService.Services;
 using Xunit;
 
-namespace WhoOwesWho.UserServiceTests.Services
+namespace WhoOwesWho.UserService.Tests.Services
 {
     public class PasswordRecoveryServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task SendPasswordRecoveryEmailAsync_ShouldReturnError_WhenEmailIsInvalid(
-            ForgotPasswordRequestModel request,
-            [Frozen] Mock<IUserSecurityService> security,
-            PasswordRecoveryService service)
-        {
-            request.Host = "https://host.com";
-
-            security
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("invalid-email");
-
-            var result = await service.SendPasswordRecoveryEmailAsync(request);
-
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("Invalid e-mail address provided.");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendPasswordRecoveryEmailAsync_ShouldReturnError_WhenHostMissing(
-            ForgotPasswordRequestModel request,
-            [Frozen] Mock<IUserSecurityService> security,
-            PasswordRecoveryService service)
-        {
-            request.Host = "";
-
-            security
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("user@test.com");
-
-            var result = await service.SendPasswordRecoveryEmailAsync(request);
-
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("Host is not provided.");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendPasswordRecoveryEmailAsync_ShouldReturnError_WhenValidationFails(
-            ForgotPasswordRequestModel request,
-            [Frozen] Mock<IUserSecurityService> security,
-            [Frozen] Mock<IUserValidationService> validation,
-            PasswordRecoveryService service)
-        {
-            request.Host = "https://host.com";
-
-            security
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("user@test.com");
-
-            validation
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-                .ReturnsAsync((false, "Invalid email"));
-
-            var result = await service.SendPasswordRecoveryEmailAsync(request);
-
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("Invalid email");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendPasswordRecoveryEmailAsync_ShouldReturnError_WhenUserNotFound(
-            ForgotPasswordRequestModel request,
-            [Frozen] Mock<IUserSecurityService> security,
-            [Frozen] Mock<IUserValidationService> validation,
-            [Frozen] Mock<IUserQueryRepository> repository,
-            PasswordRecoveryService service)
-        {
-            request.Host = "https://host.com";
-
-            security
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("user@test.com");
-
-            validation
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-                .ReturnsAsync((true, ""));
-
-            repository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((UserModel?)null);
-
-            var result = await service.SendPasswordRecoveryEmailAsync(request);
-
-            result.Success.Should().BeFalse();
-            result.Message.Should().Be("Could not find user, please try again.");
-        }
-
-        [Theory, AutoMoqData]
-        public async Task SendPasswordRecoveryEmailAsync_ShouldReturnSuccess_WhenEmailSent(
+        [Theory, AutoData]
+        public async Task SendPasswordRecoveryEmailAsync_ReturnsSuccess_WhenEmailIsSent(
             ForgotPasswordRequestModel request,
             UserModel user,
-            [Frozen] Mock<IUserSecurityService> security,
-            [Frozen] Mock<IUserValidationService> validation,
-            [Frozen] Mock<IUserQueryRepository> repository,
-            [Frozen] Mock<IUserNotificationService> notification,
-            PasswordRecoveryService service)
+            [Frozen] Mock<IConfiguration> configuration,
+            string token)
         {
-            request.Host = "https://host.com";
+            // Arrange
+            request.Host = "localhost";
+            const string tokenSecret = "HEming_wayWas%here754";
 
-            security
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("user@test.com");
+            configuration
+                .Setup(x => x["Password:ForgotPassword.TokenSecret"])
+                .Returns(tokenSecret);
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var notificationServiceMock = new Mock<IUserNotificationService>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
 
-            validation
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), true))
-                .ReturnsAsync((true, ""));
-
-            repository
-                .Setup(x => x.GetSingleUserByEmailAddressAsync(It.IsAny<string>(), false))
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, false))
                 .ReturnsAsync(user);
 
-            security
-                .Setup(x => x.ProtectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("token");
+            securityServiceMock
+                .Setup(x => x.ProtectAsync(It.IsAny<string>()))
+                .ReturnsAsync(token);
 
-            var result = await service.SendPasswordRecoveryEmailAsync(request);
+            notificationServiceMock
+                .Setup(x => x.SendPasswordRecoveryMessage(
+                    It.IsAny<UserMessageRequestModel>(),
+                    request.Host,
+                    token))
+                .Returns(Task.CompletedTask);
+
+            var sut = CreatePasswordRecoveryService(
+                queryRepositoryMock: queryRepositoryMock,
+                notificationServiceMock: notificationServiceMock,
+                securityServiceMock: securityServiceMock,
+                configurationMock: configuration);
+
+            // Act
+            var result = await sut.SendPasswordRecoveryEmailAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
 
             result.Success.Should().BeTrue();
-            result.Message.Should().Be("A password reset link sent to your e-mail address.");
 
-            notification.Verify(x =>
-                x.SendPasswordRecoveryMessage(
+            result.Message.Should()
+                .Be(Constants.PasswordRecoveryErrorMessages.SuccessfullySent);
+
+            notificationServiceMock.Verify(
+                x => x.SendPasswordRecoveryMessage(
                     It.IsAny<UserMessageRequestModel>(),
-                    request.Host!,
-                    "token"),
+                    request.Host,
+                    token),
                 Times.Once);
         }
 
-        [Theory, AutoMoqData]
-        public async Task SendPasswordRecoveryEmailAsync_ShouldReturnError_WhenExceptionOccurs(
-            ForgotPasswordRequestModel request,
-            [Frozen] Mock<IUserSecurityService> security,
-            PasswordRecoveryService service)
+        [Theory, AutoData]
+        public async Task SendPasswordRecoveryEmailAsync_ReturnsError_WhenUserDoesNotExist(
+            ForgotPasswordRequestModel request)
         {
-            request.Host = "https://host.com";
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
 
-            security
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ThrowsAsync(new Exception());
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, false))
+                .ReturnsAsync((UserModel?)null);
 
-            var result = await service.SendPasswordRecoveryEmailAsync(request);
+            var sut = CreatePasswordRecoveryService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            var result = await sut.SendPasswordRecoveryEmailAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
 
             result.Success.Should().BeFalse();
-            result.Message.Should().Be("An unexpected error occurred, please try again.");
+
+            result.Message.Should()
+                .Be(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        [Theory, AutoData]
+        public async Task SendPasswordRecoveryEmailAsync_ReturnsError_WhenNotificationFails(
+            ForgotPasswordRequestModel request,
+            UserModel user,
+            [Frozen] Mock<IConfiguration> configuration,
+            string token)
+        {
+            // Arrange
+            request.Host = "localhost";
+            const string tokenSecret = "HEming_wayWas%here754";
+
+            configuration
+                .Setup(x => x["Password:ForgotPassword.TokenSecret"])
+                .Returns(tokenSecret);
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var notificationServiceMock = new Mock<IUserNotificationService>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, false))
+                .ReturnsAsync(user);
+
+            securityServiceMock
+                .Setup(x => x.ProtectAsync(It.IsAny<string>()))
+                .ReturnsAsync(token);
+
+            notificationServiceMock
+                .Setup(x => x.SendPasswordRecoveryMessage(
+                    It.IsAny<UserMessageRequestModel>(),
+                    request.Host,
+                    token))
+                .ThrowsAsync(new Exception());
+
+            var sut = CreatePasswordRecoveryService(
+                queryRepositoryMock: queryRepositoryMock,
+                notificationServiceMock: notificationServiceMock,
+                securityServiceMock: securityServiceMock,
+                configurationMock: configuration);
+
+            // Act
+            var result = await sut.SendPasswordRecoveryEmailAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+
+            result.Success.Should().BeFalse();
+
+            result.Message.Should()
+                .Be(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        [Theory, AutoData]
+        public async Task SendPasswordRecoveryEmailAsync_ReturnsError_WhenTokenGenerationFails(
+            ForgotPasswordRequestModel request,
+            UserModel user,
+            [Frozen] Mock<IConfiguration> configuration)
+        {
+            // Arrange
+            configuration
+                .Setup(x => x["Password:ForgotPassword.TokenSecret"])
+                .Returns("HEming_wayWas%here754");
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var securityServiceMock = new Mock<IUserSecurityService>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, false))
+                .ReturnsAsync(user);
+
+            securityServiceMock
+                .Setup(x => x.ProtectAsync(It.IsAny<string>()))
+                .ThrowsAsync(new Exception());
+
+            var sut = CreatePasswordRecoveryService(
+                queryRepositoryMock: queryRepositoryMock,
+                securityServiceMock: securityServiceMock,
+                configurationMock: configuration);
+
+            // Act
+            var result = await sut.SendPasswordRecoveryEmailAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+
+            result.Success.Should().BeFalse();
+
+            result.Message.Should()
+                .Be(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        [Theory, AutoData]
+        public async Task SendPasswordRecoveryEmailAsync_ReturnsError_WhenRepositoryFails(
+            ForgotPasswordRequestModel request)
+        {
+            // Arrange
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, false))
+                .ThrowsAsync(new Exception());
+
+            var sut = CreatePasswordRecoveryService(
+                queryRepositoryMock: queryRepositoryMock);
+
+            // Act
+            var result = await sut.SendPasswordRecoveryEmailAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+
+            result.Success.Should().BeFalse();
+
+            result.Message.Should()
+                .Be(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        private static PasswordRecoveryService CreatePasswordRecoveryService(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IUserQueryRepository>? queryRepositoryMock = null,
+            Mock<IUserNotificationService>? notificationServiceMock = null,
+            Mock<IUserSecurityService>? securityServiceMock = null)
+        {
+            configurationMock ??= new();
+            queryRepositoryMock ??= new();
+            notificationServiceMock ??= new();
+            securityServiceMock ??= new();
+
+            return new PasswordRecoveryService(
+                configurationMock.Object,
+                queryRepositoryMock.Object,
+                notificationServiceMock.Object,
+                securityServiceMock.Object);
         }
     }
 }

@@ -1,29 +1,75 @@
 ﻿@page "/me/workspace"
 
-@if (EventUserAssignmentResponseModel == null)
+@if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
     </div>
 }
-
-@if (EventUserAssignmentResponseModel != null && !HasAssignment)
+else
 {
-    <EventAssignmentElement IsProcessing="@IsProcessing"
-                            EventList="@EventResponseModels"
-                            HandleAssign="@OnAssignAsync" />
-}
-@if (EventUserAssignmentResponseModel != null && HasAssignment)
-{
-    <EventPaymentElement HasAssignment="@HasAssignment"
-                         HasPayments="@HasPayments"
-                         IsProcessing="@IsProcessing"
-                         EventResponseModel="@EventResponseModel"
-                         CurrencyList="@Currencies"
-                         UserBalanceResponseModel="@UserBalanceResponseModel"
-                         HandleUnassign="@OnUnassignAsync"
-                         HandlePayment="@OnPaymentAsync"
-                         />
+    <div class="text-center mb-3">
+        <br />
+        <br />
+        <h1 class="text-4xl">My workspace</h1>
+        <br />
+        <h3 class="text-xl">Events</h3>
+        <br />
+        @if (hasAssignment)
+        {
+            <p>You are currently assigned to the event:</p>
+            <br />
+            <p class="text-2xl text-blue-800">
+                @eventResponseModel!.Name (@eventResponseModel.Location) starting at @eventResponseModel.StartDateIso
+            </p>
+        }
+        else
+        {
+            <p class="text-xs">Assign to an event to participate</p>
+        }
+        <br />
+        <br />
+        @if (!hasPayments && hasAssignment)
+        {
+            <EventUnassignmentElement IsProcessing="@isProcessing"
+                                    HandleUnassign="@OnUnassignAsync"
+                                    EventResponseModel="@eventResponseModel"/>
+        }
+        @if (hasAssignment && hasPayments)
+        {
+            <p>Your current payments balance</p>
+            <br />
+            <p class="text-xl">
+                @userBalanceResponseModel!.FormattedBalance @userBalanceResponseModel.CurrencySymbol
+            </p>
+            <br />
+            <br />
+            <br />
+            <hr />
+            <br />
+            <p class="text-2xl">
+                Create payment for user or split payment between multiple users
+            </p>
+        }
+        <br />
+        <br />
+        @if (!hasAssignment)
+        {
+            <EventAssignmentElement IsProcessing="@isProcessing"
+                                    EventList="@eventResponseModels"
+                                    HandleAssign="@OnAssignAsync" />
+        }
+        @if (hasAssignment && eventResponseModel != null && currencies != null && userBalanceResponseModel != null)
+        {
+            <EventPaymentElement HasAssignment="@hasAssignment"
+                                 HasPayments="@hasPayments"
+                                 IsProcessing="@isProcessing"
+                                 EventResponseModel="@eventResponseModel"
+                                 CurrencyList="@currencies"
+                                 UserBalanceResponseModel="@userBalanceResponseModel"
+                                 HandlePayment="@OnPaymentAsync" />
+        }
+    </div>
 }
 
 

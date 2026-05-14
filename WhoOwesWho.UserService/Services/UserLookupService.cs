@@ -15,9 +15,9 @@ namespace WhoOwesWho.UserService.Services
     {
         public async Task<UserModel?> GetSingleUserByEmailAddressAsync(string? emailAddress, bool complete = false)
         {
-            var user = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, complete);
-            user?.Success = user != null;
-            return user;
+            var response = await userQueryRepository.GetSingleUserByEmailAddressAsync(emailAddress, complete);
+            response?.Success = response != null;
+            return response;
         }
 
         public async Task<UserModel?> GetSingleUserByIdAsync(Guid id, bool complete = false)

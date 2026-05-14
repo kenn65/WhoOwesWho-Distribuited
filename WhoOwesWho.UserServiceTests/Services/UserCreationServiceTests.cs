@@ -1,169 +1,123 @@
 ﻿using AutoFixture.Xunit2;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
-using WhoOwesWho.Shared.Attributes;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Services;
 using Xunit;
 
-namespace WhoOwesWho.UserServiceTests.Services
+namespace WhoOwesWho.UserService.Tests.Services
 {
     public class UserCreationServiceTests
     {
-        [Theory, AutoMoqData]
-        public async Task CreateUserAsync_ReturnsError_WhenFullNameIsMissing(
-            SignUpRequestModel request,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            UserCreationService sut)
+        private static UserCreationService CreateUserCreationService(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IUserCommandService>? commandServiceMock = null)
         {
-            request.Entity!.FullName = "";
+            configurationMock ??= new();
+            commandServiceMock ??= new();
 
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com");
-
-            var result = await sut.CreateUserAsync(request);
-
-            result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("Full name is required.");
+            return new UserCreationService(
+                configurationMock.Object,
+                commandServiceMock.Object);
         }
 
-
-        [Theory, AutoMoqData]
-        public async Task CreateUserAsync_ReturnsError_WhenEmailValidationFails(
-            SignUpRequestModel request,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserValidationService> validationService,
-            UserCreationService sut)
-        {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com");
-
-            validationService
-                .Setup(x => x.ValidateEmailAsync("email@test.com", false))
-                .ReturnsAsync((false, "Invalid email"));
-
-            var result = await sut.CreateUserAsync(request);
-
-            result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("Invalid email");
-        }
-
-
-        [Theory, AutoMoqData]
-        public async Task CreateUserAsync_ReturnsError_WhenPasswordValidationFails(
-            SignUpRequestModel request,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserValidationService> validationService,
-            UserCreationService sut)
-        {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com");
-
-            validationService
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((true, ""));
-
-            validationService
-                .Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
-                .ReturnsAsync((false, "Invalid password"));
-
-            var result = await sut.CreateUserAsync(request);
-
-            result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("Invalid password");
-        }
-
-
-        [Theory, AutoMoqData]
+        [Theory, AutoData]
         public async Task CreateUserAsync_ReturnsSuccess_WhenUserIsCreated(
             SignUpRequestModel request,
-            UserModel createdUser,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserValidationService> validationService,
-            [Frozen] Mock<IUserCommandService> commandService,
-            UserCreationService sut)
+            UserModel createdUser)
         {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com");
+            // Arrange
+            request.Entity ??= new UserModel();
+            request.Host = "localhost";
 
-            validationService
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((true, ""));
+            var commandServiceMock = new Mock<IUserCommandService>();
 
-            validationService
-                .Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
-                .ReturnsAsync((true, ""));
-            validationService
-                .Setup(x => x.ValidateFullNameAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((true, ""));
-
-            commandService
-                .Setup(x => x.CreateUserAsync(request.Entity!, request.Host!))
+            commandServiceMock
+                .Setup(x => x.CreateUserAsync(request.Entity, request.Host))
                 .ReturnsAsync(createdUser);
 
+            var sut = CreateSut(
+                commandServiceMock: commandServiceMock);
+
+            // Act
             var result = await sut.CreateUserAsync(request);
 
+            // Assert
             result.Should().NotBeNull();
+
             result!.Success.Should().BeTrue();
-            result.Message.Should().Contain("Sign up successful");
+
+            result.Message.Should()
+                .Be(Constants.UserCreationErrorMessages.SignupSucceeded);
         }
 
-
-        [Theory, AutoMoqData]
+        [Theory, AutoData]
         public async Task CreateUserAsync_ReturnsError_WhenUserCreationFails(
-            SignUpRequestModel request,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            [Frozen] Mock<IUserValidationService> validationService,
-            [Frozen] Mock<IUserCommandService> commandService,
-            UserCreationService sut)
+            SignUpRequestModel request)
         {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync("email@test.com");
+            // Arrange
+            request.Entity ??= new UserModel();
+            request.Host = "localhost";
 
-            validationService
-                .Setup(x => x.ValidateEmailAsync(It.IsAny<string>(), false))
-                .ReturnsAsync((true, ""));
+            var commandServiceMock = new Mock<IUserCommandService>();
 
-            validationService
-                .Setup(x => x.ValidatePasswordAsync(It.IsAny<string>()))
-                .ReturnsAsync((true, ""));
-
-            commandService
-                .Setup(x => x.CreateUserAsync(request.Entity!, request.Host!))
+            commandServiceMock
+                .Setup(x => x.CreateUserAsync(request.Entity, request.Host))
                 .ReturnsAsync((UserModel?)null);
 
-            var result = await sut.CreateUserAsync(request);
+            var sut = CreateSut(
+                commandServiceMock: commandServiceMock);
 
-            result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("An unexpected error occurred, please try again.");
+            // Act
+            Func<Task> act = async () =>
+                await sut.CreateUserAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.GlobalErrorMessages.UnexpectedError);
         }
 
-
-        [Theory, AutoMoqData]
+        [Theory, AutoData]
         public async Task CreateUserAsync_ReturnsError_WhenExceptionOccurs(
-            SignUpRequestModel request,
-            [Frozen] Mock<IUserSecurityService> securityService,
-            UserCreationService sut)
+            SignUpRequestModel request)
         {
-            securityService
-                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ThrowsAsync(new Exception());
+            // Arrange
+            request.Entity ??= new UserModel();
+            request.Host = "localhost";
 
-            var result = await sut.CreateUserAsync(request);
+            var commandServiceMock = new Mock<IUserCommandService>();
 
-            result.Should().NotBeNull();
-            result!.Success.Should().BeFalse();
-            result.Message.Should().Be("An unexpected error occurred, please try again.");
+            commandServiceMock
+                .Setup(x => x.CreateUserAsync(request.Entity, request.Host))
+                .ThrowsAsync(new Exception(Constants.GlobalErrorMessages.UnexpectedError));
+
+            var sut = CreateSut(
+                commandServiceMock: commandServiceMock);
+
+            // Act
+            Func<Task> act = async () =>
+                await sut.CreateUserAsync(request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage(Constants.GlobalErrorMessages.UnexpectedError);
+        }
+
+        private static UserCreationService CreateSut(
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IUserCommandService>? commandServiceMock = null)
+        {
+            configurationMock ??= new();
+            commandServiceMock ??= new();
+
+            return new UserCreationService(
+                configurationMock.Object,
+                commandServiceMock.Object);
         }
     }
 }

@@ -5,6 +5,6 @@ namespace WhoOwesWho.EventService.Models
     public class SettleEventRequestModel
     {
         [JsonProperty("eventId")]
-        public string? EventId { get; set; }
+        public Guid EventId { get; set; }
     }
 }

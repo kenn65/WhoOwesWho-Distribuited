@@ -1,4 +1,4 @@
-﻿using Mapster;
+﻿using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services.Base;
@@ -8,38 +8,34 @@ namespace WhoOwesWho.EventService.Services
 {
     public interface IEventLookupService
     {
-        Task<EventResponseModel?> GetEventAsync(string id, bool active = true);
-        Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true);
+        Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true);
+        Task<EventResponseModel?> GetEventByUserAsync(Guid userId, bool active = true);
         Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active);
-        Task<IEnumerable<EventResponseModel>> GetEventsAsync(string userId);
-        Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true);
-        Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active = true);
+        Task<IEnumerable<EventResponseModel>> GetEventsAsync(Guid userId);
+        Task<EventAssignmentModel> GetAssignmentAsync(Guid userId, bool active = true);
+        Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(Guid eventId, bool active = true);
     }
     public class EventLookupService(
         IConfiguration configuration,
-        IEventSecurityService eventSecurityService,
         IEventQueryRepository eventQueryRepository,
         IEventCacheRepository eventCacheRepository
         ) : ServiceBase(configuration), IEventLookupService
     {
 
 
-        public async Task<EventResponseModel?> GetEventAsync(string id, bool active = true)
+        public async Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true)
         {
-            var eventId = await eventSecurityService.UnprotectAsync(id); 
-            return await eventQueryRepository.GetEventAsync(Guid.Parse(eventId), active);
+            return await eventQueryRepository.GetEventAsync(id, active);
         }
 
-        public async Task<EventResponseModel?> GetEventByUserAsync(string userId, bool active = true)
+        public async Task<EventResponseModel?> GetEventByUserAsync(Guid userId, bool active = true)
         {
-            var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
-            return await eventQueryRepository.GetEventByUserAsync(unprotectedUserId, active);
+            return await eventQueryRepository.GetEventByUserAsync(userId, active);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(string userId)
+        public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(Guid userId)
         {
-            var unprotectedUserId = await eventSecurityService.UnprotectAsync(userId);
-            var user = await eventCacheRepository.GetUserByIdAsync(unprotectedUserId);
+            var user = await eventCacheRepository.GetUserByIdAsync(userId.ToString());
             IEnumerable<UserMessageResponseModel> users = new List<UserMessageResponseModel>
             {
                 {
@@ -56,8 +52,7 @@ namespace WhoOwesWho.EventService.Services
                     item.Users = users;
                 }
             }
-
-            return filteredEvents;
+            return filteredEvents.Any() ? filteredEvents : [];
         }
 
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active)
@@ -65,17 +60,14 @@ namespace WhoOwesWho.EventService.Services
             return await eventQueryRepository.GetEventsAsync(active);
         }
 
-        public async Task<EventAssignmentModel> GetAssignmentAsync(string protectedUserId, bool active = true)
+        public async Task<EventAssignmentModel> GetAssignmentAsync(Guid userId, bool active = true)
         {
-            var userId = await eventSecurityService.UnprotectAsync(protectedUserId);
-            var response = await eventQueryRepository.GetAssignmentAsync(protectedUserId, active);
-            if (!response.Success) {
-                response.Message = "No active events are available.";
-            }
+            var response = await eventQueryRepository.GetAssignmentAsync(userId, active);
+            response.Success = true;
             return response;
         }
 
-        public async Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(string eventId, bool active = true)
+        public async Task<IEnumerable<UserMessageResponseModel>> GetEventUsersAsync(Guid eventId, bool active = true)
         {
             return await eventQueryRepository.GetEventUsersAsync(eventId, active);
         }

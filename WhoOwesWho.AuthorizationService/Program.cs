@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -10,6 +11,7 @@ using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Publishers;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Receivers;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Resolvers;
+using WhoOwesWho.AuthorizationService.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,8 +46,10 @@ builder.Services.AddScoped<IAuthorizationCacheRepository, AuthorizationCacheRepo
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IAuthorizationSecurityService, AuthorizationSecurityService>();
 builder.Services.AddScoped<IAuthenticationNotificationService, AuthenticationNotificationService>();
-builder.Services.AddScoped<IAuthenticationValidationService, AuthenticationValidationService>();
+builder.Services.AddScoped<IAuthValidationService, AuthValidationService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddValidatorsFromAssemblyContaining<AuthenticationRequestValidatior>();
+builder.Services.AddValidatorsFromAssemblyContaining<AuthorizationRequestValidator>();
 
 builder.Services.AddControllers();
 

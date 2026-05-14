@@ -2,9 +2,14 @@ using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Account;
+using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Account;
-public partial class Verify(NavigationManager nav, IUserUseCase userUseCase, IAlertService alertService)
+public partial class Verify(
+    NavigationManager nav, 
+    IUserUseCase userUseCase, 
+    IAlertService alertService,
+    IProtectionUseCase protectionUseCase)
 {
     [Parameter]
     [SupplyParameterFromQuery(Name = "emailAddress")]
@@ -22,7 +27,7 @@ public partial class Verify(NavigationManager nav, IUserUseCase userUseCase, IAl
     {
         var requestModel = new VerificationRequestModel
         {
-            EmailAddress = EmailAddress
+            EmailAddress = await protectionUseCase.ExecuteUnprotectAsync(EmailAddress)
         };
         var response = await userUseCase.ExecuteAsync(requestModel);
         if (!response.Success)

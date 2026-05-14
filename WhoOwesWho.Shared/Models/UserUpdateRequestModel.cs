@@ -4,9 +4,7 @@ namespace WhoOwesWho.Shared.Models
 {
     public class UserUpdateRequestModel
     {
-        [JsonProperty("protectedId")]
-        public string? ProtectedId { get; set; }
-
+        
         [JsonProperty("id")]
         public Guid Id { get; set; } = Guid.Empty;
 
@@ -20,7 +18,7 @@ namespace WhoOwesWho.Shared.Models
         public bool Admin { get; set; }
 
         [JsonProperty("eventId")]
-        public string? EventId { get; set; }
+        public Guid EventId { get; set; }
 
         [JsonProperty("password")]
         public string? Password { get; set; }

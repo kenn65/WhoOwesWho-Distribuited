@@ -1,7 +1,7 @@
 ﻿using Azure.Messaging.ServiceBus;
 using WhoOwesWho.AuthorizationService.Services.ServiveBus.Resolvers;
 using WhoOwesWho.Shared.Models;
-using WhoOwesWho.Shared.Models.Base;
+using WhoOwesWho.Shared.Models.Base.ServiceBus;
 using static WhoOwesWho.Shared.Models.Base.ServiceBus.ObservabilityRecords;
 
 namespace WhoOwesWho.AuthorizationService.Services.ServiveBus.Receivers

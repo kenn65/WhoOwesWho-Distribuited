@@ -12,8 +12,8 @@ namespace WhoOwesWho.WebApp.Services
         Task SetAdminCookieAsync(CookiesResponseModel data, bool isAdmin);
         Task DeleteCookiesAsync();
         Task<CookiesResponseModel?> GetAsync();
-        Task<bool> IsAuthorizedAsync();
-        Task<bool> IsAdministratorAsync();
+        Task<bool> IsAuthorizedAsync(CookiesResponseModel cookies);
+        Task<bool> IsAdministratorAsync(CookiesResponseModel cookies);
     }
 
     public class CookiesMasterService(
@@ -57,20 +57,18 @@ namespace WhoOwesWho.WebApp.Services
             });
         }
         
-        public async Task<bool> IsAuthorizedAsync()
+        public async Task<bool> IsAuthorizedAsync(CookiesResponseModel cookies)
         {
-            var data = await GetAsync();
-            return !string.IsNullOrEmpty(data?.TokenValue);
+            return !string.IsNullOrEmpty(cookies?.TokenValue);
         }
 
-        public async Task<bool> IsAdministratorAsync()
+        public async Task<bool> IsAdministratorAsync(CookiesResponseModel cookies)
         {
-            var data = await GetAsync();
-            if (string.IsNullOrEmpty(data?.AdminValue))
+            if (string.IsNullOrEmpty(cookies?.AdminValue))
             {
                 return false;
             }
-            var result = await protection.ExecuteUnprotectAsync(data!.AdminValue);
+            var result = await protection.ExecuteUnprotectAsync(cookies?.AdminValue!);
             return result == "True";
         }
 

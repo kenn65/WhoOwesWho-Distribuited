@@ -3,11 +3,11 @@
     <div class="flex justify-end mb-2">
         @if (!AllSelected)
         {
-            <img src="check-all-50.png" @onclick="@ToggleAll" width="24" height="24" alt="Check all" title="Check all" class="cursor-pointer" />
+            <img src="check-all-50.png" @onclick="@ToggleAllAsync" width="24" height="24" alt="Check all" title="Check all" class="cursor-pointer" />
         }
         else
         {
-            <img src="uncheck-all-50.png" @onclick="@ToggleAll" width="24" height="24" alt="Uncheck all" title="Uncheck all" class="cursor-pointer" />
+            <img src="uncheck-all-50.png" @onclick="@ToggleAllAsync" width="24" height="24" alt="Uncheck all" title="Uncheck all" class="cursor-pointer" />
         }
     </div>
     @foreach (var user in Users)
@@ -19,16 +19,16 @@
         }
 
         <div class="flex items-center gap-1 w-full md:w-full mx-auto text-left">
-            <input id="@Id"
+            <input id="@user.Id"
                    type="checkbox"
-                   checked="@IsSelected(user.ProtectedId!)"
-                   @onchange="e => ToggleSelected(user.ProtectedId!, (bool)((ChangeEventArgs)e).Value!)"
+                   checked="@IsSelected(user.Id.ToString()!)"
+                   @onchange="e => ToggleSelectedAsync(user.Id.ToString()!, (bool)((ChangeEventArgs)e).Value!)"
                    class="w-6 h-6 shrink-0 border border-gray-700 hover:border-green-700 rounded mb-[20px] cursor-pointer"
             />
-            <InputText id="@user.ProtectedId" @bind-Value="@bindValue" class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+            <InputText id="@user.Id" @bind-Value="@bindValue" class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
         </div>
     }
-    <ValidationMessage For="@ValueExpression" class="text-danger" />
+    <ValidationMessage For="ValueExpression" class="text-danger" />
 </div>
 
 

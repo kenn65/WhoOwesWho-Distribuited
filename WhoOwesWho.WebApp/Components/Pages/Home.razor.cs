@@ -8,7 +8,8 @@ public partial class Home(
 {
     protected override async Task OnInitializedAsync()
     {
-        if (await cookiesMasterService.IsAuthorizedAsync())
+        var cookies = await cookiesMasterService.GetAsync();
+        if (await cookiesMasterService.IsAuthorizedAsync(cookies!))
         {
             nav.NavigateTo("/me");
         }

@@ -15,15 +15,14 @@ namespace WhoOwesWho.EventService.Repositories
         Task<DeleteEventResponseModel> DeleteEventAsync(Guid id);
         Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request);
         Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request);
-        Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request);
+        Task<SettleEventResponseModel> SettleEventAsync(Guid eventId);
     }
 
     public class EventMutationRepository(
         EventDbContext context, 
         IEventQueryRepository eventQueryRepository, 
         IEventCacheRepository eventCacheRepository,
-        ICurrencyGatewayService currencyGatewayService, 
-        IEventSecurityService eventSecurityService
+        ICurrencyGatewayService currencyGatewayService 
         ) : IEventMutationRepository
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
@@ -32,11 +31,6 @@ namespace WhoOwesWho.EventService.Repositories
             {
                 request.Id = Guid.NewGuid();
                 var userId = string.Empty;
-                //if (!Guid.TryParse(request.UserId, out var _))
-                //{
-                //    userId = await eventSecurityService.UnprotectAsync(request.UserId!);
-                //}
-                //var creationUser = await eventCacheRepository.GetUserByIdAsync(userId);
                 request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
 
                 var entity = new Events
@@ -62,7 +56,7 @@ namespace WhoOwesWho.EventService.Repositories
             }
             catch 
             {
-                return new EventResponseModel();
+                throw;
             }
         }
 
@@ -97,7 +91,7 @@ namespace WhoOwesWho.EventService.Repositories
             }
             catch 
             {
-                return new UpdateResponseModel();
+                throw;
             }
         }
 
@@ -116,7 +110,7 @@ namespace WhoOwesWho.EventService.Repositories
             }
             catch 
             {
-                return new DeleteEventResponseModel();
+                throw;
             }
         }
 
@@ -124,16 +118,12 @@ namespace WhoOwesWho.EventService.Repositories
         {
             try
             {
-                if (!Guid.TryParse(request.UserId, out var _))
-                {
-                    request.UserId = await eventSecurityService.UnprotectAsync(request.UserId!);
-                }
-                var user = await eventCacheRepository.GetUserByIdAsync(request.UserId!);
-                request.UserId = user?.Id.ToString();
+                var user = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString());
+                request.UserId = user!.Id;
                 var entity = new EventAssignments
                 {
-                    EventId = Guid.Parse(request.EventId!),
-                    UserId = Guid.Parse(request.UserId!)
+                    EventId = request.EventId,
+                    UserId = request.UserId
                 };
                 await context.AddAsync(entity);
                 await context.SaveChangesAsync();
@@ -144,7 +134,7 @@ namespace WhoOwesWho.EventService.Repositories
             }
             catch 
             {
-                return new AssignmentResponseModel();
+                throw;
             }
         }
 
@@ -152,9 +142,8 @@ namespace WhoOwesWho.EventService.Repositories
         {
             try
             {
-                var userId = await eventSecurityService.UnprotectAsync(request.UserId!);
                 await context.EventAssingments
-                       .Where(x => x.EventId == Guid.Parse(request.EventId!) && x.UserId == Guid.Parse(userId))
+                       .Where(x => x.EventId == request.EventId! && x.UserId == request.UserId)
                        .ExecuteDeleteAsync();
                 return new UnassignmentResponseModel
                 {
@@ -163,16 +152,16 @@ namespace WhoOwesWho.EventService.Repositories
             }
             catch 
             {
-                return new UnassignmentResponseModel();
+                throw;
                
             }
         }
 
-        public async Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request)
+        public async Task<SettleEventResponseModel> SettleEventAsync(Guid eventId)
         {
             try
             {
-                await context.Events.Where(e => e.Id == Guid.Parse(request.EventId!)).ExecuteUpdateAsync(setters => setters
+                await context.Events.Where(e => e.Id == eventId!).ExecuteUpdateAsync(setters => setters
                     .SetProperty(e => e.Settled, true)
                 );
                 return new SettleEventResponseModel
@@ -182,7 +171,7 @@ namespace WhoOwesWho.EventService.Repositories
             }
             catch 
             {
-                return new SettleEventResponseModel();
+                throw;
             }
         }
     }

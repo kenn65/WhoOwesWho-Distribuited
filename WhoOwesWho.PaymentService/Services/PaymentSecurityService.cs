@@ -5,7 +5,7 @@ using WhoOwesWho.Shared.Extensions;
 namespace WhoOwesWho.PaymentService.Services
 {
     public interface IPaymentSecurityService
-    {
+    {   
         public Task<string> ProtectAsync(string value);
         public Task<string> UnprotectAsync(string value);
 

@@ -1,12 +1,10 @@
 ﻿using Azure.Messaging.ServiceBus;
-using WhoOwesWho.Shared.Models.Base;
+using WhoOwesWho.Shared.Models.Base.ServiceBus;
 
 namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
 {
-    public sealed class MessagingReceiverStartupService(ServiceBusClient client,MessagingReceiver receiver) : BackgroundService
+    public sealed class MessagingReceiverStartupService(ServiceBusClient client, MessagingReceiver receiver) : BackgroundService
     {
-      
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await WaitForSubscriptionAsync(
@@ -31,7 +29,7 @@ namespace WhoOwesWho.MessagingService.Services.ServiceBus.Receivers
             await receiver.StopAsync(cancellationToken);
         }
 
-      private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
+        private async Task WaitForSubscriptionAsync(string topic, string subscription, CancellationToken ct)
         {
             for (var i = 0; i < 20; i++)
             {

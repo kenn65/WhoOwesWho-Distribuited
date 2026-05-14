@@ -20,9 +20,7 @@ namespace WhoOwesWho.AuthorizationService.Services
     {
         public async Task<AuthorizationResponseModel?> AuthorizeAsync(AuthorizationRequestModel request)
         {
-            request.EmailAddress = await authorizationSecurityService.UnprotectAsync(request.EmailAddress!);
             var user = await authorizationCacheRepository.GetUserAsync(request.EmailAddress!);
-
             var claims = new List<Claim>
             {
                 new(JwtRegisteredClaimNames.Sub, user!.Id.ToString()),

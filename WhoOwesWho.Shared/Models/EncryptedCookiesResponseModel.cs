@@ -1,6 +1,8 @@
-﻿namespace WhoOwesWho.Shared.Models
+﻿using WhoOwesWho.Shared.Models.Base;
+
+namespace WhoOwesWho.Shared.Models
 {
-    public class EncryptedCookiesResponseModel
+    public class EncryptedCookiesResponseModel : ModelBase
     {
         public string TokenName => ".WhoOwesWho.Token";
         public string? TokenValue { get; set; }

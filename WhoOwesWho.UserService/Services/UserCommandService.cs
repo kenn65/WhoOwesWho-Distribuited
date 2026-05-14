@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.UserService.Models;
 using WhoOwesWho.UserService.Repositories;
@@ -15,10 +16,9 @@ namespace WhoOwesWho.UserService.Services
     public class UserCommandService(
         IConfiguration configuration,
         IUserNotificationService userNotificationService,
-        IUserSecurityService userSecurityService,
         IUserQueryRepository userQueryRepository,
         IUserMutationRepository userMutationRepository,
-        IUserPublishingServicee userPublishingServicee,
+        IUserPublishingService userPublishingServicee,
         IUserValidationService userValidationService
         ) : ServiceBase(configuration), IUserCommandService
     {
@@ -30,7 +30,7 @@ namespace WhoOwesWho.UserService.Services
                 return new UserModel()
                 {
                     Success = false,
-                    Message = "An error occurred while creating the user. Please, try again."
+                    Message = Constants.UserCreationErrorMessages.UserLoadingUnsuccessful
                 };
             }
             var entity = user.Adapt<UserMessageRequestModel>();
@@ -39,62 +39,55 @@ namespace WhoOwesWho.UserService.Services
             return await userQueryRepository.GetSingleUserByEmailAddressAsync(user.EmailAddress, true);
         }
 
-        public async Task<UserModel?> UpdateUserAsync(UserUpdateRequestModel? request)
+        public async Task<UserModel?> UpdateUserAsync(UserUpdateRequestModel request)
         {
-            var user = await userQueryRepository.GetSingleUserByIdAsync(Guid.Parse(await userSecurityService.UnprotectAsync(request!.ProtectedId!)), true);
-            if (user!.FullName != request.FullName)
-            {
-                var fullNameCheck = await userValidationService.ValidateFullNameAsync(request.FullName!, false);
-                if (!fullNameCheck.isValid)
-                {
-                    return new UserModel()
-                    {
-                        Message = fullNameCheck.errorMessage
-                    };
-                }
-            }
-
-            var validationResult = request!.IsPasswordUpdating 
+            var user = await userQueryRepository.GetSingleUserByIdAsync(request.Id);
+            var validationResult = request!.IsPasswordUpdating
                 ? new UpdateUserVerificationModel
                 {
                     Success = true,
-                    NoAdmin = true
+                    AdministratorNonExisting = true
                 }
-                : await userValidationService.VerifyUpdateAsync(request!);
+                : await userValidationService.ValidateUpdateAsync(request!);
 
-            if (validationResult is { Success: false, NoAdmin: false })
+            UserModel userModel = new UserModel();
+
+            if (validationResult is { Success: false, AdministratorNonExisting: true })
             {
-                return new UserModel()
-                {
-                    Message = "The event you have assigned to already has an administrator."
-                };
+                userModel.Message = validationResult.Message;
             }
-                       
-            request!.Id = Guid.Parse(await userSecurityService.UnprotectAsync(request!.ProtectedId!));
+            if (validationResult is { Success: false, AdministratorNonExisting: false })
+            {
+                userModel.Message = validationResult.Message;
+                return userModel;
+            }
+
             var userEntity = await userQueryRepository.GetSingleUserByIdAsync(request!.Id, true);
             userEntity!.FullName = request.FullName;
             userEntity.MobilePhoneNumber = request.MobilePhoneNumber;
             userEntity.Admin = request.Admin;
+
             if (request.IsPasswordUpdating)
             {
                 userEntity.Password = request.Password;
             }
 
             var response = await userMutationRepository.UpdateUserAsync(userEntity);
-            if (validationResult is { Success: true, NoAdmin: true })
-            {
-                var userEventModel = response.Adapt<UserMessageRequestModel>();
-                await userPublishingServicee.SendUserAsync(userEventModel!);
-                return new UserModel
-                {
-                    Success = true,
-                    Message = "The event running is now left with no administrator. This is indeed not recommended as event and payment edit, delete and settlement are not available as these can only be performed by an administrator."
-                };
-            }
-            response!.Success = true;
-            response!.Message = "Profile updated successfully.";
+            var userEventModel = response.Adapt<UserMessageRequestModel>();
+            await userPublishingServicee.SendUserAsync(userEventModel!);
+            
+            response!.Success = string.IsNullOrWhiteSpace(userModel.Message) 
+                ? true 
+                : false;
+
+            response!.Message = string.IsNullOrWhiteSpace(userModel.Message)
+                ? Constants.UserUpdatingErrorMessages.UpdateSucceeded
+                : userModel.Message;
+
+            // dispatch user
             var entity = response.Adapt<UserMessageRequestModel>();
             await userPublishingServicee.SendUserAsync(entity);
+
             return response;
         }
     }

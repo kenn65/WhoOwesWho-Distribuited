@@ -14,9 +14,14 @@ namespace WhoOwesWho.UserService.Services
     {
         public async Task<string> ProtectAsync(string value, bool force = false)
         {
+            if (value == string.Empty)
+            {
+                return value;
+            }
+
             if (value is null)
             {
-                throw new Exception("Invalid value entered");
+                throw new Exception("Security service has null value entered for protection");
             }
 
             if (value.IsValid() || value.IsGuid() || force)
@@ -28,9 +33,13 @@ namespace WhoOwesWho.UserService.Services
 
         public async Task<string> UnprotectAsync(string value, bool force = false)
         {
+            if (value == string.Empty)
+            {
+                return value;
+            }
             if (value is null)
             {
-                throw new Exception("Invalid value entered");
+                throw new Exception("Security service has null value entered for unprotection");
             }
 
             if (!value.IsValid() && !value.IsGuid() || force)
