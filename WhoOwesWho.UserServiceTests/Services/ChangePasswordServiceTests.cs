@@ -96,7 +96,8 @@ namespace WhoOwesWho.UserService.Tests.Services
         public async Task ChangePasswordAsync_ReturnsSuccess_WhenPasswordIsChanged(
             ChangePasswordRequestModel request,
             UserModel user,
-            UserModel updatedUser)
+            UserModel updatedUser,
+            [Frozen] Mock<IUserSecurityService> securityMock)
         {
             // Arrange
             request.Password = "OldPassword";
@@ -108,6 +109,14 @@ namespace WhoOwesWho.UserService.Tests.Services
             var queryRepositoryMock = new Mock<IUserQueryRepository>();
             var commandServiceMock = new Mock<IUserCommandService>();
 
+            securityMock
+                .Setup(x => x.ProtectAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync((string value, bool _) => value);
+
+            securityMock
+                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync((string value, bool _) => value);
+
             queryRepositoryMock
                 .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync(user);
@@ -118,7 +127,8 @@ namespace WhoOwesWho.UserService.Tests.Services
 
             var sut = CreateChangePasswordService(
                 queryRepositoryMock: queryRepositoryMock,
-                commandServiceMock: commandServiceMock);
+                commandServiceMock: commandServiceMock,
+                userSecurityServiceMock: securityMock);
 
             // Act
             var result = await sut.ChangePasswordAsync(request);
@@ -137,7 +147,8 @@ namespace WhoOwesWho.UserService.Tests.Services
         [Theory, AutoData]
         public async Task ChangePasswordAsync_Throws_WhenUpdateFails(
             ChangePasswordRequestModel request,
-            UserModel user)
+            UserModel user,
+            [Frozen] Mock<IUserSecurityService> securityMock)
         {
             // Arrange
             request.Password = "OldPassword";
@@ -149,6 +160,15 @@ namespace WhoOwesWho.UserService.Tests.Services
             var queryRepositoryMock = new Mock<IUserQueryRepository>();
             var commandServiceMock = new Mock<IUserCommandService>();
 
+
+            securityMock
+                .Setup(x => x.ProtectAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync((string value, bool _) => value);
+
+            securityMock
+                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync((string value, bool _) => value);
+
             queryRepositoryMock
                 .Setup(x => x.GetSingleUserByEmailAddressAsync(request.EmailAddress, true))
                 .ReturnsAsync(user);
@@ -159,7 +179,8 @@ namespace WhoOwesWho.UserService.Tests.Services
 
             var sut = CreateChangePasswordService(
                 queryRepositoryMock: queryRepositoryMock,
-                commandServiceMock: commandServiceMock);
+                commandServiceMock: commandServiceMock,
+                userSecurityServiceMock: securityMock);
 
             // Act
             Func<Task> act = async () =>

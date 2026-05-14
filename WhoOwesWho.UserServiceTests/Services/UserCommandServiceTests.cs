@@ -97,7 +97,7 @@ namespace WhoOwesWho.UserService.Tests.Services
         }
 
         [Theory, AutoData]
-        public async Task UpdateUserAsync_ReturnsAdministratorAlreadyExisting_WhenValidationFails(
+        public async Task UpdateUserAsync_ReturnsValidationMessage_WhenValidationFails(
             UserUpdateRequestModel request,
             UserModel user)
         {
@@ -116,7 +116,8 @@ namespace WhoOwesWho.UserService.Tests.Services
                 .ReturnsAsync(new UpdateUserVerificationModel
                 {
                     Success = false,
-                    AdministratorNonExisting = false
+                    AdministratorNonExisting = false,
+                    Message = Constants.UserUpdatingErrorMessages.AdministratorAlreadyExisting
                 });
 
             var sut = CreateUserCommandService(
@@ -131,10 +132,73 @@ namespace WhoOwesWho.UserService.Tests.Services
 
             result!.Message.Should()
                 .Be(Constants.UserUpdatingErrorMessages.AdministratorAlreadyExisting);
+
+            result.Success.Should().BeFalse();
         }
 
         [Theory, AutoData]
-        public async Task UpdateUserAsync_ReturnsNoAdministratorExisting_WhenValidationSucceeds(
+        public async Task UpdateUserAsync_ReturnsWarningMessage_WhenNoAdministratorExists(
+            UserUpdateRequestModel request,
+            UserModel existingUser,
+            UserModel updatedUser)
+        {
+            // Arrange
+            request.IsPasswordUpdating = false;
+
+            var queryRepositoryMock = new Mock<IUserQueryRepository>();
+            var validationServiceMock = new Mock<IUserValidationService>();
+            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
+            var publishingServiceMock = new Mock<IUserPublishingService>();
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id))
+                .ReturnsAsync(existingUser);
+
+            queryRepositoryMock
+                .Setup(x => x.GetSingleUserByIdAsync(request.Id, true))
+                .ReturnsAsync(existingUser);
+
+            validationServiceMock
+                .Setup(x => x.ValidateUpdateAsync(request))
+                .ReturnsAsync(new UpdateUserVerificationModel
+                {
+                    Success = false,
+                    AdministratorNonExisting = true,
+                    Message = Constants.UserUpdatingErrorMessages.NoAdministratorExisting
+                });
+
+            mutationRepositoryMock
+                .Setup(x => x.UpdateUserAsync(existingUser))
+                .ReturnsAsync(updatedUser);
+
+            publishingServiceMock
+                .Setup(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()))
+                .Returns(Task.CompletedTask);
+
+            var sut = CreateUserCommandService(
+                queryRepositoryMock: queryRepositoryMock,
+                validationServiceMock: validationServiceMock,
+                mutationRepositoryMock: mutationRepositoryMock,
+                publishingServiceMock: publishingServiceMock);
+
+            // Act
+            var result = await sut.UpdateUserAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+
+            result!.Success.Should().BeFalse();
+
+            result.Message.Should()
+                .Be(Constants.UserUpdatingErrorMessages.NoAdministratorExisting);
+
+            publishingServiceMock.Verify(
+                x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()),
+                Times.Exactly(2));
+        }
+
+        [Theory, AutoData]
+        public async Task UpdateUserAsync_ReturnsUpdatedUser_WhenSuccessful(
             UserUpdateRequestModel request,
             UserModel existingUser,
             UserModel updatedUser)
@@ -186,71 +250,11 @@ namespace WhoOwesWho.UserService.Tests.Services
             result!.Success.Should().BeTrue();
 
             result.Message.Should()
-                .Be(Constants.UserUpdatingErrorMessages.NoAdministratorExisting);
-
-            publishingServiceMock.Verify(
-                x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()),
-                Times.Once);
-        }
-
-        [Theory, AutoData]
-        public async Task UpdateUserAsync_ReturnsUpdatedUser_WhenSuccessful(
-            UserUpdateRequestModel request,
-            UserModel existingUser,
-            UserModel updatedUser)
-        {
-            // Arrange
-            request.IsPasswordUpdating = false;
-
-            var queryRepositoryMock = new Mock<IUserQueryRepository>();
-            var validationServiceMock = new Mock<IUserValidationService>();
-            var mutationRepositoryMock = new Mock<IUserMutationRepository>();
-            var publishingServiceMock = new Mock<IUserPublishingService>();
-
-            queryRepositoryMock
-                .Setup(x => x.GetSingleUserByIdAsync(request.Id))
-                .ReturnsAsync(existingUser);
-
-            queryRepositoryMock
-                .Setup(x => x.GetSingleUserByIdAsync(request.Id, true))
-                .ReturnsAsync(existingUser);
-
-            validationServiceMock
-                .Setup(x => x.ValidateUpdateAsync(request))
-                .ReturnsAsync(new UpdateUserVerificationModel
-                {
-                    Success = true,
-                    AdministratorNonExisting = false
-                });
-
-            mutationRepositoryMock
-                .Setup(x => x.UpdateUserAsync(existingUser))
-                .ReturnsAsync(updatedUser);
-
-            publishingServiceMock
-                .Setup(x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()))
-                .Returns(Task.CompletedTask);
-
-            var sut = CreateUserCommandService(
-                queryRepositoryMock: queryRepositoryMock,
-                validationServiceMock: validationServiceMock,
-                mutationRepositoryMock: mutationRepositoryMock,
-                publishingServiceMock: publishingServiceMock);
-
-            // Act
-            var result = await sut.UpdateUserAsync(request);
-
-            // Assert
-            result.Should().NotBeNull();
-
-            result!.Success.Should().BeTrue();
-
-            result.Message.Should()
                 .Be(Constants.UserUpdatingErrorMessages.UpdateSucceeded);
 
             publishingServiceMock.Verify(
                 x => x.SendUserAsync(It.IsAny<UserMessageRequestModel>()),
-                Times.Once);
+                Times.Exactly(2));
         }
 
         [Theory, AutoData]
