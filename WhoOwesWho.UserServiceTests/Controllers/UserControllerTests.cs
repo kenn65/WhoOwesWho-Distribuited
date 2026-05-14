@@ -316,7 +316,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
 
 
             validationServiceMock
-                .Setup(x => x.IsEmailAddressUniqueAsync(It.IsAny<string>()))
+                .Setup(x => x.DoesEmailAddressExistAsync(It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             securityServiceMock
@@ -374,7 +374,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
 
 
             validationServiceMock
-                .Setup(x => x.IsEmailAddressUniqueAsync(It.IsAny<string>()))
+                .Setup(x => x.DoesEmailAddressExistAsync(It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             securityServiceMock
