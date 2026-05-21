@@ -13,6 +13,7 @@ namespace WhoOwesWho.UserService.Repositories
         Task<IEnumerable<UserModel>> GetAllUsersAsync();
         Task<ForgotPasswordTokenModel> GetForgotPasswordTokenAsync(Guid userId);
         Task<bool> GetUserEmailExists(string emailAddress);
+        Task<bool> GetUserFullNameExists(Guid id, string fullName);
         Task<bool> GetUserFullNameExists(string fullName);
     }
 
@@ -62,14 +63,16 @@ namespace WhoOwesWho.UserService.Repositories
             return true;
         }
 
+        public async Task<bool> GetUserFullNameExists(Guid id, string fullName)
+        {
+            var output = await context.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
+            return output!.FullName == fullName;
+        }
+
         public async Task<bool> GetUserFullNameExists(string fullName)
         {
-            var output = await context.Users.Where(x => x.FullName == fullName).FirstOrDefaultAsync();
-            if (output is null)
-            {
-                return false;
-            }
-            return true;
+            var output = await context.Users.Where(_ => _.FullName == fullName).FirstOrDefaultAsync();
+            return output == null ? false : true;
         }
     }
 }

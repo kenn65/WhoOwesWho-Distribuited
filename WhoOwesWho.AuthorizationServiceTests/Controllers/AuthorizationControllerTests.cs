@@ -23,7 +23,7 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
         {
             // Arrange
             request.Host = "localhost";
-            request.EmailAddress = "john@test.com";
+            request.EmailAddress = "kennskjellerup@hotmail.com";
             request.Password = "Password44";
 
             var authenticationNotificationMock =
@@ -36,11 +36,15 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
                 new Mock<IAuthValidationService>();
 
             securityServiceMock
-                .Setup(x => x.UnprotectAsync(request.Password))
-                .ReturnsAsync(request.Password);
+                .Setup(x => x.UnprotectAsync(It.IsAny<string>(), false))
+                .ReturnsAsync((string value, bool _) => value);
 
             validationServiceMock
-                .Setup(x => x.DoesEmailExist(request.EmailAddress))
+                .Setup(x => x.DoesEmailExist(It.IsAny<string>()))
+                .ReturnsAsync(true);
+
+            validationServiceMock
+                .Setup(x => x.IsPasswordValid(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             authenticationNotificationMock
@@ -210,7 +214,7 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
                 .Subject;
 
             model.Message.Should()
-                .Be(Constants.CredentialsErrorMessages.EmailAdddressDoesNotExist);
+                .Be(Constants.AuthenticationErrorMessages.CredentialsInvalid);
         }
 
         [Theory, AutoData]
@@ -294,11 +298,7 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
                 .BeOfType<AuthenticationResponseModel>()
                 .Subject;
 
-            model.Message.Should()
-                .Be("Password should contain at least " +
-                                                       "8 characters, including at least " +
-                                                       "1 upper case character(s) and at least " +
-                                                       "2 digit(s)");
+            model.Message.Should().Be(Constants.AuthenticationErrorMessages.CredentialsInvalid);
         }
 
         [Theory, AutoData]
@@ -358,7 +358,6 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
             var sut = CreateAuthorizationController(
                 authorizationServiceMock: authorizationServiceMock, validationServiceMock: validationServiceMock);
 
-
             // Act
             var result = await sut.AuthorizeAsync(request);
 
@@ -405,7 +404,7 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
             var model = sc500.Value.Should()
                 .BeOfType<AuthorizationResponseModel>()
                 .Subject;
-            
+
             model.Message.Should().Be("Failure");
         }
 

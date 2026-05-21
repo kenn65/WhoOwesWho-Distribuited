@@ -49,13 +49,20 @@ namespace WhoOwesWho.WebApp.Infrastructure.Payments
                 (endpoint, apiKey, true, null, jwtToken);
         }
 
-        public async Task<PaymentDetailsResponseModel> GetPaymentDetailsAsync(Guid paymentId, string jwtToken)
+        public async Task<PaymentDetailsResponseModel> GetPaymentDetailsAsync(Guid paymentId, bool active, string jwtToken)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{paymentId}");
             return await GetAsync<PaymentDetailsResponseModel>
-                (endpoint, apiKey, true, null, jwtToken);
+                (endpoint, 
+                apiKey, 
+                true, 
+                new Dictionary<string, dynamic>
+                {
+                    { "active", active}
+                },
+                jwtToken);
         }
 
         public async Task<UpdatePaymentResponseModel> UpdatePaymentDetailsAsync(UpdatePaymentRequestModel request, string jwtToken)

@@ -9,7 +9,7 @@
         <option value="" disabled selected>Select event...</option>
         @foreach (EventResponseModel item in EventList!)
         {
-            <option value=@item.Id>@item.Name (@item.Location) starting at @item.StartDateIso</option>
+            <option value=@item.Id>@item.Name @item.Location starting at @item.StartDateIso</option>
         }
     </InputSelect>
     <ValidationMessage For="@ValueExpression" class="text-danger" />
@@ -22,6 +22,4 @@
     [Parameter] public EventCallback<string?> ValueChanged { get; set; }
     [Parameter] public Expression<Func<string?>> ValueExpression { get; set; } = default!;
     [Parameter] public IEnumerable<EventResponseModel>? EventList { get; set; }
-
-
 }

@@ -118,7 +118,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         [HttpGet]
         [Route("{paymentId}")]
         [Authorize]
-        public async Task<IActionResult> GetPaymentAsync(Guid paymentId)
+        public async Task<IActionResult> GetPaymentAsync(Guid paymentId, [FromQuery] bool active)
         {
             try
             {
@@ -133,6 +133,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                 var requestModel = new PaymentDetailsPageRequestModel
                 {
                     PaymentId = paymentId,
+                    Active = active,
                     Token = HttpContext.ToTokenValue()
                 };
                 

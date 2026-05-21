@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using Azure.Core;
+using Mapster;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Repositories;
 using WhoOwesWho.EventService.Services.Base;
@@ -17,6 +18,7 @@ namespace WhoOwesWho.EventService.Services
         Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request);
         Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request);
         Task<SettleEventResponseModel> SettleEventAsync(Guid eventId);
+        Task<SettleEventResponseModel> UnsettleEventAsync(Guid eventId);
     }
 
     public class EventCommandService(IConfiguration configuration,
@@ -28,129 +30,102 @@ namespace WhoOwesWho.EventService.Services
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
-            try
+            var response = await eventMutationRepository.CreateEventAsync(request);
+            if (request.AutoAssign)
             {
-                var response = await eventMutationRepository.CreateEventAsync(request);
-                if (request.AutoAssign)
+                var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString()!);
+                await AssignAsync(new AssignmentRequestModel
                 {
-                    var creationUser = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString()!);
-                    await AssignAsync(new AssignmentRequestModel
-                    {
-                        EventId = response!.Id,
-                        UserId = request.UserId,
-                        User = creationUser
-                    });
-                }
-                response!.Message = Constants.EventErrorMessages.EventCreationSucceeded;
-                return response;
+                    EventId = response!.Id,
+                    UserId = request.UserId,
+                    User = creationUser
+                });
             }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var evt = await eventLookupService.GetEventAsync(request.Id!, true);
+            var publishingItems = evt.Adapt<EventMessageRequestModel>();
+            publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+            await eventPublishingService.SendEventAsync(publishingItems);
+            response!.Message = Constants.EventErrorMessages.EventCreationSucceeded;
+            return response;
         }
 
         public async Task<UpdateResponseModel> UpdateEventAsync(EventRequestModel request)
         {
-            try
-            {
-                var response = await eventMutationRepository.UpdateEventAsync(request);
-                response.Message = Constants.EventErrorMessages.EventModificationSucceeded;
-                return response;
-            }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var response = await eventMutationRepository.UpdateEventAsync(request);
+            var evt = await eventLookupService.GetEventAsync(request.Id!, true);
+            var publishingItems = evt.Adapt<EventMessageRequestModel>();
+            publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+            await eventPublishingService.SendEventAsync(publishingItems);
+            response.Message = Constants.EventErrorMessages.EventModificationSucceeded;
+            return response;
         }
 
         public async Task<DeleteEventResponseModel> DeleteEventAsync(Guid id)
         {
-            try
-            {
-                var response = await eventMutationRepository.DeleteEventAsync(id);
-                response.Message = Constants.EventErrorMessages.EventDeletionSucceeded;
-                return response;
-            }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var response = await eventMutationRepository.DeleteEventAsync(id);
+            await eventCacheRepository.DeleteActiveEventAsync(id.ToString());
+            response.Message = Constants.EventErrorMessages.EventDeletionSucceeded;
+            return response;
         }
 
         public async Task<AssignmentResponseModel> AssignAsync(AssignmentRequestModel request)
         {
-            try
+            var you = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString());
+            var users = (await eventLookupService.GetEventUsersAsync(request.EventId)).ToList();
+            if (users.Any(u => u.Admin) && you!.Admin)
             {
-                var you = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString());
-                var users = (await eventLookupService.GetEventUsersAsync(request.EventId)).ToList();
-                if (users.Any(u => u.Admin) && you!.Admin)
+                return new AssignmentResponseModel
                 {
-                    return new AssignmentResponseModel
-                    {
-                        Message = Constants.EventErrorMessages.UserAssignmentInvalid
-                    };
-                }
-                var response = await AssignToEventAsync(request);
-                response.Message = Constants.EventErrorMessages.UserAssignmentSucceeded;
-                return response;
+                    Message = Constants.EventErrorMessages.UserAssignmentInvalid
+                };
             }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var response = await AssignToEventAsync(request);
+            response.Message = Constants.EventErrorMessages.UserAssignmentSucceeded;
+            return response;
         }
 
         public async Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request)
         {
-            try
-            {
-                var response = await eventMutationRepository.AssignToEventAsync(request);
-                var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
-                var publishingItems = evt.Adapt<EventMessageRequestModel>();
-                publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
-                await eventPublishingService.SendEventAsync(publishingItems);
-                response.Message = Constants.EventErrorMessages.UserAssignmentSucceeded;
-                return response;
-            }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var response = await eventMutationRepository.AssignToEventAsync(request);
+            var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
+            var publishingItems = evt.Adapt<EventMessageRequestModel>();
+            publishingItems!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+            await eventPublishingService.SendEventAsync(publishingItems);
+            response.Message = Constants.EventErrorMessages.UserAssignmentSucceeded;
+            return response;
         }
 
         public async Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request)
         {
-            try
-            {
-                var response = await eventMutationRepository.UnassignFromEventAsync(request);
-                var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
-                var publishingItem = evt.Adapt<EventMessageRequestModel>();
-                publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
-                await eventPublishingService.SendEventAsync(publishingItem);
-                response.Message = Constants.EventErrorMessages.UserUnassignmentSucceeded;
-                return response;
-            }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var response = await eventMutationRepository.UnassignFromEventAsync(request);
+            var evt = await eventLookupService.GetEventAsync(request.EventId!, true);
+            var publishingItem = evt.Adapt<EventMessageRequestModel>();
+            publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+            await eventPublishingService.SendEventAsync(publishingItem);
+            response.Message = Constants.EventErrorMessages.UserUnassignmentSucceeded;
+            return response;
         }
 
         public async Task<SettleEventResponseModel> SettleEventAsync(Guid eventId)
         {
-            try
-            {
-                var response = await eventMutationRepository.SettleEventAsync(eventId);
-                await eventCacheRepository.DeleteActiveEventAsync(eventId.ToString());
-                response.Message = Constants.EventErrorMessages.EventSettlmentSucceeded;
-                return response;
-            }
-            catch
-            {
-                throw new Exception(Constants.GlobalErrorMessages.UnexpectedError);
-            }
+            var response = await eventMutationRepository.SettleEventAsync(eventId);
+            var evt = await eventLookupService.GetEventAsync(eventId, false);
+            var publishingItem = evt.Adapt<EventMessageRequestModel>();
+            publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+            await eventPublishingService.SendEventAsync(publishingItem!);
+            response.Message = Constants.EventErrorMessages.EventSettlmentSucceeded;
+            return response;
+        }
 
+        public async Task<SettleEventResponseModel> UnsettleEventAsync(Guid eventId)
+        {
+            var response = await eventMutationRepository.UnsettleEventAsync(eventId);
+            var evt = await eventLookupService.GetEventAsync(eventId, true);
+            var publishingItem = evt.Adapt<EventMessageRequestModel>();
+            publishingItem!.UserIds = evt!.Users!.Select(u => u.Id.ToString());
+            await eventPublishingService.SendEventAsync(publishingItem!);
+            response.Message = Constants.EventErrorMessages.EventUnsettlmentSucceeded;
+            return response;
         }
     }
 }

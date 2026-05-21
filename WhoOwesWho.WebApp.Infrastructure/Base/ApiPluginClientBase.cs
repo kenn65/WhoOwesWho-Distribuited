@@ -102,17 +102,19 @@ namespace WhoOwesWho.WebApp.Infrastructure.Base
         {
             try
             {
-                var response = await ex.GetResponseJsonAsync<T>();
-
-                if (response is not null)
+                if (ex.StatusCode != 500 )
                 {
-                    return response;
+                    var response = await ex.GetResponseJsonAsync<T>();
+
+                    if (response is not null)
+                    {
+                        return response;
+                    }
                 }
             }
             catch
             {
             }
-
             return new T
             {
                 Success = false,

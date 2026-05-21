@@ -1,6 +1,6 @@
 ﻿@page "/me/events"
 
-@if (EventList == null)
+@if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
@@ -14,7 +14,7 @@ else
         <h1 class="text-4xl">Events</h1>
         <br />
         <br />
-        @if (IsAdmin)
+        @if (isAdministrator)
         {
             <p class="text-xl">My events </p>
         }
@@ -24,33 +24,37 @@ else
         }
         <br />
         <br />
-        @if (IsAdmin)
+        @if (isAdministrator)
         {
             <NavigationButton Text="Create new event"
-                              ProcessingText="Navigating..."
-                              NavigationUrl="/me/events/create" />
+            ProcessingText="Navigating..."
+            NavigationUrl="/me/events/create" />
+            <br />
+            <br />                
         }
-        <br />
-        <br />
-        <QuickGrid Items="@EventList.AsQueryable()" class="m-auto">
+        <QuickGrid Items="@eventList!.AsQueryable()" class="m-auto">
 
-            <PropertyColumn Property="@(e => e.Name)" Title="Name" Class="p-6" />
-            <PropertyColumn Property="@(e => e.Location)" Title="Location" Class="p-6" />
-            <PropertyColumn Property="@(e => e.Currency)" Title="Currency" Class="p-6" />
-            <PropertyColumn Property="@(e => e.StartDateIso)" Title="Start Date" Class="p-6" />
-            <PropertyColumn Property="@(e => e.CreatedBy)" Title="Created By" Class="p-6" />
+            <PropertyColumn Property="@(e => e.Name)" Title="Name" Class="p-6 text-center" />
+            <br />
+            <PropertyColumn Property="@(e => e.Location)" Title="Location" Class="p-6 text-center" />
+            <br />
+            <PropertyColumn Property="@(e => e.Currency)" Title="Currency" Class="p-6 text-center" />
+            <br />
+            <PropertyColumn Property="@(e => e.StartDateIso)" Title="Start Date" Class="p-6 text-center" />
+            <br />
+            <PropertyColumn Property="@(e => e.CreatedBy)" Title="Created By" Class="p-6 text-center" />
 
             <!-- Active column -->
-            <TemplateColumn Title="Active" Class="p-6">
+            <TemplateColumn Title="Active" Class="p-6 text-center">
                 <span class="@(context.Settled ? "text-red-600" : "text-green-600")">
                     @context.ActiveIcon
                 </span>
             </TemplateColumn>
 
             <!-- Actions -->
-            @if (IsAdmin)
+            @if (isAdministrator)
             {
-                <TemplateColumn Title="Actions" Class="p-2">
+                <TemplateColumn Title="Actions" Class="p-2 text-center">
                     @if (!context.Settled)
                     {
                         <span class="p-2">
@@ -58,11 +62,14 @@ else
                                                    ProcessingText="Navigating..."
                                                    OnClick="() => EditEventAsync(context.Adapt<EventModel>())" />
                         </span>
-                        <span class="p-2">
-                            <NavigationStateButton Text="Delete"
-                                                   ProcessingText="Navigating..."
-                                                   OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
-                        </span>
+                        @if (!context.Users!.Any())
+                        {
+                            <span class="p-2 text-center">
+                                <NavigationStateButton Text="Delete"
+                                ProcessingText="Navigating..."
+                                OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
+                            </span>                            
+                        }
                     }
                 </TemplateColumn>
             }

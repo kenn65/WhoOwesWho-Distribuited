@@ -26,12 +26,17 @@ namespace WhoOwesWho.AuthorizationService.Validators
                .WithMessage(Constants.CredentialsErrorMessages.EmailAddressInvalid)
                .MustAsync((request, emailAddress, ct) =>
                    authValidationService.DoesEmailExist(emailAddress))
-               .WithMessage(Constants.CredentialsErrorMessages.EmailAdddressDoesNotExist);
+               .WithMessage(Constants.AuthenticationErrorMessages.CredentialsInvalid);
 
             RuleFor(x => x.Password)
                 .Cascade(CascadeMode.Stop)
                 .NotEmpty()
                 .WithMessage(Constants.CredentialsErrorMessages.PasswordMissing)
+                .MustAsync((request, password, ct) =>
+                    authValidationService.IsPasswordValid(
+                    request.EmailAddress!,
+                    password!))
+                .WithMessage(Constants.AuthenticationErrorMessages.CredentialsInvalid)
                 .MinimumLength(int.Parse(appSettings.PasswordLengthRequired))
                 .WithMessage(GetPasswordRequirementsMessage())
                 .Must(ContainUppercase)

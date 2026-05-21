@@ -6,6 +6,7 @@ using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Validators;
 using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.Shared.Models.Base;
 
 namespace WhoOwesWho.EventService.Controllers
 {
@@ -31,7 +32,11 @@ namespace WhoOwesWho.EventService.Controllers
                         Message = Constants.EventErrorMessages.EventIdMissing
                     });
                 }
-                return Ok(await eventLookupService.GetEventUsersAsync(eventId, active));
+                var response = await eventLookupService.GetEventUsersAsync(eventId, active);
+                return Ok(new EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>
+                {
+                     Data = response
+                });
             }
             catch (Exception e)
             {
@@ -46,7 +51,7 @@ namespace WhoOwesWho.EventService.Controllers
         [HttpGet]
         [Route("{userId}")]
         [Authorize]
-        public async Task<IActionResult> GetUserAssignmentAsync(Guid userId)
+        public async Task<IActionResult> GetUserAssignmentAsync(Guid userId, [FromQuery] bool active)
         {
             try
             {
@@ -57,7 +62,7 @@ namespace WhoOwesWho.EventService.Controllers
                         Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
                     });
                 }
-                return Ok(await eventLookupService.GetAssignmentAsync(userId!, true));
+                return Ok(await eventLookupService.GetAssignmentAsync(userId!, active));
             }
             catch (Exception e)
             {

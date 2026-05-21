@@ -9,7 +9,7 @@ namespace WhoOwesWho.WebApp.UseCases.Payments
         Task<UserBalanceResponseModel> ExecuteAsync(Guid userId, Guid eventId, string jwtToken);
         Task<CreatePaymentResponseModel> ExecuteAsync(CreatePaymentRequestModel request, string jwtToken);
         Task<PaymentsResponseModel> ExecuteAsync(Guid eventId, bool active, string jwtToken);
-        Task<PaymentDetailsResponseModel> ExecuteAsync(Guid paymentId, string jwtToken);
+        Task<PaymentDetailsResponseModel> ExecuteAsync(bool active, Guid paymentId, string jwtToken);
         Task<UpdatePaymentResponseModel> ExecuteAsync(UpdatePaymentRequestModel request, string jwtToken);
         Task<DeletePaymentResponseModel> ExecuteAsync(string jwtToken, Guid paymentId);
     }
@@ -36,9 +36,9 @@ namespace WhoOwesWho.WebApp.UseCases.Payments
             return await paymentsPlugin.GetPaymentsDataAsync(eventId, active, jwtToken);
         }
 
-        public async Task<PaymentDetailsResponseModel> ExecuteAsync(Guid paymentId, string jwtToken)
+        public async Task<PaymentDetailsResponseModel> ExecuteAsync(bool active, Guid paymentId, string jwtToken)
         {
-            var payment = await paymentsPlugin.GetPaymentDetailsAsync(paymentId, jwtToken);
+            var payment = await paymentsPlugin.GetPaymentDetailsAsync(paymentId, active, jwtToken);
             IList<string> Ids = [];
             if (payment.PaymentDetails!.CreditorIncluded)
             {

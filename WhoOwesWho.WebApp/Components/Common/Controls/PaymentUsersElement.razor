@@ -1,11 +1,11 @@
 ﻿<div class="w-2/4 mx-auto text-left -mb-8">
     <label for="@Id">@Caption</label>
     <div class="flex justify-end mb-2">
-        @if (!AllSelected)
+        @if (!AllSelected && !Disabled)
         {
             <img src="check-all-50.png" @onclick="@ToggleAllAsync" width="24" height="24" alt="Check all" title="Check all" class="cursor-pointer" />
         }
-        else
+        @if (AllSelected && !Disabled)
         {
             <img src="uncheck-all-50.png" @onclick="@ToggleAllAsync" width="24" height="24" alt="Uncheck all" title="Uncheck all" class="cursor-pointer" />
         }
@@ -24,8 +24,8 @@
                    checked="@IsSelected(user.Id.ToString()!)"
                    @onchange="e => ToggleSelectedAsync(user.Id.ToString()!, (bool)((ChangeEventArgs)e).Value!)"
                    class="w-6 h-6 shrink-0 border border-gray-700 hover:border-green-700 rounded mb-[20px] cursor-pointer"
-            />
-            <InputText id="@user.Id" @bind-Value="@bindValue" class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+                   disabled="@Disabled" />
+            <InputText id="@user.Id" readonly @bind-Value="@bindValue" class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
         </div>
     }
     <ValidationMessage For="ValueExpression" class="text-danger" />

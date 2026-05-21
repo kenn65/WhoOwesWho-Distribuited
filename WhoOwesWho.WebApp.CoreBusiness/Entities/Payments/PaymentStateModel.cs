@@ -4,5 +4,6 @@
     {
         public Guid PaymentId { get; set; }
         public Guid CreditUserId { get; set; } 
+        public bool Active { get; set; }
     }
 }

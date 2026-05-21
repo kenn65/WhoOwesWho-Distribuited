@@ -168,5 +168,30 @@ namespace WhoOwesWho.EventService.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        [Route("unsettle")]
+        [Authorize]
+        public async Task<IActionResult> UnsettleEventAsync([FromBody] SettleEventRequestModel request)
+        {
+            try
+            {
+                if (request.EventId == Guid.Empty)
+                {
+                    return BadRequest(new SettleEventResponseModel
+                    {
+                        Message = Constants.EventErrorMessages.EventIdMissing
+                    });
+                }
+                return Ok(await eventCommanddService.UnsettleEventAsync(request.EventId));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new SettleEventResponseModel
+                {
+                    Message = e.Message
+                });
+            }
+        }
     }
 }

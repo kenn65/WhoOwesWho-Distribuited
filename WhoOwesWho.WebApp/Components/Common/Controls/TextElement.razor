@@ -9,6 +9,7 @@
                ValueExpression="@ValueExpression"
                placeholder="@Placeholder"
                @oninput="HandleInput"
+               disabled="@Disabled"
                class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
                <ValidationMessage For="@ValueExpression" class="text-danger" />
 </div>
@@ -24,6 +25,7 @@
     [Parameter] public string? Value { get; set; }
     [Parameter] public EventCallback<string?> ValueChanged { get; set; }
     [Parameter] public Expression<Func<string?>> ValueExpression { get; set; } = default!;
+    [Parameter] public bool Disabled { get; set; }
     [CascadingParameter] private EditContext? EditContext { get; set; }
     private FieldIdentifier FieldIdentifier;
 
