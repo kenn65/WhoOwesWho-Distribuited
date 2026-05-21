@@ -118,7 +118,8 @@ namespace WhoOwesWho.Shared.Auxiliaries
             public const string UserAssignmentInvalid = "You cannot assign to this event as an administrator, because an event administrator already exists.";
             public const string UserAssignmentSucceeded = "Successfully assigned your user to the event.";
             public const string UserUnassignmentSucceeded = "Successfully unassigned user from the event.";
-            public const string EventSettlmentSucceeded = "The event was successfully settled.";
+            public const string EventSettlmentSucceeded = "The event was successfully closed.";
+            public const string EventUnsettlmentSucceeded = "The event was successfully reopened.";
         }
 
         public struct PaymentErrorMessages 

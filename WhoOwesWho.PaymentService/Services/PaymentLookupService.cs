@@ -70,7 +70,7 @@ namespace WhoOwesWho.PaymentService.Services
         {
            
             var paymentDetails = await paymentQueryRepository.GetPaymentDetailsAsync(request);
-            var evt = await paymentCacheRepository.GetEventByIdAsync(paymentDetails.EventId!, true);
+            var evt = await paymentCacheRepository.GetEventByIdAsync(paymentDetails.EventId!, request.Active);
             var activeEvent = evt.Adapt<EventModel>();
             activeEvent.Users = await GetEventUsersAsync(evt!);
             var currencies = (await currencyGatewayService.GetCurrenciesAsync(request.Token!))?.Data;

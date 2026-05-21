@@ -16,163 +16,132 @@ namespace WhoOwesWho.EventService.Repositories
         Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request);
         Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request);
         Task<SettleEventResponseModel> SettleEventAsync(Guid eventId);
+        Task<SettleEventResponseModel> UnsettleEventAsync(Guid eventId);
     }
 
     public class EventMutationRepository(
-        EventDbContext context, 
-        IEventQueryRepository eventQueryRepository, 
+        EventDbContext context,
+        IEventQueryRepository eventQueryRepository,
         IEventCacheRepository eventCacheRepository,
-        ICurrencyGatewayService currencyGatewayService 
+        ICurrencyGatewayService currencyGatewayService
         ) : IEventMutationRepository
     {
         public async Task<EventResponseModel?> CreateEventAsync(EventRequestModel request)
         {
-            try
+            request.Id = Guid.NewGuid();
+            var userId = string.Empty;
+            request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
+
+            var entity = new Events
             {
-                request.Id = Guid.NewGuid();
-                var userId = string.Empty;
-                request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
+                Id = request.Id,
+                CreatedBy = request!.CreatedBy,
+                Name = request.Name,
+                Location = request.Location,
+                Currency = request.Currency,
+                CurrencySymbol = request.CurrencySymbol,
+                StartDate = request.StartDateTicks,
+                Settled = request.Settled
+            };
 
-                var entity = new Events
-                {
-                    Id = request.Id,
-                    CreatedBy = request!.CreatedBy,
-                    Name = request.Name,
-                    Location = request.Location,
-                    Currency = request.Currency,
-                    CurrencySymbol = request.CurrencySymbol,
-                    StartDate = request.StartDateTicks,
-                    Settled = request.Settled
-                };
+            await context.AddAsync(entity);
+            await context.SaveChangesAsync();
 
-                await context.AddAsync(entity);
-                await context.SaveChangesAsync();
-                
-                var response = await eventQueryRepository.GetEventAsync(request.Id, true);
+            var response = await eventQueryRepository.GetEventAsync(request.Id, true);
 
-                response!.Success = true;
-                return response;
-
-            }
-            catch 
-            {
-                throw;
-            }
+            response!.Success = true;
+            return response;
         }
 
         public async Task<UpdateResponseModel> UpdateEventAsync(EventRequestModel request)
         {
-            try
-            {
-                request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
+            request.CurrencySymbol = await currencyGatewayService.GetCurrencySymbolAsync(request.Currency!, request.Token!);
 
-                var entity = new Events
-                {
-                    Name = request.Name,
-                    Location = request.Location,
-                    Currency = request.Currency,
-                    CurrencySymbol = request.CurrencySymbol,
-                    StartDate = request.StartDateTicks,
-                    Settled = request.Settled,
-                };
-                await context.Events.Where(e => e.Id == request.Id).ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.Name, entity.Name)
-                    .SetProperty(e => e.Location, entity.Location)
-                    .SetProperty(e => e.Currency, entity.Currency)
-                    .SetProperty(e => e.CurrencySymbol, entity.CurrencySymbol)
-                    .SetProperty(e => e.StartDate, entity.StartDate)
-                    .SetProperty(e => e.Settled, entity.Settled)
-                );
-
-                return new UpdateResponseModel
-                {
-                    Success = true,
-                };
-            }
-            catch 
+            var entity = new Events
             {
-                throw;
-            }
+                Name = request.Name,
+                Location = request.Location,
+                Currency = request.Currency,
+                CurrencySymbol = request.CurrencySymbol,
+                StartDate = request.StartDateTicks,
+                Settled = request.Settled,
+            };
+            await context.Events.Where(e => e.Id == request.Id).ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.Name, entity.Name)
+                .SetProperty(e => e.Location, entity.Location)
+                .SetProperty(e => e.Currency, entity.Currency)
+                .SetProperty(e => e.CurrencySymbol, entity.CurrencySymbol)
+                .SetProperty(e => e.StartDate, entity.StartDate)
+                .SetProperty(e => e.Settled, entity.Settled)
+            );
+
+            return new UpdateResponseModel
+            {
+                Success = true,
+            };
         }
 
         public async Task<DeleteEventResponseModel> DeleteEventAsync(Guid id)
         {
-            try
-            {
-                await context.Events
-                       .Where(x => x.Id == id)
-                       .ExecuteDeleteAsync();
+            await context.Events
+                   .Where(x => x.Id == id)
+                   .ExecuteDeleteAsync();
 
-                return new DeleteEventResponseModel
-                {
-                    Success = true,
-                };
-            }
-            catch 
+            return new DeleteEventResponseModel
             {
-                throw;
-            }
+                Success = true,
+            };
         }
 
         public async Task<AssignmentResponseModel> AssignToEventAsync(AssignmentRequestModel request)
         {
-            try
+            var user = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString());
+            request.UserId = user!.Id;
+            var entity = new EventAssignments
             {
-                var user = await eventCacheRepository.GetUserByIdAsync(request.UserId.ToString());
-                request.UserId = user!.Id;
-                var entity = new EventAssignments
-                {
-                    EventId = request.EventId,
-                    UserId = request.UserId
-                };
-                await context.AddAsync(entity);
-                await context.SaveChangesAsync();
-                return new AssignmentResponseModel
-                {
-                    Success = true,
-                };
-            }
-            catch 
+                EventId = request.EventId,
+                UserId = request.UserId
+            };
+            await context.AddAsync(entity);
+            await context.SaveChangesAsync();
+            return new AssignmentResponseModel
             {
-                throw;
-            }
+                Success = true,
+            };
         }
 
         public async Task<UnassignmentResponseModel> UnassignFromEventAsync(UnassignmentRequestModel request)
         {
-            try
+            await context.EventAssingments
+                   .Where(x => x.EventId == request.EventId! && x.UserId == request.UserId)
+                   .ExecuteDeleteAsync();
+            return new UnassignmentResponseModel
             {
-                await context.EventAssingments
-                       .Where(x => x.EventId == request.EventId! && x.UserId == request.UserId)
-                       .ExecuteDeleteAsync();
-                return new UnassignmentResponseModel
-                {
-                    Success = true
-                };
-            }
-            catch 
-            {
-                throw;
-               
-            }
+                Success = true
+            };
         }
+
 
         public async Task<SettleEventResponseModel> SettleEventAsync(Guid eventId)
         {
-            try
+            await context.Events.Where(e => e.Id == eventId!).ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.Settled, true)
+            );
+            return new SettleEventResponseModel
             {
-                await context.Events.Where(e => e.Id == eventId!).ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.Settled, true)
-                );
-                return new SettleEventResponseModel
-                {
-                    Success = true
-                };
-            }
-            catch 
+                Success = true
+            };
+        }
+
+        public async Task<SettleEventResponseModel> UnsettleEventAsync(Guid eventId)
+        {
+            await context.Events.Where(e => e.Id == eventId!).ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.Settled, false)
+            );
+            return new SettleEventResponseModel
             {
-                throw;
-            }
+                Success = true
+            };
         }
     }
 }

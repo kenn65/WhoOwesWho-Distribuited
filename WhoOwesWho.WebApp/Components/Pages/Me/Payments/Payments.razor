@@ -1,6 +1,6 @@
 ﻿@page "/me/payments"
 
-@if (payments is null)
+@if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
@@ -13,8 +13,27 @@ else
         <h1 class="text-4xl">Payments owerview</h1>
         <br />
         <br />
-        <PaymentsDataOverwiev PaymentsData="@payments" />
+        @if (payments?.Payments == null)
+        {
+            <p class="text-base">No active payments available for this event!</p>
+        }
+        else
+        {
+            <PaymentsDataOverwiev PaymentsData="@payments"
+                                  Active="@true" />
+            <br />
+            <br />
+            @if (isAdministrator)
+            {
+                <EditForm method="post" Model="settleEventRequestModel" OnSubmit="SettleEventAsync" FormName="settlement" Enhance>
+                    <SubmitButton IsProcessing="@isProcessing"
+                                  Text="Close event"
+                                  ProcessingText="Processing" />
+                </EditForm>
+            }
+        }
     </div>
 }
+
 
 

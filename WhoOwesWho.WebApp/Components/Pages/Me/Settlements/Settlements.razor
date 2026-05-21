@@ -1,0 +1,59 @@
+﻿@page "/me/settlements"
+@if (isLoading)
+{
+    <div class="flex justify-center items-center h-40">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
+    </div>
+}
+else
+{
+    <div class="text-center mb-3">
+        <br />
+        <h1 class="text-4xl">Settlements</h1>
+        <br />
+        <br />
+        <hr />
+        <br />
+        @if (eventList == null || !eventList!.Any())
+        {
+            <p class="text-base">No events has been settled!</p>
+        }
+        @if (eventList != null && eventList.Any())
+        {
+            <p class="text-base">Select an event to show settlement details</p>
+            <br />
+            <EditForm method="post" Model="settleEventRequestModel" FormName="settlement" Enhance>
+                <DataAnnotationsValidator />
+                <EventSelectElement Id="event"
+                                    Caption="Event:"
+                                    Value="@settleEventRequestModel?.EventIdString"
+                                    ValueExpression="@(() => settleEventRequestModel!.EventIdString)"
+                                    ValueChanged="@OnEventChangedAsync"
+                                    EventList="@eventList" />
+            </EditForm>
+            <br />
+            <br />
+        }
+        @if (!string.IsNullOrWhiteSpace(settleEventRequestModel?.EventIdString) && payments == null)
+        {
+            <div class="flex justify-center items-center h-40">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
+            </div>
+        }
+        @if (payments != null)
+        {
+            <PaymentsDataOverwiev PaymentsData="@payments"
+                                  Active="@false" />
+            @if (isAdminisstrator)
+            {
+                <br />
+                <br />
+                <EditForm method="post" Model="settleEventRequestModel" OnSubmit="HandleReopenEventAsync" FormName="unsettlement" Enhance>
+                    <SubmitButton IsProcessing="@isProcessing"
+                                  Text="Reopen event"
+                                  ProcessingText="Processing" />
+                </EditForm>
+            }
+        }
+    </div>
+}

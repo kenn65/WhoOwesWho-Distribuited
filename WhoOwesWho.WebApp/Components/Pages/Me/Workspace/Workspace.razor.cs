@@ -72,7 +72,7 @@ public partial class Workspace(
 
     private async Task<IEnumerable<EventResponseModel>> GetEventsAsync()
     {
-        return (await eventsUseCase.ExecuteGetEventsAsync(true, cookies!.TokenValue)).Data!;
+        return await eventsUseCase.ExecuteGetEventsAsync(true, cookies!.TokenValue);
     }
 
     private async Task<EventResponseModel> GetEventAsync(Guid eventId)
@@ -82,7 +82,7 @@ public partial class Workspace(
 
     private async Task<EventUserAssignmentResponseModel> GetEventAssignmentAsync()
     {
-        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, true, cookies!.TokenValue);
     }
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {

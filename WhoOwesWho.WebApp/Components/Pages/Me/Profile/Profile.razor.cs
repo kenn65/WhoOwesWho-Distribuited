@@ -40,7 +40,7 @@ public partial class Profile(
     private async Task HandleSubmit()
     {
         IsProcessing = true;
-        var eventUserResponse = await eventsUseCase.ExecuteGetUserAssignmentAsync(UserId, Cookies!.TokenValue);
+        var eventUserResponse = await eventsUseCase.ExecuteGetUserAssignmentAsync(UserId, true, Cookies!.TokenValue);
         var eventId = eventUserResponse!.EventId.ToString();
         var requestModel = new UserUpdateRequestModel
         {

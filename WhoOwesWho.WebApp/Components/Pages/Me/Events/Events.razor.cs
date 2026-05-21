@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Components;
+using System.Net;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.Services;
@@ -10,30 +12,32 @@ namespace WhoOwesWho.WebApp.Components.Pages.Me.Events;
 
 public partial class Events(
     NavigationManager nav,
-    IEventsUseCase eventUseCase,
+    IEventsUseCase eventsUseCase,
     IAlertService alertService,
     ICookiesMasterService cookiesMasterService,
     IStateHandler<EventModel> eventState,
     IProtectionUseCase protectionUseCase)
 {
-    private bool IsAdmin { get; set; }
-    private Guid UserId { get; set; }
-    private IEnumerable<EventResponseModel>? EventList { get; set; }
-    private CookiesResponseModel? Cookies = null;
+    private bool isAdministrator;
+    private Guid userId; 
+    private IEnumerable<EventResponseModel>? eventList { get; set; }
+    private CookiesResponseModel? cookies = null;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        Cookies = await cookiesMasterService.GetAsync();
-        UserId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(Cookies!.UserIdValue));
-        IsAdmin = await cookiesMasterService.IsAdministratorAsync(Cookies);
-        if (IsAdmin)
+        cookies = await cookiesMasterService.GetAsync();
+        userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
+        isAdministrator = await cookiesMasterService.IsAdministratorAsync(cookies);
+        if (isAdministrator)
         {
-            EventList = await GetAdminEventsAsync();
+            eventList = await GetAdminEventsAsync();
         }
         else
         {
-            EventList = await GetUserEventsAsync();
+            eventList = await GetUserEventsAsync();
         }
+        isLoading = false;
     }
 
     private async Task EditEventAsync(EventModel eventModel)
@@ -47,7 +51,7 @@ public partial class Events(
         var confirmation = await alertService.Confirm("Are you sure you want to delete this event?");
         if (confirmation)
         {
-            var response = await eventUseCase.ExecuteDeleteEventAsync(eventModel.Id, Cookies!.TokenValue);
+            var response = await eventsUseCase.ExecuteDeleteEventAsync(eventModel.Id, cookies!.TokenValue);
             if (!response.Success)
             {
                 await alertService.Error(response.Message!);
@@ -57,14 +61,15 @@ public partial class Events(
             nav.NavigateTo("/me/events", true);
         }
     }
-
+    
     private async Task<IEnumerable<EventResponseModel>> GetAdminEventsAsync()
     {
-       return (await eventUseCase.ExecuteGetEventsAsync(UserId, Cookies!.TokenValue))?.Data!;
+       return await eventsUseCase.ExecuteGetEventsAsync(userId, cookies!.TokenValue);
     }
+
     private async Task<IEnumerable<EventResponseModel>> GetUserEventsAsync()
     {
-        return (await eventUseCase.ExecuteGetEventsAsync(true, Cookies!.TokenValue))?.Data!;
+        return await eventsUseCase.ExecuteGetEventsAsync(true, cookies!.TokenValue);
     }
 
     

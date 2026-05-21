@@ -9,5 +9,8 @@ namespace WhoOwesWho.PaymentService.Models
 
         [JsonProperty("token")]
         public string? Token { get; set; }
+
+        [JsonProperty("active")]
+        public bool Active { get; set; }
     }
 }

@@ -34,7 +34,9 @@ else
                                  CurrencyList="@currencies"
                                  PaymentDetailsResponseModel="@paymentDetailsResponseModel"
                                  HandleUpdate="@OnUpdateAsync"
-                                 HandleDelete="@OnDeleteAsync" />
+                                 HandleDelete="@OnDeleteAsync"
+                                 Disabled="@(!isAdministrator || !active)"
+                                 FromSettlement="!active"/>
         }
     </div>
 }

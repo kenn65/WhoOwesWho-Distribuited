@@ -30,7 +30,9 @@ public partial class EventPaymentElement(
     [Parameter] public EventCallback<CreatePaymentRequestModel> HandlePayment { get; set; }
     [Parameter] public EventCallback<CreatePaymentRequestModel> HandleUpdate { get; set; }
     [Parameter] public EventCallback HandleDelete { get; set; }
-
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool FromSettlement { get; set; }
+    
     [SupplyParameterFromForm]
     private CreatePaymentRequestModel? CreatePaymentRequestModel { get; set; }
 

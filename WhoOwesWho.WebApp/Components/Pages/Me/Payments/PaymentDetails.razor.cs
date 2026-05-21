@@ -43,19 +43,21 @@ public partial class PaymentDetails
     private bool hasAssignment = false;
     private bool hasPayments = false;
     private bool isLoading = true;
+    private bool active = false;
 
     protected override async Task OnInitializedAsync()
     {
+        paymentId = stateHandler.SelectedItem!.PaymentId;
+        creditUserId = stateHandler.SelectedItem.CreditUserId;
+        active = stateHandler.SelectedItem.Active;
         cookies = await cookiesMasterService.GetAsync();
         isAdministrator = await cookiesMasterService.IsAdministratorAsync(cookies!);
         userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
         eventUserAssignmentResponseModel = await GetEventAssignmentAsync();
+        eventResponseModel = await GetEventAsync(eventUserAssignmentResponseModel!.EventId);
         hasAssignment = eventUserAssignmentResponseModel!.EventId != Guid.Empty;
         hasPayments = await HasUserPaymentsAsync(eventUserAssignmentResponseModel!.EventId.ToString());
-        paymentId = stateHandler.SelectedItem!.PaymentId;
-        creditUserId = stateHandler.SelectedItem.CreditUserId;
         currencies = await GetCurrenciesAsync();
-        eventResponseModel = await GetEventAsync(eventUserAssignmentResponseModel!.EventId);
         userBalanceResponseModel = await GetUserBalanceAsync(eventUserAssignmentResponseModel!.EventId);
         paymentDetailsResponseModel = await GetPaymentDetailsAsync();
         isLoading = false;
@@ -69,17 +71,21 @@ public partial class PaymentDetails
 
     private async Task OnDeleteAsync()
     {
-        await HandleDeleteAsync();
+        var confirmation = await alertService.Confirm("Are you sure you want to delete this payment?");
+        if (confirmation)
+        {
+            await HandleDeleteAsync();
+        }
     }
 
     private async Task<EventResponseModel> GetEventAsync(Guid eventId)
     {
-        return await eventsUseCase.ExecuteGetEventAsync(eventId, true, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventAsync(eventId, active, cookies!.TokenValue);
     }
 
     private async Task<EventUserAssignmentResponseModel> GetEventAssignmentAsync()
     {
-        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, active, cookies!.TokenValue);
     }
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {
@@ -88,11 +94,11 @@ public partial class PaymentDetails
 
     private async Task<PaymentDetailsResponseModel> GetPaymentDetailsAsync()
     {
-        return await paymentsUseCase.ExecuteAsync(paymentId, cookies!.TokenValue);
+        return await paymentsUseCase.ExecuteAsync(active, paymentId, cookies!.TokenValue);
     }
     private async Task<bool> HasUserPaymentsAsync(string eventId)
     {
-        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), userId, true, cookies!.TokenValue);
+        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), userId, active, cookies!.TokenValue);
         return response.Success;
     }
     private async Task<UserBalanceResponseModel> GetUserBalanceAsync(Guid eventId)

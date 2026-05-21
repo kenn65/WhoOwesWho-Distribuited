@@ -10,7 +10,7 @@ namespace WhoOwesWho.UserService.Services
         Task<UserModel?> VerifyUserEmailAddressAsync(string emailAddress);
         Task<UpdateUserVerificationModel> ValidateUpdateAsync(UserUpdateRequestModel request);
         Task<bool> IsFullNameUniqueAsync(string fullName);
-        Task<bool> DoesFullNameExistAsync(string fullName);
+        Task<bool> DoesFullNameExistAsync(Guid Id, string fullname);
         Task<bool> IsEmailAddressUniqueAsync(string emailAddress);
         Task<bool> DoesEmailAddressExistAsync(string emailAddress);
     }
@@ -38,9 +38,9 @@ namespace WhoOwesWho.UserService.Services
             return !(await userQueryRepository.GetUserFullNameExists(fullName));
         }
 
-        public async Task<bool> DoesFullNameExistAsync(string fullName)
+        public async Task<bool> DoesFullNameExistAsync(Guid id, string fullname)
         {
-            return await userQueryRepository.GetUserFullNameExists(fullName);
+            return await userQueryRepository.GetUserFullNameExists(id, fullname);
         }
 
         public async Task<bool> IsEmailAddressUniqueAsync(string emailAddress)

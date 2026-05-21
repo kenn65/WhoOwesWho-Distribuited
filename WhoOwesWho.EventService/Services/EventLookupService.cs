@@ -21,8 +21,6 @@ namespace WhoOwesWho.EventService.Services
         IEventCacheRepository eventCacheRepository
         ) : ServiceBase(configuration), IEventLookupService
     {
-
-
         public async Task<EventResponseModel?> GetEventAsync(Guid id, bool active = true)
         {
             return await eventQueryRepository.GetEventAsync(id, active);

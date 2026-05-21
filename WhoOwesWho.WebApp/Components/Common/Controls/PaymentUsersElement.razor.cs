@@ -15,6 +15,7 @@ public partial class PaymentUsersElement
     [Parameter] public EventCallback<IEnumerable<string>> ValueChanged { get; set; }
     [Parameter] public Expression<Func<IEnumerable<string>>>? ValueExpression { get; set; }
     [Parameter] public EventCallback<IEnumerable<string>> HandleUsers { get; set; }
+    [Parameter] public bool Disabled { get; set; } 
     [Parameter] public bool IsPaymentDetails { get; set; }
     [CascadingParameter] private EditContext? EditContext { get; set; }
 
