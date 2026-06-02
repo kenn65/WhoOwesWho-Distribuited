@@ -1,6 +1,6 @@
-﻿using Mapster;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Extensions;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
@@ -9,47 +9,47 @@ using WhoOwesWho.WebApp.UseCases.Payments.PluginInterfaces;
 namespace WhoOwesWho.WebApp.Infrastructure.Payments
 {
     public class PaymentsPlugin(
-        IConfiguration configuration) : ApiPluginClientBase(configuration),
+        IConfiguration configuration, ITokenService tokenService) : ApiPluginClientBase(configuration, tokenService),
         IPaymentsPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
-
-        public async Task<UserHasPaymentsResponseModel> GetUserPaymentsAsync(Guid eventId, Guid userId, bool active, string jwtToken)
+        
+        public async Task<UserHasPaymentsResponseModel> GetUserPaymentsAsync(Guid eventId, Guid userId, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var activeLowerCase = active.ToString().ToLowerInvariant();
             var baseAddress = await GetPaymentsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{eventId}/{userId}/{activeLowerCase}");
-            return await GetAsync<UserHasPaymentsResponseModel>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<UserHasPaymentsResponseModel>(endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<UserBalanceResponseModel> GetUserBalanceAsync(Guid userId, Guid eventId, string jwtToken)
+        public async Task<UserBalanceResponseModel> GetUserBalanceAsync(Guid userId, Guid eventId)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBalanceBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{userId}/{eventId}");
-            return await GetAsync<UserBalanceResponseModel>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<UserBalanceResponseModel>(endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<CreatePaymentResponseModel> CreatePaymentAsync(CreatePaymentRequestModel request, string jwtToken)
+        public async Task<CreatePaymentResponseModel> CreatePaymentAsync(CreatePaymentRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("create");
             return await PutAsync<CreatePaymentResponseModel, CreatePaymentRequestModel>
-                (endpoint, request, apiKey, true, null, jwtToken);
+                (endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<PaymentsResponseModel> GetPaymentsDataAsync(Guid eventId, bool active, string jwtToken)
+        public async Task<PaymentsResponseModel> GetPaymentsDataAsync(Guid eventId, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{eventId}/{active}");
             return await GetAsync<PaymentsResponseModel>
-                (endpoint, apiKey, true, null, jwtToken);
+                (endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<PaymentDetailsResponseModel> GetPaymentDetailsAsync(Guid paymentId, bool active, string jwtToken)
+        public async Task<PaymentDetailsResponseModel> GetPaymentDetailsAsync(Guid paymentId, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
@@ -62,24 +62,24 @@ namespace WhoOwesWho.WebApp.Infrastructure.Payments
                 {
                     { "active", active}
                 },
-                jwtToken);
+                true);
         }
 
-        public async Task<UpdatePaymentResponseModel> UpdatePaymentDetailsAsync(UpdatePaymentRequestModel request, string jwtToken)
+        public async Task<UpdatePaymentResponseModel> UpdatePaymentDetailsAsync(UpdatePaymentRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("update");
             return await PatchAsync<UpdatePaymentResponseModel, UpdatePaymentRequestModel>
-                (endpoint, request, apiKey, true, null, jwtToken);
+                (endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<DeletePaymentResponseModel> DeletePaymentAsync(Guid paymentId, string jwtToken)
+        public async Task<DeletePaymentResponseModel> DeletePaymentAsync(Guid paymentId)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"delete/{paymentId}");
-            return await DeleteAsync<DeletePaymentResponseModel>(endpoint, apiKey, true, null, jwtToken);
+            return await DeleteAsync<DeletePaymentResponseModel>(endpoint, apiKey, true, applyToken: true);
         }
 
 

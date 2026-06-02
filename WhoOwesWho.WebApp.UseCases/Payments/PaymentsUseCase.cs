@@ -5,40 +5,40 @@ namespace WhoOwesWho.WebApp.UseCases.Payments
 {
     public interface IPaymentsUseCase
     {
-        Task<UserHasPaymentsResponseModel> ExecuteAsync(Guid eventId, Guid userId, bool active, string jwtToken);
-        Task<UserBalanceResponseModel> ExecuteAsync(Guid userId, Guid eventId, string jwtToken);
-        Task<CreatePaymentResponseModel> ExecuteAsync(CreatePaymentRequestModel request, string jwtToken);
-        Task<PaymentsResponseModel> ExecuteAsync(Guid eventId, bool active, string jwtToken);
-        Task<PaymentDetailsResponseModel> ExecuteAsync(bool active, Guid paymentId, string jwtToken);
-        Task<UpdatePaymentResponseModel> ExecuteAsync(UpdatePaymentRequestModel request, string jwtToken);
-        Task<DeletePaymentResponseModel> ExecuteAsync(string jwtToken, Guid paymentId);
+        Task<UserHasPaymentsResponseModel> ExecuteAsync(Guid eventId, Guid userId, bool active);
+        Task<UserBalanceResponseModel> ExecuteAsync(Guid userId, Guid eventId);
+        Task<CreatePaymentResponseModel> ExecuteAsync(CreatePaymentRequestModel request);
+        Task<PaymentsResponseModel> ExecuteAsync(Guid eventId, bool active);
+        Task<PaymentDetailsResponseModel> ExecuteAsync(bool active, Guid paymentId);
+        Task<UpdatePaymentResponseModel> ExecuteAsync(UpdatePaymentRequestModel request);
+        Task<DeletePaymentResponseModel> ExecuteAsync(Guid paymentId);
     }
 
     public class PaymentsUseCase(IPaymentsPlugin paymentsPlugin) : IPaymentsUseCase
     {
-        public async Task<UserHasPaymentsResponseModel> ExecuteAsync(Guid eventId, Guid userId, bool active, string jwtToken)
+        public async Task<UserHasPaymentsResponseModel> ExecuteAsync(Guid eventId, Guid userId, bool active)
         {
-            return await paymentsPlugin.GetUserPaymentsAsync(eventId, userId, active, jwtToken);
+            return await paymentsPlugin.GetUserPaymentsAsync(eventId, userId, active);
         }
 
-        public async Task<UserBalanceResponseModel> ExecuteAsync(Guid userId, Guid eventId, string jwtToken)
+        public async Task<UserBalanceResponseModel> ExecuteAsync(Guid userId, Guid eventId)
         {
-            return await paymentsPlugin.GetUserBalanceAsync(userId, eventId, jwtToken);
+            return await paymentsPlugin.GetUserBalanceAsync(userId, eventId);
         }
 
-        public async Task<CreatePaymentResponseModel> ExecuteAsync(CreatePaymentRequestModel request, string jwtToken)
+        public async Task<CreatePaymentResponseModel> ExecuteAsync(CreatePaymentRequestModel request)
         {
-            return await paymentsPlugin.CreatePaymentAsync(request, jwtToken);
+            return await paymentsPlugin.CreatePaymentAsync(request);
         }
 
-        public async Task<PaymentsResponseModel> ExecuteAsync(Guid eventId, bool active, string jwtToken)
+        public async Task<PaymentsResponseModel> ExecuteAsync(Guid eventId, bool active)
         {
-            return await paymentsPlugin.GetPaymentsDataAsync(eventId, active, jwtToken);
+            return await paymentsPlugin.GetPaymentsDataAsync(eventId, active);
         }
 
-        public async Task<PaymentDetailsResponseModel> ExecuteAsync(bool active, Guid paymentId, string jwtToken)
+        public async Task<PaymentDetailsResponseModel> ExecuteAsync(bool active, Guid paymentId)
         {
-            var payment = await paymentsPlugin.GetPaymentDetailsAsync(paymentId, active, jwtToken);
+            var payment = await paymentsPlugin.GetPaymentDetailsAsync(paymentId, active);
             IList<string> Ids = [];
             if (payment.PaymentDetails!.CreditorIncluded)
             {
@@ -52,14 +52,14 @@ namespace WhoOwesWho.WebApp.UseCases.Payments
             return payment;
         }
 
-        public async Task<UpdatePaymentResponseModel> ExecuteAsync(UpdatePaymentRequestModel request, string jwtToken)
+        public async Task<UpdatePaymentResponseModel> ExecuteAsync(UpdatePaymentRequestModel request)
         {
-            return await paymentsPlugin.UpdatePaymentDetailsAsync(request, jwtToken);
+            return await paymentsPlugin.UpdatePaymentDetailsAsync(request);
         }
 
-        public async Task<DeletePaymentResponseModel> ExecuteAsync(string jwtToken, Guid paymentId)
+        public async Task<DeletePaymentResponseModel> ExecuteAsync(Guid paymentId)
         {
-            return await paymentsPlugin.DeletePaymentAsync(paymentId, jwtToken);
+            return await paymentsPlugin.DeletePaymentAsync(paymentId);
         }
     }
 }

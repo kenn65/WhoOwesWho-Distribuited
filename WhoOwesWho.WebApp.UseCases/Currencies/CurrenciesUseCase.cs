@@ -6,14 +6,14 @@ namespace WhoOwesWho.WebApp.UseCases.Currencies
 {
     public interface ICurrenciesUseCase
     {
-        Task<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>> ExecuteAsync(string jwtToken);
+        Task<IEnumerable<CurrencyResponseModel>> ExecuteAsync();
     }
 
     public class CurrenciesUseCase(ICurrencyPlugin currencyPlugin) : ICurrenciesUseCase
     {
-        public async Task<EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>> ExecuteAsync(string jwtToken)
+        public async Task<IEnumerable<CurrencyResponseModel>> ExecuteAsync()
         {
-            return await currencyPlugin.GetCurrenciesAsync(jwtToken);
+            return (await currencyPlugin.GetCurrenciesAsync())?.Data!;
         }
     }
 }

@@ -1,24 +1,22 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 using System.Globalization;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Account;
-using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Common.Controls;
 
 public partial class EventPaymentElement(
     NavigationManager nav,
-    ICookiesMasterService cookiesMasterService,
     IUserUseCase userUseCase,
     IAlertService alertService,
     IHostNameService hostNameService,
-    IProtectionUseCase protectionUseCase)
+    ICurrentUserService currentUserService)
 {
     [Parameter] public bool HasAssignment { get; set; }
     [Parameter] public bool HasPayments { get; set; }
@@ -40,15 +38,13 @@ public partial class EventPaymentElement(
     private bool isPaymentDetails;
     private bool isAdministrator;
     private UserModel? currentUser;
-    private CookiesResponseModel? cookies;
     private Guid userId;
 
     protected override async Task OnInitializedAsync()
     {
-        cookies = await cookiesMasterService.GetAsync();
-        isAdministrator = await cookiesMasterService.IsAdministratorAsync(cookies!);
+        userId = await currentUserService.GetUserIdAsync();
+        isAdministrator = await currentUserService.GetIsAdminAsync();
         var host = await hostNameService.GetAsync();
-        userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
         isPaymentDetails = nav.Uri == $"https://{host}/me/payment/details";
         CreatePaymentRequestModel ??= new CreatePaymentRequestModel();
         EventResponseModel?.Users = EventResponseModel.Users?.OrderBy(u => u?.FullName);
@@ -71,7 +67,7 @@ public partial class EventPaymentElement(
 
     private async Task<UserModel> GetCurrentUser()
     {
-        var response = await userUseCase.ExecuteAsync(userId, cookies!.TokenValue, false);
+        var response = await userUseCase.ExecuteAsync(userId, false);
         if (!response.Success)
         {
             await alertService.Error("An unexpected error occurred, please try again");

@@ -38,7 +38,7 @@ namespace WhoOwesWho.UserService.Services
         {
             var activeEvent = await userCacheRepository.GetActiveEventByIdAsync(request.EventId.ToString()!);
             var eventUsers = await GetEventUsersAsync(activeEvent!);
-            var existingAdministratorId = eventUsers.FirstOrDefault(u => u.Admin && u.Id != request.Id );
+            var existingAdministratorId = eventUsers.FirstOrDefault(u => u.Admin);
             
             if (request.Admin && existingAdministratorId is not null && existingAdministratorId.Id != request.Id)
             {

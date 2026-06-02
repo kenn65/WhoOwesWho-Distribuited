@@ -1,5 +1,5 @@
 ﻿@page "/me/events/edit"
-
+@inherits AuthorizationComponentBase
 @if (EventResponseModel == null)
 {
     <div class="flex justify-center items-center h-40">
@@ -41,13 +41,13 @@ else
                                    Value="@EventResponseModel.Currency"
                                    ValueChanged="@(v=> EventResponseModel.Currency = v)"
                                    ValueExpression="@(() => EventResponseModel.Currency)"
-                                   CurrencyList="@CurrencyList" />
+                                   CurrencyList="@currencyList" />
             <br />
             <br />
             <div class="w-2/4 mx-auto text-left -mb-8">
                 <label for="startDate" class="form-label">Start date:</label>
                 <br />
-                <InputDate id="startDate" @bind-Value="EventResponseModel!.StartDateDate" @attributes="_dateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+                <InputDate id="startDate" @bind-Value="EventResponseModel!.StartDateDate" @attributes="DateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
             </div>
             <br />
             <br />
@@ -62,7 +62,7 @@ else
             <span class="p-2">
                 <SubmitButton Text="Submit"
                               ProcessingText="Processing..."
-                              IsProcessing="IsProcessing" />
+                              IsProcessing="isProcessing" />
             </span>
             <span class="p-2">
                 <ActionButton Text="Cancel"

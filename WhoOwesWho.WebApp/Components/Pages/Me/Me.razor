@@ -1,12 +1,12 @@
 ﻿@page "/me"
-
+@inherits AuthorizationComponentBase
 <div class="text-center mb-3">
     <br />
     <br />
     <h1 class="text-4xl">My Who Owes Who</h1>
     <br />
     <br />
-    <p>@_userName</p>
+    <p>@userName</p>
     <br />
     <br />
     <p class="text-xl">Welcome to your self service center</p>
@@ -21,19 +21,16 @@
                 <br />
                 <br />
                 <p>
-                    A user can act as an administrator, which allows them to create events and manage payments (edit and delete).
+                    A user can act as an administrator, which allows them to create events and manage payments.
                     <br />
                     <br />
                     Multiple events may have different administrators.
                     <br />
                     <br />
-                    A user can become an administrator either during signup or later via their profile. When logged in, the user can enable the administrator option in “My Profile” and click “Update” — provided that no other member of their group has already been assigned as administrator.
+                    A user can only become an administrator during signup or if no administrator is available it can be done in My Profile.
                     <br />
                     <br />
                     Within a group assigned to an event, exactly one person must be designated as the administrator.
-                    <br />
-                    <br />
-                    A user cannot be assigned to more than one event at the same time.
                 </p>
             </div>
         </li>
@@ -48,7 +45,7 @@
                     Administrators can create, edit, and delete events on this page.
                     <br />
                     <br />
-                    All users can view a list of available events and assign themselves to one. A user may only be assigned to a single event at a time, until that event has been closed (settled).
+                    All users can view a list of available events and assign themselves to one in My Workspace. A user may only be assigned to a single event at a time, until that event has been closed (settled).
                 </p>
             </div>
         </li>

@@ -1,13 +1,17 @@
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using WhoOwesWho.WebApp.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Account;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
 using WhoOwesWho.WebApp.Infrastructure.Events;
 using WhoOwesWho.WebApp.Infrastructure.Payments;
 using WhoOwesWho.WebApp.Infrastructure.Protection;
+using WhoOwesWho.WebApp.Infrastructure.Services;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.StateHandlers;
 using WhoOwesWho.WebApp.UseCases.Account;
@@ -21,25 +25,99 @@ using WhoOwesWho.WebApp.UseCases.Payments.PluginInterfaces;
 using WhoOwesWho.WebApp.UseCases.Protection;
 using WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Add services to the container.
+// =====================================
+// COMPONENTS
+// =====================================
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddCascadingAuthenticationState();
+
+// =====================================
+// AUTHENTICATION
+// =====================================
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+
+                ValidIssuer =
+                    builder.Configuration["Authorization:Issuer"],
+
+                ValidAudience =
+                    builder.Configuration["Authorization:Audience"],
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            builder.Configuration["Authorization:JwtSecret"]!)),
+
+                ClockSkew = TimeSpan.Zero
+            };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                context.Token =
+                    context.Request.Cookies[
+                        ".WhoOwesWho.Token"];
+
+                return Task.CompletedTask;
+            },
+
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine(context.Exception);
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// =====================================
+// GENERAL SERVICES
+// =====================================
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IHostNameService, HostNameService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddHttpClient();
+
+// =====================================
+// STATE HANDLERS
+// =====================================
+
+builder.Services.AddSingleton<IStateHandler<EventModel>, StateHandler<EventModel>>();
+builder.Services.AddSingleton<IStateHandler<PaymentStateModel>, StateHandler<PaymentStateModel>>();
+
+// =====================================
+// USE CASES + PLUGINS
+// =====================================
+
 builder.Services.AddTransient<IAuthorizationUseCase, AuthorizationUseCase>();
 builder.Services.AddTransient<IAuthorizationPlugin, AuthorizationPlugin>();
 builder.Services.AddTransient<IProtectionUseCase, ProtectionUseCase>();
 builder.Services.AddTransient<IProtectionPlugin, ProtectionPlugin>();
-builder.Services.AddScoped<IAlertService, AlertService>();
-builder.Services.AddScoped<ICookiesMasterService, CookiesMasterService>();
-builder.Services.AddScoped<IHostNameService, HostNameService>();
-builder.Services.AddSingleton<IStateHandler<EventModel>, StateHandler<EventModel>>();
 builder.Services.AddTransient<IUserUseCase, UserUseCase>();
 builder.Services.AddTransient<IUserPlugin, UserPlugin>();
 builder.Services.AddTransient<IEventsUseCase, EventsUseCase>();
@@ -48,97 +126,130 @@ builder.Services.AddTransient<ICurrenciesUseCase, CurrenciesUseCase>();
 builder.Services.AddTransient<ICurrencyPlugin, CurrencyPlugin>();
 builder.Services.AddTransient<IPaymentsUseCase, PaymentsUseCase>();
 builder.Services.AddTransient<IPaymentsPlugin, PaymentsPlugin>();
-builder.Services.AddSingleton<IStateHandler<PaymentStateModel>, StateHandler<PaymentStateModel>>();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// SET COOKIES
-app.MapPost("/api/auth/set-cookies", (CookiesResponseModel data, HttpContext ctx) =>
-{
-    var options = new CookieOptions
+// =====================================
+// COOKIE ENDPOINTS
+// =====================================
+
+app.MapPost(
+    "/api/auth/set-cookies",
+    (CookiesResponseModel data,
+     HttpContext ctx) =>
     {
-        HttpOnly = true,
-        Secure = true,
-        SameSite = SameSiteMode.None,
-        Path = "/",
-        Expires = DateTimeOffset.UtcNow.AddHours(48)
-    };
+        // =====================================
+        // JWT ACCESS TOKEN COOKIE
+        // =====================================
 
-    void Set(string name, string value)
+        var tokenOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = "/",
+
+            // SHORT LIFETIME
+            Expires = DateTimeOffset.UtcNow.AddMinutes(2)
+        };
+
+        // =====================================
+        // REFRESH TOKEN COOKIE
+        // =====================================
+
+        var refreshOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = "/",
+
+            // LONG LIFETIME
+            Expires = DateTimeOffset.UtcNow.AddDays(1)
+        };
+
+        void Set(
+            string name,
+            string value,
+            CookieOptions options)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                ctx.Response.Cookies.Append(
+                    name,
+                    value,
+                    options);
+            }
+        }
+
+        //=====================================
+        //ACCESS TOKEN
+        //=====================================
+
+        Set(
+            data.TokenName,
+            data.TokenValue,
+            tokenOptions);
+
+        //=====================================
+        //REFRESH TOKEN
+        //=====================================
+
+        Set(
+            data.RefreshName,
+            data.RefreshValue,
+            refreshOptions);
+
+        return Results.Ok();
+    });
+
+app.MapPost("/api/auth/delete-cookies",
+    (HttpContext ctx) =>
     {
-        if (!string.IsNullOrWhiteSpace(value))
-            ctx.Response.Cookies.Append(name, value, options);
-    }
+        var names = new[]
+        {
+            ".WhoOwesWho.Token",
+            ".WhoOwesWho.Refresh"
+        };
 
-    Set(data.TokenName, data.TokenValue);
-    Set(data.UserIdName, data.UserIdValue);
-    Set(data.UserEmailAddressName, data.UserEmailAddressValue);
-    Set(data.AdminName, data.AdminValue);
+        foreach (var name in names)
+        {
+            ctx.Response.Cookies.Delete(name);
+        }
 
-    return Results.Ok();
-});
+        return Results.Ok();
+    });
 
-// UPDATE ADMIN COOKIE
-app.MapPost("/api/auth/update-admin-cookie", (CookiesResponseModel data, HttpContext ctx) =>
-{
-    var options = new CookieOptions
-    {
-        HttpOnly = true,
-        Secure = true,
-        SameSite = SameSiteMode.None,
-        Path = "/",
-        Expires = DateTimeOffset.UtcNow.AddHours(48)
-    };
+// =====================================
+// PIPELINE
+// =====================================
 
-    void Set(string name, string value)
-    {
-        if (!string.IsNullOrWhiteSpace(value))
-            ctx.Response.Cookies.Append(name, value, options);
-    }
-
-    void Delete(string name)
-    {
-        ctx.Response.Cookies.Delete(name);
-    }
-
-    Delete(data.AdminName);
-    Set(data.AdminName, data.AdminValue);
-
-    return Results.Ok();
-});
-
-// DELETE COOKIES
-app.MapPost("/api/auth/delete-cookies", (HttpContext ctx) =>
-{
-    var names = new[]
-    {
-        ".WhoOwesWho.Token",
-        ".WhoOwesWho.UserId",
-        ".WhoOwesWho.Email",
-        ".WhoOwesWho.UserAdmin"
-    };
-
-    foreach (var name in names)
-        ctx.Response.Cookies.Delete(name);
-
-    return Results.Ok();
-});
-
-
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseExceptionHandler(
+        "/Error",
+        createScopeForErrors: true);
+
     app.UseHsts();
 }
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
+app.UseStatusCodePagesWithReExecute(
+    "/not-found",
+    createScopeForStatusCodePages: true);
+
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+
+app.UseAuthorization();
+
 app.UseAntiforgery();
+
 app.MapStaticAssets();
+
 app.MapRazorComponents<App>()
-   .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode();
+
 app.Run();

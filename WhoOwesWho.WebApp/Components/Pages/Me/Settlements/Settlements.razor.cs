@@ -1,20 +1,20 @@
 using Microsoft.AspNetCore.Components;
-using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
+using WhoOwesWho.WebApp.Components.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
+using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Payments;
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Settlements;
 
 public partial class Settlements(
-    ICookiesMasterService cookiesMasterService,
     IEventsUseCase eventsUseCase,
     IPaymentsUseCase paymentsUseCase,
     IAlertService alertService,
-    NavigationManager nav)
+    NavigationManager nav
+    ) : AuthorizationComponentBase
 {
-    private CookiesResponseModel? cookies;
     private IEnumerable<EventResponseModel>? eventList;
     private PaymentsResponseModel? payments;
     private bool isAdminisstrator = false;
@@ -23,32 +23,34 @@ public partial class Settlements(
 
 
     [SupplyParameterFromForm]
-    private SettleEventRequestModel? settleEventRequestModel { get; set; }
-
+    private SettleEventRequestModel? SettleEventRequestModel { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        cookies = await cookiesMasterService.GetAsync();
-        isAdminisstrator = await cookiesMasterService.IsAdministratorAsync(cookies!);
+        if (!await EnsureAuthorizedAsync())
+        {
+            return;
+        }
+        isAdminisstrator = await CurrentUserService.GetIsAdminAsync();
         eventList = await GetUserEventsAsync();
-        settleEventRequestModel ??= new();
+        SettleEventRequestModel ??= new();
         isLoading = false;
     }
 
     private async Task<IEnumerable<EventResponseModel>> GetUserEventsAsync()
     {
-        return await eventsUseCase.ExecuteGetEventsAsync(false, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventsAsync(false);
     }
 
     private async Task OnEventChangedAsync(string eventId)
     {
-        settleEventRequestModel?.EventIdString = eventId;
+        SettleEventRequestModel?.EventIdString = eventId;
         payments = await GetPaymentsAsync(Guid.Parse(eventId));
     }
 
     private async Task<PaymentsResponseModel> GetPaymentsAsync(Guid eventId)
     {
-        return await paymentsUseCase.ExecuteAsync(eventId, false, cookies!.TokenValue);
+        return await paymentsUseCase.ExecuteAsync(eventId, false);
     }
 
     private async Task HandleReopenEventAsync()
@@ -57,7 +59,7 @@ public partial class Settlements(
         if (confirmation)
         {
             isProcessing = true;
-            var response = await eventsUseCase.ExecuteUnsettleEventAsync(settleEventRequestModel!, cookies!.TokenValue);
+            var response = await eventsUseCase.ExecuteUnsettleEventAsync(SettleEventRequestModel!);
             await StopProcessingAsync();
             if (!response.Success)
             {
@@ -68,7 +70,6 @@ public partial class Settlements(
             nav.NavigateTo("me/payments", true);
         }
     }
-
     private async Task StopProcessingAsync()
     {
         isProcessing = false;

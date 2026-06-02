@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.UseCases.Account;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Account.Password;

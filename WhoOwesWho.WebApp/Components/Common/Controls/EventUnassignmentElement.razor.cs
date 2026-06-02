@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Common.Controls;
 
-public partial class EventUnassignmentElement(ICookiesMasterService cookiesMasterService, IProtectionUseCase protectionUseCase)
+public partial class EventUnassignmentElement(
+    ICurrentUserService currentUserService)
 {
     [Parameter] public bool IsProcessing { get; set; }
     [Parameter] public EventCallback<EventUnassignmentRequestModel> HandleUnassign { get; set; }
@@ -14,13 +16,11 @@ public partial class EventUnassignmentElement(ICookiesMasterService cookiesMaste
 
     [SupplyParameterFromForm(FormName = "eventunassignment")]
     private EventUnassignmentRequestModel? EventUnassignmentRequestModel { get; set; }
-    private CookiesResponseModel? cookies;
     private string userId = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        cookies = await cookiesMasterService.GetAsync();
-        userId = await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue);
+        userId = (await currentUserService.GetUserIdAsync()).ToString();
 
         EventUnassignmentRequestModel = new EventUnassignmentRequestModel
         {

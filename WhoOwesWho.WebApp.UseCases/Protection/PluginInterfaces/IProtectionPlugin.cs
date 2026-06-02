@@ -1,5 +1,4 @@
-﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
-using WhoOwesWho.WebApp.CoreBusiness.Entities.Protection;
+﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Protection;
 
 namespace WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces
 {
@@ -7,6 +6,6 @@ namespace WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces
     {
         Task<ProtectionResponseModel> ProtectAsync(string text);
         Task<ProtectionResponseModel> UnprotectAsync(string text);
-        Task<ProtectionResponseModel> ProtectCookiesAsync(CookiesRequestModel request);
+        //Task<ProtectionResponseModel> ProtectCookiesAsync(CookiesRequestModel request);
     }
 }

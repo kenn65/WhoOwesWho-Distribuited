@@ -13,7 +13,7 @@ namespace WhoOwesWho.EncryptionService.Services
     {
         Task<ProtectionResponseModel> Encrypt(string plainText);
         Task<ProtectionResponseModel> Decrypt(string cipherText);
-        Task<EncryptedCookiesResponseModel> EncryptCookies(CookiesRequestModel request);
+        //Task<EncryptedCookiesResponseModel> EncryptCookies(CookiesRequestModel request);
     }
 
     public class EncryptionService(IConfiguration configuration)
@@ -70,21 +70,21 @@ namespace WhoOwesWho.EncryptionService.Services
             };
         }
 
-        public async Task<EncryptedCookiesResponseModel> EncryptCookies([FromBody] CookiesRequestModel request)
-        {
+        //public async Task<EncryptedCookiesResponseModel> EncryptCookies([FromBody] CookiesRequestModel request)
+        //{
 
-            var idResponse = await Encrypt(request.User?.Id.ToString()!);
-            var emailResponse = await Encrypt(request.User?.EmailAddress!);
-            var adminResponse = await Encrypt(request.User?.Admin.ToString()!);
+        //    var idResponse = await Encrypt(request.User?.Id.ToString()!);
+        //    var emailResponse = await Encrypt(request.User?.EmailAddress!);
+        //    var adminResponse = await Encrypt(request.User?.Admin.ToString()!);
 
-            return new EncryptedCookiesResponseModel
-            {
-                UserIdValue = idResponse.ProtectedValue,
-                UserEmailAddressValue = emailResponse.ProtectedValue,
-                AdminValue = adminResponse.ProtectedValue,
-                Success = true
-            };
-        }
+        //    return new EncryptedCookiesResponseModel
+        //    {
+        //        UserIdValue = idResponse.ProtectedValue,
+        //        UserEmailAddressValue = emailResponse.ProtectedValue,
+        //        AdminValue = adminResponse.ProtectedValue,
+        //        Success = true
+        //    };
+        //}
     }
 }
 

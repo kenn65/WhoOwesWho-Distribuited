@@ -1,15 +1,28 @@
 using Microsoft.AspNetCore.Components;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
+using WhoOwesWho.WebApp.UseCases.Account;
 
 namespace WhoOwesWho.WebApp.Components.Pages;
+
 public partial class Home(
     NavigationManager nav,
-    ICookiesMasterService cookiesMasterService)
+    ICurrentUserService currentUserService,
+    IAuthorizationUseCase authorizationUseCase)
 {
     protected override async Task OnInitializedAsync()
     {
-        var cookies = await cookiesMasterService.GetAsync();
-        if (await cookiesMasterService.IsAuthorizedAsync(cookies!))
+        var userId = await currentUserService.GetUserIdAsync();
+        if (userId == Guid.Empty)
+        {
+            await authorizationUseCase.ExecuteRefreshTokenAsync();
+            userId = await currentUserService.GetUserIdAsync();
+        }
+        if (userId == Guid.Empty)
+        {
+            return;
+        }
+
+        if (await currentUserService.GetIsAuthorizedAsync())
         {
             nav.NavigateTo("/me");
         }

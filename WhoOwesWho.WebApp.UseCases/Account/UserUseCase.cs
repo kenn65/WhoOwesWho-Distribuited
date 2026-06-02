@@ -10,12 +10,12 @@ namespace WhoOwesWho.WebApp.UseCases.Account
     {
         Task<UserModel> ExecuteAsync(SignUpRequestModel request);
         Task<UserModel> ExecuteAsync(VerificationRequestModel request);
-        Task<UserModel> ExecuteAsync(Guid id, string jwtToken, bool includePassword = true);
+        Task<UserModel> ExecuteAsync(Guid id, bool includePassword = true);
         Task<ForgotPasswordResponseModel> ExecuteAsync(ForgotPasswordRequestModel request);
         Task<ResetPasswordResponseModel> ExecuteAsync(string emailAddress, string forgotPasswordToken);
         Task<ResetPasswordResponseModel> ExecuteAsync(ResetPasswordRequestModel request);
-        Task<UserModel> ExecuteAsync(Guid userId, string jwtToken, UserUpdateRequestModel request);
-        Task<ChangePasswordResponseModel> ExecuteAsync(string jwtToken, ChangePasswordRequestModel request);
+        Task<UserModel> ExecuteAsync(Guid userId, UserUpdateRequestModel request);
+        Task<ChangePasswordResponseModel> ExecuteAsync(ChangePasswordRequestModel request);
     }
 
     public class UserUseCase(IUserPlugin userPlugin, IProtectionUseCase protectionUseCase) : IUserUseCase
@@ -31,9 +31,9 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             return await userPlugin.VerifyAccountAsync(request);
         }
 
-        public async Task<UserModel> ExecuteAsync(Guid id, string jwtToken, bool includePassword = true)
+        public async Task<UserModel> ExecuteAsync(Guid id, bool includePassword = true)
         {
-            return await userPlugin.GetUserByIdAsync(id, jwtToken, includePassword);
+            return await userPlugin.GetUserByIdAsync(id, includePassword);
         }
 
         public async Task<ForgotPasswordResponseModel> ExecuteAsync(ForgotPasswordRequestModel request)
@@ -53,17 +53,17 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             return await userPlugin.ResetPasswordAsync(request);
         }
 
-        public async Task<UserModel> ExecuteAsync(Guid userId, string jwtToken, UserUpdateRequestModel request)
+        public async Task<UserModel> ExecuteAsync(Guid userId, UserUpdateRequestModel request)
         {
-            return await userPlugin.UpdateUserAsync(userId, jwtToken, request);
+            return await userPlugin.UpdateUserAsync(userId, request);
         }
 
-        public async Task<ChangePasswordResponseModel> ExecuteAsync(string jwtToken, ChangePasswordRequestModel request)
+        public async Task<ChangePasswordResponseModel> ExecuteAsync(ChangePasswordRequestModel request)
         {
             request.Password = await protectionUseCase.ExecuteProtectAsync(request.Password);
             request.NewPassword1 = await protectionUseCase.ExecuteProtectAsync(request.NewPassword1);
             request.NewPassword2 = await protectionUseCase.ExecuteProtectAsync(request.NewPassword2);
-            return await userPlugin.ChangePasswordAsync(jwtToken, request);
+            return await userPlugin.ChangePasswordAsync(request);
         }
     }
 }

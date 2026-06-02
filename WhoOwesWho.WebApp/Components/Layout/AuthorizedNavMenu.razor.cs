@@ -1,13 +1,22 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.UseCases.Account;
 
 namespace WhoOwesWho.WebApp.Components.Layout;
-public partial class AuthorizedNavMenu(NavigationManager nav, ICookiesMasterService cookiesMasterService)
+public partial class AuthorizedNavMenu(NavigationManager nav, IAuthorizationUseCase authorizationUseCase)
 {
+    private bool signOut;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (signOut)
+        {
+            await authorizationUseCase.ExecuteDeleteCookiesAsync();
+            nav.NavigateTo("/", forceLoad: true);
+        }
+    }
+
     private async Task HandleSignOut(MouseEventArgs args)
     {
-        await cookiesMasterService.DeleteCookiesAsync();
-        nav.NavigateTo("/", forceLoad: true);
+        signOut = true;
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using WhoOwesWho.AuthorizationService.Controllers;
+using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Validators;
 using WhoOwesWho.Shared.Auxiliaries;
@@ -407,62 +408,21 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
 
             model.Message.Should().Be("Failure");
         }
-
-        [Fact]
-        public void SetCookies_ReturnsOk()
-        {
-            // Arrange
-            var sut = CreateAuthorizationController();
-
-            sut.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext()
-            };
-
-            var request = new AuthorizationResponseModel();
-            request.TokenValue = "tokenValue";
-            request.UserIdValue = "userIdValue";
-            request.UserEmailAddressValue = "emailAddressValue";
-            request.AdminValue = "adminValue";
-
-
-            // Act
-            var result = sut.SetCookies(request);
-
-            // Assert
-            result.Should().BeOfType<OkResult>();
-        }
-
-        [Fact]
-        public void DeleteCookies_ReturnsOk()
-        {
-            // Arrange
-            var sut = CreateAuthorizationController();
-
-            sut.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext()
-            };
-
-            // Act
-            var result = sut.DeleteCookies();
-
-            // Assert
-            result.Should().BeOfType<OkResult>();
-        }
-
+        
         private static AuthorizationController CreateAuthorizationController(
             Mock<IAuthorizationService>? authorizationServiceMock = null,
             Mock<IAuthenticationNotificationService>? authenticationNotificationMock = null,
             Mock<IAuthorizationSecurityService>? securityServiceMock = null,
             Mock<IAuthValidationService>? validationServiceMock = null,
-            Mock<IConfiguration>? configurationMock = null)
-        {
+            Mock<IConfiguration>? configurationMock = null,
+            Mock<IAuthorizationCacheRepository>? cacheRepositoryMock = null) 
+         {
             authorizationServiceMock ??= new();
             authenticationNotificationMock ??= new();
             securityServiceMock ??= new();
             validationServiceMock ??= new();
             configurationMock ??= new();
+            cacheRepositoryMock ??= new();
 
             //validationServiceMock
             //    .Setup(x => x.DoesEmailExist(It.IsAny<string>()))
@@ -491,7 +451,8 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
                 authenticationNotificationMock.Object,
                 securityServiceMock.Object,
                 authentivationValidator,
-                authorizationValidator);
+                authorizationValidator,
+                cacheRepositoryMock.Object);
         }
     }
 }

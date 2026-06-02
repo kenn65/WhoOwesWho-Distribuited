@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.EventService.Models;
 using WhoOwesWho.EventService.Services;
 using WhoOwesWho.EventService.Validators;
-using WhoOwesWho.Shared.Auxiliaries;
 using WhoOwesWho.Shared.Models;
 using WhoOwesWho.Shared.Models.Base;
+using WhoOwesWho.EventService.Auxiliaries;
+using Constants = WhoOwesWho.Shared.Auxiliaries.Constants;
 
 namespace WhoOwesWho.EventService.Controllers
 {
@@ -32,6 +33,7 @@ namespace WhoOwesWho.EventService.Controllers
                         Message = validationResult.Errors.First().ErrorMessage
                     });
                 }
+                request.Token = HttpContext.ToTokenValue();
                 return Ok(await eventCommanddService.CreateEventAsync(request));
             }
             catch (Exception e)
@@ -53,7 +55,8 @@ namespace WhoOwesWho.EventService.Controllers
                 var response = await eventLookupService.GetEventsAsync(active);
                 return Ok(new EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>
                 {
-                    Data = response
+                    Data = response,
+                    Success = true
                 });
             }
             catch (Exception e)
@@ -106,6 +109,7 @@ namespace WhoOwesWho.EventService.Controllers
                         Message = validationResult.Errors.First().ErrorMessage
                     });
                 }
+                request.Token = HttpContext.ToTokenValue();
                 return Ok(await eventCommanddService.UpdateEventAsync(request));
             }
             catch (Exception e)

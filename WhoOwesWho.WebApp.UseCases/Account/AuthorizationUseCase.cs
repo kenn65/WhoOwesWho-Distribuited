@@ -1,4 +1,5 @@
 ﻿using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces;
 using WhoOwesWho.WebApp.UseCases.Protection;
 
@@ -6,13 +7,15 @@ namespace WhoOwesWho.WebApp.UseCases.Account
 {
     public interface IAuthorizationUseCase
     {
-        Task<AuthenticationResponseModel> ExecuteAsync(AuthenticationRequestModel request);
-        Task<AuthorizationResponseModel> ExecuteAsync(AuthorizationRequestModel request);
+        Task<AuthenticationResponseModel> ExecuteAuthenticateAsync(AuthenticationRequestModel request);
+        Task<AuthorizationResponseModel> ExecuteAuthorizeAsync(AuthorizationRequestModel request);
+        Task<CookiesResponseModel> ExecuteRefreshTokenAsync();
+        Task<CookiesDeletionResponseModel> ExecuteDeleteCookiesAsync();
     }
 
     public class AuthorizationUseCase(IAuthorizationPlugin authorizationPlugin, IProtectionUseCase protectionUseCase) : IAuthorizationUseCase
     {
-        public async Task<AuthenticationResponseModel> ExecuteAsync(AuthenticationRequestModel request)
+        public async Task<AuthenticationResponseModel> ExecuteAuthenticateAsync(AuthenticationRequestModel request)
         {
             var requestModel = new AuthenticationRequestModel
             {
@@ -23,9 +26,19 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             return await authorizationPlugin.AuthenticateAsync(requestModel);
         }
 
-        public async Task<AuthorizationResponseModel> ExecuteAsync(AuthorizationRequestModel request)
+        public async Task<AuthorizationResponseModel> ExecuteAuthorizeAsync(AuthorizationRequestModel request)
         {
             return await authorizationPlugin.AuthorizeAsync(request);
+        }
+        
+        public async Task<CookiesResponseModel> ExecuteRefreshTokenAsync()
+        {
+            return await authorizationPlugin.RefreshAsync();
+        }
+
+        public async Task<CookiesDeletionResponseModel> ExecuteDeleteCookiesAsync()
+        {
+            return await authorizationPlugin.DeleteCookiesAsync();
         }
     }
 }

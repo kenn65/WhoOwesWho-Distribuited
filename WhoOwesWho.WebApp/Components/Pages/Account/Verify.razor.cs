@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Protection;
 

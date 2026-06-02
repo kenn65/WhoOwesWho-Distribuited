@@ -8,7 +8,7 @@ namespace WhoOwesWho.EncryptionService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EncryptionController(IEncryptionService encryptionService, ProtectCookiesRequestValidator validator)
+    public class EncryptionController(IEncryptionService encryptionService)
         : ControllerBase
     {
         [HttpGet]
@@ -33,8 +33,6 @@ namespace WhoOwesWho.EncryptionService.Controllers
                     Message = e.Message
                 });
             }
-            //    return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
-            //}
         }
 
         [HttpGet]
@@ -66,27 +64,27 @@ namespace WhoOwesWho.EncryptionService.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("cookies/protect")]
-        public async Task<IActionResult> ProtectCookies([FromBody] CookiesRequestModel request)
-        {
-            try
-            {
-                var validationResult = await validator.ValidateAsync(request);
-                if (!validationResult.IsValid)
-                {
-                    return BadRequest(new EncryptedCookiesResponseModel
-                    {
-                        Message = validationResult.Errors.First().ErrorMessage
-                    });
-                }
+        //[HttpPost]
+        //[Route("cookies/protect")]
+        //public async Task<IActionResult> ProtectCookies([FromBody] CookiesRequestModel request)
+        //{
+        //    try
+        //    {
+        //        var validationResult = await validator.ValidateAsync(request);
+        //        if (!validationResult.IsValid)
+        //        {
+        //            return BadRequest(new EncryptedCookiesResponseModel
+        //            {
+        //                Message = validationResult.Errors.First().ErrorMessage
+        //            });
+        //        }
 
-                return Ok(await encryptionService.EncryptCookies(request));
-            }
-            catch (Exception e)
-            {
-                return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
-            }
-        }
+        //        return Ok(await encryptionService.EncryptCookies(request));
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest($"Message: {e.Message} StackTrace: {e.StackTrace}");
+        //    }
+        //}
     }
 }

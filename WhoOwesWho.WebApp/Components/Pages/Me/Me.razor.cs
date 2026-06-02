@@ -1,33 +1,20 @@
-using Microsoft.AspNetCore.Components;
-using System.Net;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.Components.Base;
 using WhoOwesWho.WebApp.UseCases.Account;
-using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me;
-public partial class Me(
-    NavigationManager nav, 
-    ICookiesMasterService cookiesMasterService, 
-    IUserUseCase userUseCase,
-    IProtectionUseCase protectionUseCase)
+
+public partial class Me(IUserUseCase userUseCase) : AuthorizationComponentBase
 {
-    private string _userName = string.Empty;
+    private string userName = string.Empty;
     
     protected override async Task OnInitializedAsync()
     {
-        var cookies = await cookiesMasterService.GetAsync();
-        var userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
-        if (cookies is null)
+        if (!await EnsureAuthorizedAsync())
         {
-            nav.NavigateTo("/", true);
+            return;
         }
-        else
-        {
-            var response = await userUseCase.ExecuteAsync(
-                userId,
-                cookies.TokenValue,
-                false);
-            _userName = $"Hi {response!.FullName!}";
-        }
+        var response = await userUseCase.ExecuteAsync(CurrentUserId, false);
+        userName = $"Hi {response!.FullName!}";
     }
 }
+

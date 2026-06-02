@@ -22,7 +22,8 @@ namespace WhoOwesWho.CurrencyService.Controllers
                 var response = await currencyService.GetCurrenciesAsync();
                 return Ok(new EnumerableWrapperResponseModel<IEnumerable<CurrencyResponseModel>>
                 {
-                    Data = response
+                    Data = response,
+                    Success = true
                 });
             }
             catch (Exception e)

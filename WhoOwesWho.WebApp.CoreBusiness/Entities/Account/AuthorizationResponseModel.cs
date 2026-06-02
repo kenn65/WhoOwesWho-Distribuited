@@ -5,12 +5,11 @@ namespace WhoOwesWho.WebApp.CoreBusiness.Entities.Account
     public class AuthorizationResponseModel : ResponseModelBase
     {
         public static string TokenName => ".WhoOwesWho.Token";
-        public string? TokenValue { get; set; }
-        public static string UserIdName => ".WhoOwesWho.UserId";
-        public string? UserIdValue { get; set; }
-        public static string UserEmailAddressName => ".WhoOwesWho.Email";
-        public string? UserEmailAddressValue { get; set; }
-        public static string AdminName => ".WhoOwesWho.UserAdmin";
-        public string? AdminValue { get; set; }
+        public string TokenValue { get; set; } = string.Empty;
+
+        public static string RefreshName => ".WhoOwesWho.Refresh";
+        public string RefreshValue { get; set; } = string.Empty;
+
+       
     }
 }

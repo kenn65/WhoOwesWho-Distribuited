@@ -1,17 +1,15 @@
 using Mapster;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Connections.Abstractions;
-using System.Net;
+using WhoOwesWho.WebApp.Components.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
-using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.StateHandlers;
 using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Payments;
-using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Payments;
 
@@ -19,27 +17,24 @@ public partial class PaymentDetails
 (
     NavigationManager nav,
     IEventsUseCase eventsUseCase,
-    ICookiesMasterService cookiesMasterService,
     IAlertService alertService,
     ICurrenciesUseCase currenciesUseCase,
     IPaymentsUseCase paymentsUseCase,
-    IStateHandler<PaymentStateModel> stateHandler,
-    IProtectionUseCase protectionUseCase
-    )
+    IStateHandler<PaymentStateModel> stateHandler
+    ) : AuthorizationComponentBase
 
 {
-    private EventUserAssignmentResponseModel? eventUserAssignmentResponseModel { get; set; }
-    private EventResponseModel? eventResponseModel { get; set; }
-    private IEnumerable<CurrencyResponseModel>? currencies { get; set; }
-    private UserBalanceResponseModel? userBalanceResponseModel { get; set; }
-    private PaymentDetailsResponseModel? paymentDetailsResponseModel { get; set; }
-    private bool isAdministrator { get; set; }
+    private EventUserAssignmentResponseModel? eventUserAssignmentResponseModel;
+    private EventResponseModel? eventResponseModel;
+    private IEnumerable<CurrencyResponseModel>? currencies;
+    private UserBalanceResponseModel? userBalanceResponseModel;
+    private PaymentDetailsResponseModel? paymentDetailsResponseModel;
+    private bool isAdministrator = false;
 
     private CookiesResponseModel? cookies = null;
     private bool isProcessing = false;
     private Guid paymentId = Guid.Empty;
     private Guid creditUserId = Guid.Empty;
-    private Guid userId = Guid.Empty;
     private bool hasAssignment = false;
     private bool hasPayments = false;
     private bool isLoading = true;
@@ -47,12 +42,14 @@ public partial class PaymentDetails
 
     protected override async Task OnInitializedAsync()
     {
+        if (!await EnsureAuthorizedAsync())
+        {
+            return;
+        }
         paymentId = stateHandler.SelectedItem!.PaymentId;
         creditUserId = stateHandler.SelectedItem.CreditUserId;
         active = stateHandler.SelectedItem.Active;
-        cookies = await cookiesMasterService.GetAsync();
-        isAdministrator = await cookiesMasterService.IsAdministratorAsync(cookies!);
-        userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
+        isAdministrator = await CurrentUserService.GetIsAdminAsync();
         eventUserAssignmentResponseModel = await GetEventAssignmentAsync();
         eventResponseModel = await GetEventAsync(eventUserAssignmentResponseModel!.EventId);
         hasAssignment = eventUserAssignmentResponseModel!.EventId != Guid.Empty;
@@ -80,30 +77,30 @@ public partial class PaymentDetails
 
     private async Task<EventResponseModel> GetEventAsync(Guid eventId)
     {
-        return await eventsUseCase.ExecuteGetEventAsync(eventId, active, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventAsync(eventId, active);
     }
 
     private async Task<EventUserAssignmentResponseModel> GetEventAssignmentAsync()
     {
-        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, active, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetUserAssignmentAsync(CurrentUserId, active);
     }
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {
-        return (await currenciesUseCase.ExecuteAsync(cookies!.TokenValue))?.Data!;
+        return await currenciesUseCase.ExecuteAsync();
     }
 
     private async Task<PaymentDetailsResponseModel> GetPaymentDetailsAsync()
     {
-        return await paymentsUseCase.ExecuteAsync(active, paymentId, cookies!.TokenValue);
+        return await paymentsUseCase.ExecuteAsync(active, paymentId);
     }
     private async Task<bool> HasUserPaymentsAsync(string eventId)
     {
-        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), userId, active, cookies!.TokenValue);
+        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), CurrentUserId, active);
         return response.Success;
     }
     private async Task<UserBalanceResponseModel> GetUserBalanceAsync(Guid eventId)
     {
-        return await paymentsUseCase.ExecuteAsync(userId, eventId, cookies!.TokenValue);
+        return await paymentsUseCase.ExecuteAsync(CurrentUserId, eventId);
     }
 
     private async Task HandleUpdateAsync(CreatePaymentRequestModel request)
@@ -112,8 +109,8 @@ public partial class PaymentDetails
         requestModel.PaymentId = paymentId;
         requestModel.CreditorId = paymentDetailsResponseModel!.PaymentDetails!.CreditEventUser!.Id;
         requestModel.OriginalAmount = requestModel.TotalAmount!.Value;
-        requestModel.Token = cookies!.TokenValue;
-        var response = await paymentsUseCase.ExecuteAsync(requestModel, cookies!.TokenValue);
+        
+        var response = await paymentsUseCase.ExecuteAsync(requestModel);
         await StopProcessingAsync();
         if (!response.Success)
         {
@@ -127,7 +124,7 @@ public partial class PaymentDetails
 
     private async Task HandleDeleteAsync()
     {
-        var response = await paymentsUseCase.ExecuteAsync(cookies!.TokenValue, paymentId);
+        var response = await paymentsUseCase.ExecuteAsync(paymentId);
         await StopProcessingAsync();
         if (!response.Success)
         {

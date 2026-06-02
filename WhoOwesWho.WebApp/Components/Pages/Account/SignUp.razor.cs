@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.UseCases.Account;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Account;

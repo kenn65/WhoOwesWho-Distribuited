@@ -1,18 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Validators;
 using WhoOwesWho.Shared.Models;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 
 namespace WhoOwesWho.AuthorizationService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class AuthorizationController(
-        IAuthorizationService authorizationService,
+        Services.IAuthorizationService authorizationService,
         IAuthenticationNotificationService authenticationNotificationService,
         IAuthorizationSecurityService authorizationSecurityService,
         AuthenticationRequestValidatior authenticationValidator,
-        AuthorizationRequestValidator authorizationValidator
+        AuthorizationRequestValidator authorizationValidator,
+        IAuthorizationCacheRepository authorizationCacheRepository
         ) : ControllerBase
     {
         [HttpPost]
@@ -70,62 +75,129 @@ namespace WhoOwesWho.AuthorizationService.Controllers
             }
         }
 
-        [HttpPost("set-cookies")]
-        public IActionResult SetCookies([FromBody] AuthorizationResponseModel data)
+        [HttpPost]
+        [Route("refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RefreshAsync(RefreshRequestModel request)
         {
-            var options = new CookieOptions
+            try
             {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Path = "/"
-            };
+                var refreshToken = request.RefreshToken;
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    return Unauthorized(new AuthorizationResponseModel
+                    {
+                        Success = false,
+                        Message = "Refresh token missing"
+                    });
+                }
 
-            Response.Cookies.Append(data.TokenName, data.TokenValue!, options);
-            Response.Cookies.Append(data.UserIdName, data.UserIdValue!, options);
-            Response.Cookies.Append(data.UserEmailAddressName, data.UserEmailAddressValue!, options);
-            Response.Cookies.Append(data.AdminName, data.AdminValue!, options);
-            return Ok();
+                var existingRefreshToken = await authorizationCacheRepository.GetRefreshTokenAsync(refreshToken);
+
+                if (existingRefreshToken is null)
+                {
+                    return Unauthorized(
+                        new AuthorizationResponseModel
+                        {
+                            Success = false,
+                            Message = "Invalid refresh token"
+                        });
+                }
+
+                if (existingRefreshToken.ExpiresUtc < DateTime.UtcNow)
+                {
+                    return Unauthorized(new AuthorizationResponseModel
+                    {
+                        Success = false,
+                        Message = "Refresh token expired"
+                    });
+                }
+
+                var user = await authorizationCacheRepository.GetUserByIdAsync(existingRefreshToken.UserId.ToString());
+
+                if (user is null)
+                {
+                    return Unauthorized(
+                        new AuthorizationResponseModel
+                        {
+                            Success = false,
+                            Message = "User not found"
+                        });
+                }
+
+                //await authorizationCacheRepository.DeleteRefreshTokenAsync(refreshToken);
+
+                var authorizationResponse = await authorizationService.AuthorizeAsync(
+                            new AuthorizationRequestModel
+                            {
+                                EmailAddress = user.EmailAddress
+                            });
+
+                if (authorizationResponse is null || !authorizationResponse.Success)
+                {
+                    return Unauthorized(new AuthorizationResponseModel
+                    {
+                        Success = false,
+                        Message = "Failed to generate JWT"
+                    });
+                }
+
+                var newRefreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+                var refreshModel =
+                    new RefreshTokenModel
+                    {
+                        UserId = user.Id,
+                        Token = newRefreshToken,
+                        CreatedUtc = DateTime.UtcNow,
+                        ExpiresUtc = DateTime.UtcNow.AddDays(90)
+                    };
+                var options = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/"
+                };
+                await authorizationCacheRepository.SaveRefreshTokenAsync(refreshModel);
+                authorizationResponse.RefreshValue = newRefreshToken;
+                authorizationResponse.Success = true;
+                return Ok(authorizationResponse);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+
+                    new AuthorizationResponseModel
+                    {
+                        Success = false,
+                        Message = e.Message
+                    });
+            }
         }
 
-        [HttpPost("delete-cookies")]
-        public IActionResult DeleteCookies()
+        [HttpPost]
+        [Route("delete")]
+        public async Task<IActionResult> DeleteRefreshTokenFromCache(RefreshRequestModel request)
         {
-            var options = new CookieOptions
+            try
             {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Path = "/"
-            };
-
-            var data = new AuthorizationResponseModel();
-
-            Response.Cookies.Delete(data.TokenName, options);
-            Response.Cookies.Delete(data.UserIdName, options);
-            Response.Cookies.Delete(data.UserEmailAddressName, options);
-            Response.Cookies.Delete(data.AdminName, options);
-
-            // fallback (important)
-            var expired = new CookieOptions
+                await authorizationCacheRepository.DeleteRefreshTokenAsync(request.RefreshToken);
+                return Ok(new CookiesDeletionResponseModel
+                {
+                    Success = true
+                });
+            }
+            catch (Exception e)
             {
-                Path = "/",
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddDays(-1)
-            };
+                return StatusCode(StatusCodes.Status500InternalServerError,
 
-            Response.Cookies.Append(data.TokenName, "", expired);
-            Response.Cookies.Append(data.UserIdName, "", expired);
-            Response.Cookies.Append(data.UserEmailAddressName, "", expired);
-            Response.Cookies.Append(data.AdminName, "", expired);
-
-            return Ok();
+                    new CookiesDeletionResponseModel
+                    {
+                        Success = false,
+                        Message = e.Message
+                    });
+            }
         }
-
-        
     }
-
-
-
 }

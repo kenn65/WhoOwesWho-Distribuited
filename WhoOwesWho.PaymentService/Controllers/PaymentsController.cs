@@ -33,6 +33,7 @@ namespace WhoOwesWho.PaymentService.Controllers
                         Message = validationResult.Errors.First().ErrorMessage
                     });
                 }
+                request.Token = HttpContext.ToTokenValue();
                 return Ok(await paymentCommandService.CreatePaymentAsync(request));
             }
             catch(Exception e)
@@ -155,6 +156,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         {
             try
             {
+                request.Token = HttpContext.ToTokenValue();
                 var validationResult = updatePaymentRequestValidator.Validate(request);
                 if (!validationResult.IsValid)
                 {

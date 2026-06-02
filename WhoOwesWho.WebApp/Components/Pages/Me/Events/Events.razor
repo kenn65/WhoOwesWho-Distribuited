@@ -1,5 +1,5 @@
 ﻿@page "/me/events"
-
+@inherits AuthorizationComponentBase
 @if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
@@ -27,10 +27,10 @@ else
         @if (isAdministrator)
         {
             <NavigationButton Text="Create new event"
-            ProcessingText="Navigating..."
-            NavigationUrl="/me/events/create" />
+                              ProcessingText="Navigating..."
+                              NavigationUrl="/me/events/create" />
             <br />
-            <br />                
+            <br />
         }
         <QuickGrid Items="@eventList!.AsQueryable()" class="m-auto">
 
@@ -66,9 +66,15 @@ else
                         {
                             <span class="p-2 text-center">
                                 <NavigationStateButton Text="Delete"
-                                ProcessingText="Navigating..."
-                                OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
-                            </span>                            
+                                                       ProcessingText="Navigating..."
+                                                       OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="p-2 text-center">
+                                <input type="button" disabled value="Delete" class="bg-gray-500 text-white font-extralight py-2 px-4 rounded focus:outline-none focus:shadow-outline" />
+                            </span>
                         }
                     }
                 </TemplateColumn>

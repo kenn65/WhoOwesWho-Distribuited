@@ -10,7 +10,7 @@ namespace WhoOwesWho.WebApp.UseCases.Protection
     {
         Task<string> ExecuteProtectAsync(string text);
         Task<string> ExecuteUnprotectAsync(string text);
-        Task<ProtectionResponseModel> ExecuteProtectCookiesAsync(CookiesRequestModel request);
+        //Task<ProtectionResponseModel> ExecuteProtectCookiesAsync(CookiesRequestModel request);
     }
 
     public class ProtectionUseCase(IProtectionPlugin protectionPlugin) : IProtectionUseCase
@@ -28,9 +28,9 @@ namespace WhoOwesWho.WebApp.UseCases.Protection
             return response.UnprotectedValue ?? string.Empty;
         }
 
-        public async Task<ProtectionResponseModel> ExecuteProtectCookiesAsync(CookiesRequestModel request)
-        {
-            return await protectionPlugin.ProtectCookiesAsync(request);
-        }
+        //public async Task<ProtectionResponseModel> ExecuteProtectCookiesAsync(CookiesRequestModel request)
+        //{
+        //    return await protectionPlugin.ProtectCookiesAsync(request);
+        //}
     }
 }

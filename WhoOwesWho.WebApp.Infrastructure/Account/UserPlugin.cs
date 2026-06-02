@@ -1,15 +1,15 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System.Net;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
 using WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Account
 {
-    public class UserPlugin(IConfiguration configuration) : ApiPluginClientBase(configuration), IUserPlugin
+    public class UserPlugin(IConfiguration configuration, ITokenService tokenService) : ApiPluginClientBase(configuration, tokenService), IUserPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
 
@@ -27,12 +27,12 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
             return await PostAsync<UserModel, VerificationRequestModel>(endpoint, request, apiKey, true);
         }
 
-        public async Task<UserModel> GetUserByIdAsync(Guid id, string jwtToken, bool includePassword = true)
+        public async Task<UserModel> GetUserByIdAsync(Guid id, bool includePassword = true)
         {
             var apiKey = await GetApiKeyAsync();
             var complete = includePassword.ToString().ToLowerInvariant();
             var endpoint = await CreateEndpoint($"{id}/{complete}");
-            return await GetAsync<UserModel>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<UserModel>(endpoint, apiKey, true, applyToken: true);
         }
 
         public async Task<ForgotPasswordResponseModel> ForgotPasswordAsync(ForgotPasswordRequestModel request)
@@ -54,17 +54,17 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
             var endpoint = await CreateEndpoint("password/reset");
             return await PostAsync<ResetPasswordResponseModel, ResetPasswordRequestModel>(endpoint, request, apiKey, true);
         }
-        public async Task<UserModel> UpdateUserAsync(Guid userId, string jwtToken, UserUpdateRequestModel? requst)
+        public async Task<UserModel> UpdateUserAsync(Guid userId, UserUpdateRequestModel? requst)
         {
             var apiKey = await GetApiKeyAsync();
             var endpoint = await CreateEndpoint($"{userId}");
-            return await PatchAsync<UserModel, UserUpdateRequestModel>(endpoint, requst!, apiKey, true, null, jwtToken);
+            return await PatchAsync<UserModel, UserUpdateRequestModel>(endpoint, requst!, apiKey, true, applyToken: true);
         }
-        public async Task<ChangePasswordResponseModel> ChangePasswordAsync(string jwtToken, ChangePasswordRequestModel request)
+        public async Task<ChangePasswordResponseModel> ChangePasswordAsync(ChangePasswordRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var endpoint = await CreateEndpoint("password/change");
-            return await PatchAsync<ChangePasswordResponseModel, ChangePasswordRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PatchAsync<ChangePasswordResponseModel, ChangePasswordRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
         private async Task<string> GetBaseAddressAsync() => appSettings.UserMicroserviceBaseAddress!;
