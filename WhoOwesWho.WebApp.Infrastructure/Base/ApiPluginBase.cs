@@ -3,6 +3,8 @@ using Flurl.Http.Configuration;
 using Microsoft.Extensions.Configuration;
 using System.Text;
 using System.Web;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Base
 {

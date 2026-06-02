@@ -35,7 +35,8 @@ namespace WhoOwesWho.EventService.Controllers
                 var response = await eventLookupService.GetEventUsersAsync(eventId, active);
                 return Ok(new EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>
                 {
-                     Data = response
+                     Data = response,
+                     Success = true
                 });
             }
             catch (Exception e)

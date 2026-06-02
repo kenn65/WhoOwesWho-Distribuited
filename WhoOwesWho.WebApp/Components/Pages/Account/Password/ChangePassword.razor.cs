@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Components;
+using WhoOwesWho.WebApp.Components.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Account;
-using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Account.Password;
 public partial class ChangePassword(
     NavigationManager nav, 
     IUserUseCase userUseCase, 
-    IAlertService alertService, 
-    ICookiesMasterService cookiesMasterService,
-    IProtectionUseCase protectionUseCase)
+    IAlertService alertService,
+    IAuthorizationUseCase authorizationUseCase
+    ) : AuthorizationComponentBase
 {
     [SupplyParameterFromForm]
     private ChangePasswordRequestModel? ChangePasswordRequestModel { get; set; }
@@ -24,10 +25,13 @@ public partial class ChangePassword(
 
     private async Task HandleSubmit()
     {
+        if (!await EnsureAuthorizedAsync())
+        {
+            return;
+        }
         IsProcessing = true;
-        var cookies = await cookiesMasterService.GetAsync();
-        ChangePasswordRequestModel!.EmailAddress = await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserEmailAddressValue);
-        var response = await userUseCase.ExecuteAsync(cookies.TokenValue, ChangePasswordRequestModel!);
+        ChangePasswordRequestModel!.EmailAddress = await CurrentUserService.GetEmailAddressAsync() ;
+        var response = await userUseCase.ExecuteAsync(ChangePasswordRequestModel);
         await StopProcessing();
         if (!response.Success)
         {
@@ -35,7 +39,7 @@ public partial class ChangePassword(
             nav.NavigateTo("/me/profile/password", true);
             return;
         }
-        await cookiesMasterService.DeleteCookiesAsync();
+        await authorizationUseCase.ExecuteDeleteCookiesAsync();
         await alertService.Success(response.Message!);
         nav.NavigateTo("/account/signin", true);
     }

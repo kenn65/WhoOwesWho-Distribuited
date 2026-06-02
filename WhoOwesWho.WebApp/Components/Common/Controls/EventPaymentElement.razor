@@ -10,7 +10,7 @@
                              Users="@EventResponseModel!.Users"
                              You="@currentUser"
                              IsPaymentDetails="@isPaymentDetails"
-                             Disabled="@Disabled"/>
+                             Disabled="@Disabled" />
         <br />
         <br />
         <CurrencySelectElement Id="currency"
@@ -19,7 +19,7 @@
                                ValueChanged="@(v=> CreatePaymentRequestModel?.Currency = v)"
                                ValueExpression="@(() => CreatePaymentRequestModel!.Currency)"
                                CurrencyList="@CurrencyList"
-                               Disabled="@Disabled"/>
+                               Disabled="@Disabled" />
         <br />
         <br />
         <DecimalInputElement id="amount"
@@ -39,20 +39,17 @@
                      Placeholder="Describe what you payed for"
                      Value="@CreatePaymentRequestModel?.Description"
                      ValueChanged="@(v => CreatePaymentRequestModel?.Description = v)"
-                     ValueExpression="@(() => CreatePaymentRequestModel!.Description)" 
-                     Disabled="@Disabled"/>
+                     ValueExpression="@(() => CreatePaymentRequestModel!.Description)"
+                     Disabled="@Disabled" />
         <br />
         <br />
-        @if (isAdministrator && !isPaymentDetails && !Disabled)
+        @if (isAdministrator && !Disabled)
         {
             <span class="p-2">
                 <SubmitButton IsProcessing="@IsProcessing"
                               Text="Submit"
                               ProcessingText="Processing..." />
             </span>
-        }
-        @if (isAdministrator && isPaymentDetails && !Disabled)
-        {
             <span class="p-2">
                 <NavigationStateButton Text="Delete"
                                        ProcessingText="Processing..."

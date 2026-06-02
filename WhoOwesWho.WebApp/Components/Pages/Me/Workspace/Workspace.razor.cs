@@ -1,41 +1,39 @@
 using Microsoft.AspNetCore.Components;
-using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
+using WhoOwesWho.WebApp.Components.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
-using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Payments;
-using WhoOwesWho.WebApp.UseCases.Protection;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Workspace;
 
 public partial class Workspace(
     NavigationManager nav,
     IEventsUseCase eventsUseCase,
-    ICookiesMasterService cookiesMasterService,
     IAlertService alertService,
     ICurrenciesUseCase currenciesUseCase,
-    IPaymentsUseCase paymentsUseCase,
-    IProtectionUseCase protectionUseCase)
+    IPaymentsUseCase paymentsUseCase
+    ) : AuthorizationComponentBase
 {
-    private IEnumerable<EventResponseModel>? eventResponseModels; 
-    private EventResponseModel? eventResponseModel; 
-    private EventUserAssignmentResponseModel? eventUserAssignmentResponseModel; 
+    private IEnumerable<EventResponseModel>? eventResponseModels;
+    private EventResponseModel? eventResponseModel;
+    private EventUserAssignmentResponseModel? eventUserAssignmentResponseModel;
     private IEnumerable<CurrencyResponseModel>? currencies;
-    private UserBalanceResponseModel? userBalanceResponseModel; 
-    private CookiesResponseModel? cookies = null;
+    private UserBalanceResponseModel? userBalanceResponseModel;
     private bool hasAssignment = false;
     private bool hasPayments = false;
     private bool isProcessing = false;
-    private Guid userId = Guid.Empty;
     private bool isLoading = true;
-    
+
     protected override async Task OnInitializedAsync()
     {
-        cookies = await cookiesMasterService.GetAsync();
-        userId = Guid.Parse(await protectionUseCase.ExecuteUnprotectAsync(cookies!.UserIdValue));
+        if (!await EnsureAuthorizedAsync())
+        {
+            return;
+        }
         eventUserAssignmentResponseModel = await GetEventAssignmentAsync();
         hasAssignment = eventUserAssignmentResponseModel!.EventId != Guid.Empty;
         if (!hasAssignment)
@@ -72,32 +70,32 @@ public partial class Workspace(
 
     private async Task<IEnumerable<EventResponseModel>> GetEventsAsync()
     {
-        return await eventsUseCase.ExecuteGetEventsAsync(true, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventsAsync(true);
     }
 
     private async Task<EventResponseModel> GetEventAsync(Guid eventId)
     {
-        return await eventsUseCase.ExecuteGetEventAsync(eventId, true, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetEventAsync(eventId, true);
     }
 
     private async Task<EventUserAssignmentResponseModel> GetEventAssignmentAsync()
     {
-        return await eventsUseCase.ExecuteGetUserAssignmentAsync(userId, true, cookies!.TokenValue);
+        return await eventsUseCase.ExecuteGetUserAssignmentAsync(CurrentUserId, true);
     }
     private async Task<IEnumerable<CurrencyResponseModel>> GetCurrenciesAsync()
     {
-        return (await currenciesUseCase.ExecuteAsync(cookies!.TokenValue))?.Data!;
+        return await currenciesUseCase.ExecuteAsync();
     }
 
     private async Task<bool> HasUserPaymentsAsync(string eventId)
     {
-        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), userId, true, cookies!.TokenValue);
+        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), CurrentUserId, true);
         return response.Success;
     }
 
     private async Task<UserBalanceResponseModel> GetUserBalanceAsync(string eventId)
     {
-        return await paymentsUseCase.ExecuteAsync(userId, Guid.Parse(eventId), cookies!.TokenValue);
+        return await paymentsUseCase.ExecuteAsync(CurrentUserId, Guid.Parse(eventId));
     }
 
     private async Task HandleAssignAsync(EventAssignmentRequestModel requestModel)
@@ -108,8 +106,8 @@ public partial class Workspace(
             await alertService.Error("Please select an event!");
             return;
         }
-        requestModel!.UserIdString = userId.ToString();
-        var response = await eventsUseCase.ExecuteAssignToEventAsync(requestModel, cookies!.TokenValue);
+        requestModel!.UserIdString = CurrentUserId.ToString();
+        var response = await eventsUseCase.ExecuteAssignToEventAsync(requestModel);
         await StopProcessing();
         if (!response.Success)
         {
@@ -119,7 +117,7 @@ public partial class Workspace(
         await alertService.Success(response.Message!);
         nav.NavigateTo("/me/workspace", true);
     }
-    
+
     private async Task HandleUnassingAsync(EventUnassignmentRequestModel requestModel)
     {
         if (requestModel.EventId == Guid.Empty)
@@ -128,8 +126,8 @@ public partial class Workspace(
             await alertService.Error("An unexpected error occurred, please try again");
             return;
         }
-        requestModel.UserIdString = userId.ToString();
-        var response = await eventsUseCase.ExecuteUnassignFromEventAsync(requestModel, cookies!.TokenValue);
+        requestModel.UserIdString = CurrentUserId.ToString();
+        var response = await eventsUseCase.ExecuteUnassignFromEventAsync(requestModel);
         await StopProcessing();
         if (!response.Success)
         {
@@ -142,10 +140,9 @@ public partial class Workspace(
 
     private async Task HandlePaymentAsync(CreatePaymentRequestModel requestModel)
     {
-        requestModel.CreditorId = userId;
+        requestModel.CreditorId = CurrentUserId;
         requestModel.OriginalAmount = requestModel.TotalAmount!.Value;
-        requestModel.Token = cookies!.TokenValue;
-        var responnse = await paymentsUseCase.ExecuteAsync(requestModel, cookies!.TokenValue);
+        var responnse = await paymentsUseCase.ExecuteAsync(requestModel);
         await StopProcessing();
         if (!responnse.Success)
         {

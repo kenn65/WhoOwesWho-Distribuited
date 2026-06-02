@@ -50,7 +50,6 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
             var sut = CreateAuthorizationService(
                 cacheRepositoryMock: cacheRepositoryMock,
-                securityServiceMock: securityServiceMock,
                 configurationMock: configuration);
 
             // Act
@@ -71,7 +70,6 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
         public async Task AuthorizeAsync_CreatesJwtToken_WithExpectedClaims(
             AuthorizationRequestModel request,
             UserMessageResponseModel user,
-            AuthorizationResponseModel response,
             [Frozen] Mock<IConfiguration> configuration)
         {
             // Arrange
@@ -87,28 +85,13 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
             var cacheRepositoryMock =
                 new Mock<IAuthorizationCacheRepository>();
-
-            var securityServiceMock =
-                new Mock<IAuthorizationSecurityService>();
-
+            
             cacheRepositoryMock
                 .Setup(x => x.GetUserAsync(request.EmailAddress!))
                 .ReturnsAsync(user);
 
-            securityServiceMock
-                .Setup(x => x.ProtectCookiesAsync(
-                    user,
-                    It.IsAny<string>(),
-                    true))
-                .Callback<UserMessageResponseModel, string, bool>((_, token, _) =>
-                {
-                    capturedToken = token;
-                })
-                .ReturnsAsync(response);
-
             var sut = CreateAuthorizationService(
                 cacheRepositoryMock: cacheRepositoryMock,
-                securityServiceMock: securityServiceMock,
                 configurationMock: configuration);
 
             // Act
@@ -160,24 +143,13 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
             var cacheRepositoryMock =
                 new Mock<IAuthorizationCacheRepository>();
-
-            var securityServiceMock =
-                new Mock<IAuthorizationSecurityService>();
-
+            
             cacheRepositoryMock
                 .Setup(x => x.GetUserAsync(request.EmailAddress!))
                     .ReturnsAsync(user);
-
-            securityServiceMock
-                .Setup(x => x.ProtectCookiesAsync(
-                    user,
-                    It.IsAny<string>(),
-                        true))
-                    .ThrowsAsync(new Exception("Protection failed"));
-
+            
             var sut = CreateAuthorizationService(
                 cacheRepositoryMock: cacheRepositoryMock,
-                securityServiceMock: securityServiceMock,
                 configurationMock: configuration);
 
             // Act
@@ -192,17 +164,16 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
 
         private static AuthorizationService.Services.AuthorizationService CreateAuthorizationService(
             Mock<IConfiguration>? configurationMock = null,
-            Mock<IAuthorizationCacheRepository>? cacheRepositoryMock = null,
-            Mock<IAuthorizationSecurityService>? securityServiceMock = null)
+            Mock<IAuthorizationCacheRepository>? cacheRepositoryMock = null)
+            
         {
             configurationMock ??= new();
             cacheRepositoryMock ??= new();
-            securityServiceMock ??= new();
+            
 
             return new AuthorizationService.Services.AuthorizationService(
                 configurationMock.Object,
-                cacheRepositoryMock.Object,
-                securityServiceMock.Object);
+                cacheRepositoryMock.Object);
         }
     }
 }

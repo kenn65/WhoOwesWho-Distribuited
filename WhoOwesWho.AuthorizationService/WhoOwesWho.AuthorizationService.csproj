@@ -34,6 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="..\WhoOwesWho.ServiceDefaults\WhoOwesWho.ServiceDefaults.csproj" />
     <ProjectReference Include="..\WhoOwesWho.Shared\WhoOwesWho.Shared.csproj" />
+    <ProjectReference Include="..\WhoOwesWho.WebApp.CoreBusiness\WhoOwesWho.WebApp.CoreBusiness.csproj" />
   </ItemGroup>
 
 </Project>

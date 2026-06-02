@@ -2,6 +2,7 @@
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Extensions;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
@@ -9,11 +10,12 @@ using WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Events
 {
-    public class EventsPlugin(IConfiguration configuration) : ApiPluginClientBase(configuration), IEventsPlugin
+    public class EventsPlugin(IConfiguration configuration, ITokenService tokenService) 
+        : ApiPluginClientBase(configuration, tokenService), IEventsPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
 
-        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(Guid userId, string jwtToken)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(Guid userId)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetUserEventsBassAddressAsync();
@@ -23,58 +25,58 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
                 {
                     { "userId", userId}
                 },
-                jwtToken);
+                true);
         }
 
-        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(bool active, string jwtToken)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{active}");
-            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>>(endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<EventResponseModel> CreateEventAsync(EventRequestModel request, string jwtToken)
+        public async Task<EventResponseModel> CreateEventAsync(EventRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
-            return await PutAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PutAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<EventResponseModel> DeleteEventAsync(Guid id, string jwtToken)
+        public async Task<EventResponseModel> DeleteEventAsync(Guid id)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{id}");
-            return await DeleteAsync<EventResponseModel>(endpoint, apiKey, true, null, jwtToken);
+            return await DeleteAsync<EventResponseModel>(endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<EventResponseModel> GetEventAsync(Guid eventId, bool active, string jwtToken)
+        public async Task<EventResponseModel> GetEventAsync(Guid eventId, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{eventId}/{active}");
-            return await GetAsync<EventResponseModel>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<EventResponseModel>(endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<EventResponseModel> UpdateEventAsync(EventRequestModel request, string jwtToken)
+        public async Task<EventResponseModel> UpdateEventAsync(EventRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("update");
-            return await PatchAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PatchAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>> GetEventUsersAsync(Guid eventId, bool active, string jwtToken)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>> GetEventUsersAsync(Guid eventId, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventUsersBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync($"{eventId}/{active}");
-            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>>(endpoint, apiKey, true, null, jwtToken);
+            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>>(endpoint, apiKey, true, applyToken: true);
         }
 
-        public async Task<EventUserAssignmentResponseModel> GetUserAssignmentAsync(Guid userId, bool active, string jwtToken)
+        public async Task<EventUserAssignmentResponseModel> GetUserAssignmentAsync(Guid userId, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventUsersBaseAddressAsync();
@@ -87,39 +89,39 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
                 {
                     { "active", active }
                 },
-                jwtToken);
+                true);
         }
 
-        public async Task<EventAssignmentResponseModel> AssignToEventAsync(EventAssignmentRequestModel request, string jwtToken)
+        public async Task<EventAssignmentResponseModel> AssignToEventAsync(EventAssignmentRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventUsersBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("assign");
-            return await PostAsync<EventAssignmentResponseModel, EventAssignmentRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PostAsync<EventAssignmentResponseModel, EventAssignmentRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<EventUnassignmentResponseModel> UnassignFromEventAsync(EventUnassignmentRequestModel request, string jwtToken)
+        public async Task<EventUnassignmentResponseModel> UnassignFromEventAsync(EventUnassignmentRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventUsersBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("unassign");
-            return await PostAsync<EventUnassignmentResponseModel, EventUnassignmentRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PostAsync<EventUnassignmentResponseModel, EventUnassignmentRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request, string jwtToken)
+        public async Task<SettleEventResponseModel> SettleEventAsync(SettleEventRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("settle");
-            return await PostAsync<SettleEventResponseModel, SettleEventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PostAsync<SettleEventResponseModel, SettleEventRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
-        public async Task<SettleEventResponseModel> UnsettleEventAsync(SettleEventRequestModel request, string jwtToken)
+        public async Task<SettleEventResponseModel> UnsettleEventAsync(SettleEventRequestModel request)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
             var endpoint = await baseAddress.ToEndpointAsync("unsettle");
-            return await PostAsync<SettleEventResponseModel, SettleEventRequestModel>(endpoint, request, apiKey, true, null, jwtToken);
+            return await PostAsync<SettleEventResponseModel, SettleEventRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
         private async Task<string> GetEventsBaseAddressAsync() => appSettings.EventMicroserviceEventsBaseAddress!;

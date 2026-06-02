@@ -154,7 +154,7 @@ namespace WhoOwesWho.UserService.Controllers
                 var validationResult =
                     await updateUserValidator.ValidateAsync(request);
 
-                if (!validationResult.IsValid && !(await userValidationService.DoesFullNameExistAsync(request.Id!, request.FullName!)))
+                if (!validationResult.IsValid && !(await userValidationService.DoesFullNameExistAsync(userId!, request.FullName!)))
                 {
                     return BadRequest(new UserModel
                     {

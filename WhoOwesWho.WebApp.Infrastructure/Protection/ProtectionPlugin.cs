@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Protection;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Base;
 using WhoOwesWho.WebApp.Infrastructure.Extensions;
 using WhoOwesWho.WebApp.Infrastructure.Settings;
@@ -8,7 +9,7 @@ using WhoOwesWho.WebApp.UseCases.Protection.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Protection
 {
-    public class ProtectionPlugin(IConfiguration configuration) : ApiPluginClientBase(configuration), IProtectionPlugin
+    public class ProtectionPlugin(IConfiguration configuration, ITokenService tokenService) : ApiPluginClientBase(configuration, tokenService), IProtectionPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
 

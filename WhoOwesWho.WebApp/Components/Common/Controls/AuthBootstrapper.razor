@@ -1,0 +1,19 @@
+﻿@inject ITokenService TokenService
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        var cookies = await TokenService.GetAsync();
+
+        // =====================================
+        // JWT missing
+        // BUT refresh token exists
+        // =====================================
+
+        if (string.IsNullOrWhiteSpace(cookies?.TokenValue) && !string.IsNullOrWhiteSpace(cookies?.RefreshValue))
+        {
+            await TokenService.RefreshAsync();
+        }
+    }
+}

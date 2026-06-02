@@ -56,7 +56,8 @@ namespace WhoOwesWho.EventService.Controllers
                 var response = allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == userId));
                 return Ok(new EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>
                 {
-                    Data = response
+                    Data = response,
+                    Success = true
                 });
             }
             catch (Exception e)
@@ -84,7 +85,8 @@ namespace WhoOwesWho.EventService.Controllers
                var response = await eventLookupService.GetEventsAsync(userId);
                 return Ok(new EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>
                 {
-                    Data = response
+                    Data = response,
+                    Success = true
                 });
             }
             catch (Exception e)

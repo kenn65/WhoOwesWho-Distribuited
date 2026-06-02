@@ -1,12 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 
 namespace WhoOwesWho.WebApp.Services
 {
-    public interface IHostNameService
-    {
-        Task<string> GetAsync();
-    }
-
     public class HostNameService(NavigationManager nav) : IHostNameService
     {
         public async Task<string> GetAsync()

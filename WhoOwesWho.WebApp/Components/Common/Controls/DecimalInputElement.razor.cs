@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using System.Globalization;
 using System.Linq.Expressions;
 using WhoOwesWho.WebApp.CoreBusiness.Extensions.WhoOwesWho.Shared.Extensions;
-using WhoOwesWho.WebApp.Services;
+using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 
 namespace WhoOwesWho.WebApp.Components.Common.Controls;
 public partial class DecimalInputElement(IAlertService alertService)

@@ -34,22 +34,22 @@ namespace WhoOwesWho.EventService.Services
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(Guid userId)
         {
             var user = await eventCacheRepository.GetUserByIdAsync(userId.ToString());
-            IEnumerable<UserMessageResponseModel> users = new List<UserMessageResponseModel>
-            {
-                {
-                    user! 
-                }
-            };
+            //IEnumerable<UserMessageResponseModel> users = new List<UserMessageResponseModel>
+            //{
+            //    {
+            //        user! 
+            //    }
+            //};
             var allEvents = await eventQueryRepository.GetEventsAsync();
             var filteredEvents = allEvents.Where(e => e.CreatedBy == user!.FullName).ToList();
 
-            foreach (var item in filteredEvents)
-            {
-                if (item.Users == null || !item.Users.Any())
-                {
-                    item.Users = users;
-                }
-            }
+            //foreach (var item in filteredEvents)
+            //{
+            //    if (item.Users == null || !item.Users.Any())
+            //    {
+            //        item.Users = users;
+            //    }
+            //}
             return filteredEvents.Any() ? filteredEvents : [];
         }
 
