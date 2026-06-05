@@ -17,46 +17,40 @@ namespace WhoOwesWho.WebApp.Infrastructure.Base
         {
             await js.InvokeVoidAsync(
                 "cookieApi.setCookies",
-                $"{baseUrl}api/auth/set-cookies",   
+                $"{baseUrl}api/auth/set-cookies",
                 data
             );
         }
 
-        protected async Task AppendCookies(CookiesResponseModel data)
+        protected async Task AppendRefreshedCookiesAsync(CookiesResponseModel data)
         {
-            try
+            var ctx = httpContextAccessor.HttpContext;
+
+            if (!string.IsNullOrWhiteSpace(data.TokenValue))
             {
-                var ctx = httpContextAccessor.HttpContext;
-
-                if (!string.IsNullOrWhiteSpace(data.TokenValue))
+                ctx.Response.Cookies.Append(data.TokenName, data.TokenValue, new CookieOptions
                 {
-                    ctx.Response.Cookies.Append(data.TokenName, data.TokenValue, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Strict,
-                        Path = "/",
-                        Expires = DateTimeOffset.UtcNow.AddMinutes(10)
-                    });
-                }
-
-                if (!string.IsNullOrWhiteSpace(data.RefreshValue))
-                {
-                    ctx.Response.Cookies.Append(data.RefreshName, data.RefreshValue, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Strict,
-                        Path = "/",
-                        Expires = DateTimeOffset.UtcNow.AddDays(90)
-                    });
-                }
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/",
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+                });
             }
-            catch
+
+            if (!string.IsNullOrWhiteSpace(data.RefreshValue))
             {
-                await AppendCookiesAsync(data);
+                ctx.Response.Cookies.Append(data.RefreshName, data.RefreshValue, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/",
+                    Expires = DateTimeOffset.UtcNow.AddDays(90)
+                });
             }
         }
+
 
         protected async Task RemoveCookiesAsync()
         {
@@ -66,7 +60,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Base
             );
         }
 
-        
+
 
         protected IFlurlClient GetClient(string endpoint, string apiKey, string? token = null)
         {

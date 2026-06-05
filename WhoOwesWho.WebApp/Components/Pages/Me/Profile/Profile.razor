@@ -1,5 +1,6 @@
 ﻿@page "/me/profile"
 @inherits AuthorizationComponentBase
+
 @if (UserProfileResponseModel == null)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,63 +9,95 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <br />
-        <h1 class="text-4xl">My profile</h1>
-        <br />
-        <br />
-        <p class="text-xl">
-            Edit full name, mobile phone number, <a href="/me" class="text-blue-600 underline">administrator</a> or change password.
-        </p>
-        <br />
-        <br />
-        <EditForm method="post" Model="@UserProfileResponseModel" OnValidSubmit="HandleSubmit" FormName="myprofile" Enhance>
+    <div class="text-center px-4 mb-3">
+
+        <div class="my-6 md:my-10">
+            <h1 class="text-2xl md:text-4xl">
+                My profile
+            </h1>
+
+            <p class="text-lg md:text-xl mt-4">
+                Edit full name, mobile phone number,
+                <a href="/me" class="text-blue-600 underline">
+                    administrator
+                </a>
+                or change password.
+            </p>
+        </div>
+
+        <EditForm method="post"
+                  Model="@UserProfileResponseModel"
+                  OnValidSubmit="HandleSubmit"
+                  FormName="myprofile"
+                  Enhance>
+
             <DataAnnotationsValidator />
-            <TextElement Id="   name"
-                         Caption="Name:"
-                         Placeholder="Your first and last name or some other unique nickname"
-                         Value="@UserProfileResponseModel!.FullName"
-                         ValueChanged="@(v => UserProfileResponseModel.FullName = v)"
-                         ValueExpression="@(() => UserProfileResponseModel.FullName)" />
-            <br />
-            <br />
-            <TextElement Id="mobile"
-                         Caption="Mobile phone number:"
-                         Placeholder="Your mobile phone number"
-                         Value="@UserProfileResponseModel.MobilePhoneNumber"
-                         ValueChanged="@(v => UserProfileResponseModel.MobilePhoneNumber = v)"
-                         ValueExpression="@(() => UserProfileResponseModel.MobilePhoneNumber)" />
-            <br />
-            <br />
-            <TextElement Id="mobile"
-                         Caption="Email address:"
-                         Value="@UserProfileResponseModel.EmailAddress"
-                         ValueChanged="@(v => UserProfileResponseModel.EmailAddress = v)"
-                         ValueExpression="@(() => UserProfileResponseModel.EmailAddress)"
-                         readonly />
-            <br />
-            <br />
-            <label for="administrator" class="form-label">Administrator:</label>
-            <br />
-            <InputCheckbox id="administrator" @bind-Value="UserProfileResponseModel.Admin" class="tshadow border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
-            <br />
-            <br />
-            <span class="p-2">
+
+            <!-- Full Name -->
+            <div class="mb-6">
+                <TextElement Id="name"
+                             Caption="Name:"
+                             Placeholder="Your first and last name or some other unique nickname"
+                             Value="@UserProfileResponseModel.FullName"
+                             ValueChanged="@(v => UserProfileResponseModel.FullName = v)"
+                             ValueExpression="@(() => UserProfileResponseModel.FullName)" />
+            </div>
+
+            <!-- Mobile -->
+            <div class="mb-6">
+                <TextElement Id="mobile"
+                             Caption="Mobile phone number:"
+                             Placeholder="Your mobile phone number"
+                             Value="@UserProfileResponseModel.MobilePhoneNumber"
+                             ValueChanged="@(v => UserProfileResponseModel.MobilePhoneNumber = v)"
+                             ValueExpression="@(() => UserProfileResponseModel.MobilePhoneNumber)" />
+            </div>
+
+            <!-- Email -->
+            <div class="mb-6">
+                <TextElement Id="email"
+                             Caption="Email address:"
+                             Value="@UserProfileResponseModel.EmailAddress"
+                             ValueChanged="@(v => UserProfileResponseModel.EmailAddress = v)"
+                             ValueExpression="@(() => UserProfileResponseModel.EmailAddress)"
+                             readonly />
+            </div>
+
+            <!-- Administrator -->
+            <div class="w-full md:w-2/4 mx-auto text-left mb-6">
+                <label for="administrator"
+                       class="flex items-center gap-3 cursor-pointer">
+
+                    <InputCheckbox id="administrator"
+                                   @bind-Value="UserProfileResponseModel.Admin"
+                                   class="h-5 w-5" />
+
+                    <span>
+                        Administrator
+                    </span>
+
+                </label>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-3 mt-6">
+
                 <SubmitButton Text="Submit"
                               ProcessingText="Processing..."
                               IsProcessing="IsProcessing" />
-            </span>
-            <span class="p-2">
+
                 <NavigationButton Text="Change password"
                                   ProcessingText="Navigating..."
                                   NavigationUrl="/me/profile/password" />
-            </span>
-            <span class="p-2">
+
                 <ActionButton Text="Cancel"
-                              ProcessingText="Cancellig..."
-                              NavigationUrl="/me" ForceLoad="true" />
-            </span>
+                              ProcessingText="Cancelling..."
+                              NavigationUrl="/me"
+                              ForceLoad="true" />
+
+            </div>
+
         </EditForm>
+
     </div>
 }

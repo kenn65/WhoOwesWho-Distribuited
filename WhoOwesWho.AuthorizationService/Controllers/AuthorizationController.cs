@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography;
-using WhoOwesWho.AuthorizationService.Repositories;
 using WhoOwesWho.AuthorizationService.Services;
 using WhoOwesWho.AuthorizationService.Validators;
 using WhoOwesWho.Shared.Models;
@@ -17,7 +15,7 @@ namespace WhoOwesWho.AuthorizationService.Controllers
         IAuthorizationSecurityService authorizationSecurityService,
         AuthenticationRequestValidatior authenticationValidator,
         AuthorizationRequestValidator authorizationValidator,
-        IAuthorizationCacheRepository authorizationCacheRepository
+        IRefreshTokenService refreshTokenService
         ) : ControllerBase
     {
         [HttpPost]
@@ -82,87 +80,12 @@ namespace WhoOwesWho.AuthorizationService.Controllers
         {
             try
             {
-                var refreshToken = request.RefreshToken;
-                if (string.IsNullOrWhiteSpace(refreshToken))
+                var response = await refreshTokenService.RefreshTokenAsync(request);
+                if (response is null || !response.Success)
                 {
-                    return Unauthorized(new AuthorizationResponseModel
-                    {
-                        Success = false,
-                        Message = "Refresh token missing"
-                    });
+                    return Unauthorized(response);
                 }
-
-                var existingRefreshToken = await authorizationCacheRepository.GetRefreshTokenAsync(refreshToken);
-
-                if (existingRefreshToken is null)
-                {
-                    return Unauthorized(
-                        new AuthorizationResponseModel
-                        {
-                            Success = false,
-                            Message = "Invalid refresh token"
-                        });
-                }
-
-                if (existingRefreshToken.ExpiresUtc < DateTime.UtcNow)
-                {
-                    return Unauthorized(new AuthorizationResponseModel
-                    {
-                        Success = false,
-                        Message = "Refresh token expired"
-                    });
-                }
-
-                var user = await authorizationCacheRepository.GetUserByIdAsync(existingRefreshToken.UserId.ToString());
-
-                if (user is null)
-                {
-                    return Unauthorized(
-                        new AuthorizationResponseModel
-                        {
-                            Success = false,
-                            Message = "User not found"
-                        });
-                }
-
-                //await authorizationCacheRepository.DeleteRefreshTokenAsync(refreshToken);
-
-                var authorizationResponse = await authorizationService.AuthorizeAsync(
-                            new AuthorizationRequestModel
-                            {
-                                EmailAddress = user.EmailAddress
-                            });
-
-                if (authorizationResponse is null || !authorizationResponse.Success)
-                {
-                    return Unauthorized(new AuthorizationResponseModel
-                    {
-                        Success = false,
-                        Message = "Failed to generate JWT"
-                    });
-                }
-
-                var newRefreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-
-                var refreshModel =
-                    new RefreshTokenModel
-                    {
-                        UserId = user.Id,
-                        Token = newRefreshToken,
-                        CreatedUtc = DateTime.UtcNow,
-                        ExpiresUtc = DateTime.UtcNow.AddDays(90)
-                    };
-                var options = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Path = "/"
-                };
-                await authorizationCacheRepository.SaveRefreshTokenAsync(refreshModel);
-                authorizationResponse.RefreshValue = newRefreshToken;
-                authorizationResponse.Success = true;
-                return Ok(authorizationResponse);
+                return Ok(response);
             }
             catch (Exception e)
             {
@@ -182,7 +105,7 @@ namespace WhoOwesWho.AuthorizationService.Controllers
         {
             try
             {
-                await authorizationCacheRepository.DeleteRefreshTokenAsync(request.RefreshToken);
+                await refreshTokenService.DeleteRefreshTokenAsync(request.RefreshToken);
                 return Ok(new CookiesDeletionResponseModel
                 {
                     Success = true

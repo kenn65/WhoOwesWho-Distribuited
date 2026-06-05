@@ -1,5 +1,6 @@
 ﻿@page "/me/payment/details"
 @inherits AuthorizationComponentBase
+
 @if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,24 +9,34 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <br />
-        <h1 class="text-2xl font-bold">Payment Details</h1>
-        <br />
-        <br />
-        <p class="text-2xl text-blue-800">
-            @eventResponseModel!.Name (@eventResponseModel.Location) starting at @eventResponseModel.StartDateIso
-        </p>
-        <br />
-        <br />
-        @if (isAdministrator)
-        {
-            <p class="text-2xl">Edit or delete payment</p>
-        }
-        <br />
-        <br />
-        @if (hasAssignment && eventResponseModel != null && currencies != null && userBalanceResponseModel != null)
+    <div class="text-center px-4 mb-3">
+
+        <div class="my-6 md:my-10">
+
+            <h1 class="text-2xl md:text-4xl">
+                Payment Details
+            </h1>
+
+            <p class="text-lg md:text-2xl text-blue-800 mt-6 break-words">
+                @eventResponseModel!.Name
+                (@eventResponseModel.Location)
+                starting at
+                @eventResponseModel.StartDateIso
+            </p>
+
+            @if (isAdministrator)
+            {
+                <p class="text-lg md:text-2xl mt-6">
+                    Edit or delete payment
+                </p>
+            }
+
+        </div>
+
+        @if (hasAssignment &&
+             eventResponseModel != null &&
+             currencies != null &&
+             userBalanceResponseModel != null)
         {
             <EventPaymentElement HasAssignment="@hasAssignment"
                                  HasPayments="@hasPayments"
@@ -36,11 +47,8 @@ else
                                  HandleUpdate="@OnUpdateAsync"
                                  HandleDelete="@OnDeleteAsync"
                                  Disabled="@(!isAdministrator || !active)"
-                                 FromSettlement="!active"/>
+                                 FromSettlement="!active" />
         }
+
     </div>
 }
-
-    
-
-

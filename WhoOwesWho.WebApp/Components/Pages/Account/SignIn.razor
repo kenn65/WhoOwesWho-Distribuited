@@ -1,69 +1,99 @@
 ﻿@page "/account/signin"
 
-<div class="text-center mb-3">
-    <h1 class="text-4xl">Sign in</h1>
-    <br />
-    <br />
+<div class="text-center px-4 mb-3">
+
+    <div class="my-6 md:my-10">
+        <h1 class="text-2xl md:text-4xl">
+            Sign in
+        </h1>
+    </div>
+
     @if (string.IsNullOrEmpty(Code))
     {
-        <EditForm method="post" Model="@AuthenticationRequestModel" OnValidSubmit="HandleAuthenticationAsync" FormName="signin" Enhance>
+        <EditForm method="post"
+                  Model="@AuthenticationRequestModel"
+                  OnValidSubmit="HandleAuthenticationAsync"
+                  FormName="signin"
+                  Enhance>
+
             <DataAnnotationsValidator />
-            <TextElement Id="emailaddress"
-                         Type="email"
-                         Caption="Email address:"
-                         Placeholder="Your e-mail address"
-                         Value="@AuthenticationRequestModel!.EmailAddress"
-                         ValueChanged="@(v => AuthenticationRequestModel.EmailAddress = v)"
-                         ValueExpression="@(() => AuthenticationRequestModel.EmailAddress)" />
-            <br />
-            <br />
-            <TextElement Id="password"
-                         Type="password"
-                         Caption="Password:"
-                         Placeholder="Your password containing at least eight characters including one upper case character and two digits"
-                         Value="@AuthenticationRequestModel!.Password"
-                         ValueChanged="@(v => AuthenticationRequestModel.Password = v)"
-                         ValueExpression="@(() => AuthenticationRequestModel.Password)" />
-            <br />
-            <br />
-            <SubmitButton Text="Sign in"
-                          ProcessingText="Processing..."
-                          IsProcessing="IsProcessing" />
+
+            <div class="mb-6">
+                <TextElement Id="emailaddress"
+                             Type="email"
+                             Caption="Email address:"
+                             Placeholder="Your e-mail address"
+                             Value="@AuthenticationRequestModel!.EmailAddress"
+                             ValueChanged="@(v => AuthenticationRequestModel.EmailAddress = v)"
+                             ValueExpression="@(() => AuthenticationRequestModel.EmailAddress)" />
+            </div>
+
+            <div class="mb-6">
+                <TextElement Id="password"
+                             Type="password"
+                             Caption="Password:"
+                             Placeholder="Your password containing at least eight characters including one upper case character and two digits"
+                             Value="@AuthenticationRequestModel!.Password"
+                             ValueChanged="@(v => AuthenticationRequestModel.Password = v)"
+                             ValueExpression="@(() => AuthenticationRequestModel.Password)" />
+            </div>
+
+            <div class="flex justify-center mt-10">
+                <SubmitButton Text="Sign in"
+                              ProcessingText="Processing..."
+                              IsProcessing="IsProcessing" />
+            </div>
+
         </EditForm>
-        <br />
-        <br />
-        <div>
-            <a href="/account/password/forgot" class="text-blue-500 hover:underline">Forgot your password?</a>
+
+        <div class="mt-8">
+            <a href="/account/password/forgot"
+               class="text-blue-500 hover:underline">
+                Forgot your password?
+            </a>
         </div>
-        <br />
-        <br />
-        <div>
-            <a href="#" class="text-blue-500 hover:underline" @onclick="GotoSignUp">Sign up</a>
+
+        <div class="mt-4">
+            <a href="#"
+               class="text-blue-500 hover:underline"
+               @onclick="GotoSignUp">
+                Sign up
+            </a>
         </div>
     }
     else
     {
-        <EditForm method="post" Model="@AuthenticationCodeRequestModel" OnValidSubmit="HandleAuthorizationAsync" FormName="code" Enhance>
+        <EditForm method="post"
+                  Model="@AuthenticationCodeRequestModel"
+                  OnValidSubmit="HandleAuthorizationAsync"
+                  FormName="code"
+                  Enhance>
+
             <DataAnnotationsValidator />
-            <TextElement Id="authenticationcode"
-                         Caption="Authentication Code:"
-                         Placeholder="Enter the authentication code from your e-mail"
-                         Value="@AuthenticationCodeRequestModel!.Code"
-                         ValueChanged="@(v => AuthenticationCodeRequestModel.Code = v)"
-                         ValueExpression="@(() => AuthenticationCodeRequestModel.Code)" />
-            <br />
-            <br />
-            <span class="p-2">
+
+            <div class="mb-6">
+                <TextElement Id="authenticationcode"
+                             Caption="Authentication Code:"
+                             Placeholder="Enter the authentication code from your e-mail"
+                             Value="@AuthenticationCodeRequestModel!.Code"
+                             ValueChanged="@(v => AuthenticationCodeRequestModel.Code = v)"
+                             ValueExpression="@(() => AuthenticationCodeRequestModel.Code)" />
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-3 mt-10">
+
                 <SubmitButton Text="OK"
                               ProcessingText="Processing..."
                               IsProcessing="IsProcessing" />
-            </span>
-            <span class="p-2">
+
                 <ActionButton Text="Cancel"
                               ProcessingText="Cancelling..."
                               NavigationUrl="/account/signin"
                               ForceLoad="true" />
-            </span>
+
+            </div>
+
         </EditForm>
     }
+
 </div>

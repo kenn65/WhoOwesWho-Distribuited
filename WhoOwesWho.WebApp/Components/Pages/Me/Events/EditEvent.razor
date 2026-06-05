@@ -1,5 +1,6 @@
 ﻿@page "/me/events/edit"
 @inherits AuthorizationComponentBase
+
 @if (EventResponseModel == null)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,68 +9,93 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <br />
-        <h1 class="text-4xl">Event details</h1>
-        <br />
-        <br />
-        <p class="text-xl">Update event</p>
-        <br />
-        <br />
-        <EditForm method="post" Model="@EventResponseModel" OnValidSubmit="HandleSubmit" FormName="newevent" Enhance>
-            <DataAnnotationsValidator />
-            <TextElement Id="name"
-                         Caption="Name:"
-                         Placeholder="Enter the event name"
-                         Value="@EventResponseModel!.Name"
-                         ValueChanged="@(v => EventResponseModel.Name = v)"
-                         ValueExpression="@(() => EventResponseModel.Name)" />
-            <br />
-            <br />
-            <TextElement Id="location"
-                         Caption="Location:"
-                         Placeholder="Enter the event location"
-                         Value="@EventResponseModel!.Location"
-                         ValueChanged="@(v => EventResponseModel.Location = v)"
-                         ValueExpression="@(() => EventResponseModel.Location)" />
+    <div class="text-center px-4 mb-3">
 
-            <br />
-            <br />
-            <CurrencySelectElement Id="currency"
-                                   Caption="Currency:"
-                                   Value="@EventResponseModel.Currency"
-                                   ValueChanged="@(v=> EventResponseModel.Currency = v)"
-                                   ValueExpression="@(() => EventResponseModel.Currency)"
-                                   CurrencyList="@currencyList" />
-            <br />
-            <br />
-            <div class="w-2/4 mx-auto text-left -mb-8">
-                <label for="startDate" class="form-label">Start date:</label>
-                <br />
-                <InputDate id="startDate" @bind-Value="EventResponseModel!.StartDateDate" @attributes="DateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+        <div class="my-6 md:my-10">
+            <h1 class="text-2xl md:text-4xl">
+                Event details
+            </h1>
+
+            <p class="text-lg md:text-xl mt-4">
+                Update event
+            </p>
+        </div>
+
+        <EditForm method="post"
+                  Model="@EventResponseModel"
+                  OnValidSubmit="HandleSubmit"
+                  FormName="newevent"
+                  Enhance>
+
+            <DataAnnotationsValidator />
+
+            <!-- Name -->
+            <div class="mb-6">
+                <TextElement Id="name"
+                             Caption="Name:"
+                             Placeholder="Enter the event name"
+                             Value="@EventResponseModel.Name"
+                             ValueChanged="@(v => EventResponseModel.Name = v)"
+                             ValueExpression="@(() => EventResponseModel.Name)" />
             </div>
-            <br />
-            <br />
-            <TextElement Value="@EventResponseModel!.CreatedBy"
-                         ValueChanged="@(v => EventResponseModel.CreatedBy = v)"
-                         ValueExpression="@(() => EventResponseModel.CreatedBy)"
-                         Id="createdby"
-                         Caption="Created by:"
-                         readonly />
-            <br />
-            <br />
-            <span class="p-2">
+
+            <!-- Location -->
+            <div class="mb-6">
+                <TextElement Id="location"
+                             Caption="Location:"
+                             Placeholder="Enter the event location"
+                             Value="@EventResponseModel.Location"
+                             ValueChanged="@(v => EventResponseModel.Location = v)"
+                             ValueExpression="@(() => EventResponseModel.Location)" />
+            </div>
+
+            <!-- Currency -->
+            <div class="mb-6">
+                <CurrencySelectElement Id="currency"
+                                       Caption="Currency:"
+                                       Value="@EventResponseModel.Currency"
+                                       ValueChanged="@(v => EventResponseModel.Currency = v)"
+                                       ValueExpression="@(() => EventResponseModel.Currency)"
+                                       CurrencyList="@currencyList" />
+            </div>
+
+            <!-- Start Date -->
+            <div class="w-full md:w-2/4 mx-auto text-left mb-6 px-1 md:px-0">
+                <label for="startDate" class="form-label">
+                    Start date:
+                </label>
+
+                <InputDate id="startDate"
+                           @bind-Value="EventResponseModel.StartDateDate"
+                           @attributes="DateAttributes"
+                           placeholder="Select start date"
+                           class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" />
+            </div>
+
+            <!-- Created By -->
+            <div class="mb-8">
+                <TextElement Id="createdby"
+                             Caption="Created by:"
+                             Value="@EventResponseModel.CreatedBy"
+                             ValueChanged="@(v => EventResponseModel.CreatedBy = v)"
+                             ValueExpression="@(() => EventResponseModel.CreatedBy)"
+                             readonly />
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
+
                 <SubmitButton Text="Submit"
                               ProcessingText="Processing..."
                               IsProcessing="isProcessing" />
-            </span>
-            <span class="p-2">
+
                 <ActionButton Text="Cancel"
                               ProcessingText="Cancelling..."
                               NavigationUrl="/me/events" />
-            </span>
+
+            </div>
 
         </EditForm>
+
     </div>
 }
