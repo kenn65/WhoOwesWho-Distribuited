@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
@@ -13,9 +14,9 @@ namespace WhoOwesWho.WebApp.Infrastructure.Account
     {
         private readonly AppSettings appSettings;
         private readonly ITokenService tokenService;
-
-        public AuthorizationPlugin(IConfiguration configuration, ITokenService tokenService)
-            : base(configuration, tokenService)
+       
+        public AuthorizationPlugin(IConfiguration configuration, ITokenService tokenService, NavigationManager nav)
+            : base(configuration, tokenService, nav)
         {
             this.tokenService = tokenService;
             this.appSettings = new AppSettings(configuration);

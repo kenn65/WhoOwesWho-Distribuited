@@ -1,5 +1,6 @@
 ﻿using Flurl.Http;
 using Mapster;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
@@ -8,7 +9,7 @@ using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Base
 {
-    public abstract class ApiPluginClientBase(IConfiguration configuration, ITokenService tokenService) : ApiPluginBase(configuration)
+    public abstract class ApiPluginClientBase(IConfiguration configuration, ITokenService tokenService, NavigationManager nav) : ApiPluginBase(configuration)
     {
         protected async Task<T> GetAsync<T>(string baseEndpoint, string apiKey, bool encode, IDictionary<string, dynamic>? parameters = null, bool applyToken = false) where T : ResponseModelBase, new()
         {
@@ -125,7 +126,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Base
             }
         }
 
-        private static async Task<T> HandleFlurlException<T>(FlurlHttpException e) where T : ResponseModelBase, new()
+        private async Task<T> HandleFlurlException<T>(FlurlHttpException e) where T : ResponseModelBase, new()
         {
             try
             {
@@ -134,6 +135,10 @@ namespace WhoOwesWho.WebApp.Infrastructure.Base
                     var response = await e.GetResponseJsonAsync<T>();
                     if (response is not null)
                         return response;
+                }
+                if (e.StatusCode == 500)
+                {
+                    nav.NavigateTo("/error/500", true);
                 }
             }
             catch { }

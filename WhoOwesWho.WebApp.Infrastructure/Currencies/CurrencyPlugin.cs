@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Base;
@@ -8,7 +9,7 @@ using WhoOwesWho.WebApp.UseCases.Currencies.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Currencies
 {
-    public class CurrencyPlugin(IConfiguration configuration, ITokenService tokenService) : ApiPluginClientBase(configuration, tokenService), ICurrencyPlugin
+    public class CurrencyPlugin(IConfiguration configuration, ITokenService tokenService, NavigationManager nav) : ApiPluginClientBase(configuration, tokenService, nav), ICurrencyPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
                 
