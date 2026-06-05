@@ -415,14 +415,14 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
             Mock<IAuthorizationSecurityService>? securityServiceMock = null,
             Mock<IAuthValidationService>? validationServiceMock = null,
             Mock<IConfiguration>? configurationMock = null,
-            Mock<IAuthorizationCacheRepository>? cacheRepositoryMock = null) 
+            Mock<IRefreshTokenService>? refreshTokenServiceMock = null) 
          {
             authorizationServiceMock ??= new();
             authenticationNotificationMock ??= new();
             securityServiceMock ??= new();
             validationServiceMock ??= new();
             configurationMock ??= new();
-            cacheRepositoryMock ??= new();
+            refreshTokenServiceMock ??= new();
 
             //validationServiceMock
             //    .Setup(x => x.DoesEmailExist(It.IsAny<string>()))
@@ -452,7 +452,7 @@ namespace WhoOwesWho.AuthorizationService.Tests.Controllers
                 securityServiceMock.Object,
                 authentivationValidator,
                 authorizationValidator,
-                cacheRepositoryMock.Object);
+                refreshTokenServiceMock.Object);
         }
     }
 }
