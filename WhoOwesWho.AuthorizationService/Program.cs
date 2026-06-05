@@ -39,18 +39,16 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton<UserReceiver>();
 builder.Services.AddHostedService<UserReceiverStartupService>();
 builder.Services.AddSingleton<IMessagingPublisher, MessagingPublisher>();
-
 builder.Services.AddScoped<IUserResolverService, UserResolverService>();
 builder.Services.AddScoped<IAuthorizationCacheRepository, AuthorizationCacheRepository>();
-
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IAuthorizationSecurityService, AuthorizationSecurityService>();
 builder.Services.AddScoped<IAuthenticationNotificationService, AuthenticationNotificationService>();
 builder.Services.AddScoped<IAuthValidationService, AuthValidationService>();
 builder.Services.AddScoped<IEncryptionGatewayService, EncryptionGatewayService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddValidatorsFromAssemblyContaining<AuthenticationRequestValidatior>();
 builder.Services.AddValidatorsFromAssemblyContaining<AuthorizationRequestValidator>();
-
 builder.Services.AddControllers();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

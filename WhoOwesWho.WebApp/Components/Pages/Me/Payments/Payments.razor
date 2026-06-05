@@ -1,5 +1,6 @@
 ﻿@page "/me/payments"
 @inherits AuthorizationComponentBase
+
 @if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,32 +9,44 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <h1 class="text-4xl">Payments owerview</h1>
-        <br />
-        <br />
+    <div class="text-center px-4 mb-3">
+
+        <div class="my-6 md:my-10">
+            <h1 class="text-2xl md:text-4xl">
+                Payments overview
+            </h1>
+        </div>
+
         @if (payments?.Payments == null)
         {
-            <p class="text-base">No active payments available for this event!</p>
+            <p class="text-base">
+                No active payments available for this event!
+            </p>
         }
         else
         {
             <PaymentsDataOverwiev PaymentsData="@payments"
                                   Active="@true" />
-            <br />
-            <br />
+
             @if (isAdministrator)
             {
-                <EditForm method="post" Model="settleEventRequestModel" OnSubmit="SettleEventAsync" FormName="settlement" Enhance>
-                    <SubmitButton IsProcessing="@isProcessing"
-                                  Text="Close event"
-                                  ProcessingText="Processing" />
+                <EditForm method="post"
+                          Model="settleEventRequestModel"
+                          OnSubmit="SettleEventAsync"
+                          FormName="settlement"
+                          Enhance>
+
+                    <div class="flex justify-center mt-10">
+
+                        <SubmitButton IsProcessing="@isProcessing"
+                                      Text="Close event"
+                                      ProcessingText="Processing..." />
+
+                    </div>
+
                 </EditForm>
             }
         }
+
     </div>
 }
-
-
-

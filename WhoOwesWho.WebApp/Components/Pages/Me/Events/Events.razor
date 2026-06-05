@@ -1,5 +1,6 @@
 ﻿@page "/me/events"
 @inherits AuthorizationComponentBase
+
 @if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,80 +9,175 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <br />
-        <h1 class="text-4xl">Events</h1>
-        <br />
-        <br />
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <div class="text-center mb-8">
+            <h1 class="text-2xl md:text-3xl lg:text-4xl font-semibold mb-4">
+                Events
+            </h1>
+
+            <p class="text-base md:text-lg lg:text-xl">
+                @(isAdministrator ? "My events" : "Active events list")
+            </p>
+        </div>
+
         @if (isAdministrator)
         {
-            <p class="text-xl">My events </p>
+            <div class="flex justify-center mb-6">
+                <NavigationButton Text="Create new event"
+                                  ProcessingText="Navigating..."
+                                  NavigationUrl="/me/events/create" />
+            </div>
         }
-        else
-        {
-            <p class="text-xl">Active events list</p>
-        }
-        <br />
-        <br />
-        @if (isAdministrator)
-        {
-            <NavigationButton Text="Create new event"
-                              ProcessingText="Navigating..."
-                              NavigationUrl="/me/events/create" />
-            <br />
-            <br />
-        }
-        <QuickGrid Items="@eventList!.AsQueryable()" class="m-auto">
 
-            <PropertyColumn Property="@(e => e.Name)" Title="Name" Class="p-6 text-center" />
-            <br />
-            <PropertyColumn Property="@(e => e.Location)" Title="Location" Class="p-6 text-center" />
-            <br />
-            <PropertyColumn Property="@(e => e.Currency)" Title="Currency" Class="p-6 text-center" />
-            <br />
-            <PropertyColumn Property="@(e => e.StartDateIso)" Title="Start Date" Class="p-6 text-center" />
-            <br />
-            <PropertyColumn Property="@(e => e.CreatedBy)" Title="Created By" Class="p-6 text-center" />
+        <!-- MOBILE -->
+        <div class="md:hidden">
+            <div class="space-y-4">
 
-            <!-- Active column -->
-            <TemplateColumn Title="Active" Class="p-6 text-center">
-                <span class="@(context.Settled ? "text-red-600" : "text-green-600")">
-                    @context.ActiveIcon
-                </span>
-            </TemplateColumn>
+                @foreach (var eventItem in eventList!)
+                {
+                    <div class="bg-white rounded-lg shadow border p-4">
 
-            <!-- Actions -->
-            @if (isAdministrator)
-            {
-                <TemplateColumn Title="Actions" Class="p-2 text-center">
-                    @if (!context.Settled)
-                    {
-                        <span class="p-2">
-                            <NavigationStateButton Text="Edit"
-                                                   ProcessingText="Navigating..."
-                                                   OnClick="() => EditEventAsync(context.Adapt<EventModel>())" />
-                        </span>
-                        @if (!context.Users!.Any())
+                        <div class="mb-3">
+                            <h2 class="font-semibold text-lg">
+                                @eventItem.Name
+                            </h2>
+                        </div>
+
+                        <div class="space-y-2 text-sm">
+
+                            <div class="flex justify-between">
+                                <span class="font-medium">Location</span>
+                                <span>@eventItem.Location</span>
+                            </div>
+
+                            <div class="flex justify-between">
+                                <span class="font-medium">Currency</span>
+                                <span>@eventItem.Currency</span>
+                            </div>
+
+                            <div class="flex justify-between">
+                                <span class="font-medium">Start Date</span>
+                                <span>@eventItem.StartDateIso</span>
+                            </div>
+
+                            <div class="flex justify-between">
+                                <span class="font-medium">Created By</span>
+                                <span>@eventItem.CreatedBy</span>
+                            </div>
+
+                            <div class="flex justify-between">
+                                <span class="font-medium">Active</span>
+
+                                <span class="@(eventItem.Settled ? "text-red-600" : "text-green-600")">
+                                    @eventItem.ActiveIcon
+                                </span>
+                            </div>
+
+                        </div>
+
+                        @if (isAdministrator && !eventItem.Settled)
                         {
-                            <span class="p-2 text-center">
-                                <NavigationStateButton Text="Delete"
+                            <div class="mt-4 flex flex-col gap-2">
+
+                                <NavigationStateButton Text="Edit"
                                                        ProcessingText="Navigating..."
-                                                       OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="p-2 text-center">
-                                <input type="button" disabled value="Delete" class="bg-gray-500 text-white font-extralight py-2 px-4 rounded focus:outline-none focus:shadow-outline" />
-                            </span>
-                        }
-                    }
-                </TemplateColumn>
-            }
+                                                       OnClick="() => EditEventAsync(eventItem.Adapt<EventModel>())" />
 
-        </QuickGrid>
-        <br />
-        <br />
+                                @if (!eventItem.Users!.Any())
+                                {
+                                    <NavigationStateButton Text="Delete"
+                                                           ProcessingText="Processing..."
+                                                           OnClick="() => DeleteEventAsync(eventItem.Adapt<EventModel>())" />
+                                }
+                                else
+                                {
+                                    <input type="button"
+                                           disabled
+                                           value="Delete"
+                                           class="bg-gray-500 text-white py-2 px-4 rounded cursor-not-allowed" />
+                                }
+
+                            </div>
+                        }
+
+                    </div>
+                }
+
+            </div>
+        </div>
+
+        <!-- TABLET + DESKTOP -->
+        <div class="hidden md:block overflow-x-auto">
+
+            <QuickGrid Items="@eventList!.AsQueryable()"
+                       class="w-full">
+
+                <PropertyColumn Property="@(e => e.Name)"
+                                Title="Name"
+                                Class="p-2 md:p-4 text-center" />
+
+                <PropertyColumn Property="@(e => e.Location)"
+                                Title="Location"
+                                Class="p-2 md:p-4 text-center" />
+
+                <PropertyColumn Property="@(e => e.Currency)"
+                                Title="Currency"
+                                Class="p-2 md:p-4 text-center" />
+
+                <PropertyColumn Property="@(e => e.StartDateIso)"
+                                Title="Start Date"
+                                Class="p-2 md:p-4 text-center" />
+
+                <PropertyColumn Property="@(e => e.CreatedBy)"
+                                Title="Created By"
+                                Class="p-2 md:p-4 text-center" />
+
+                <TemplateColumn Title="Active"
+                                Class="p-2 md:p-4 text-center">
+                    <span class="@(context.Settled
+                                                  ? "text-red-600"
+                                                  : "text-green-600")">
+                        @context.ActiveIcon
+                    </span>
+                </TemplateColumn>
+
+                @if (isAdministrator)
+                {
+                    <TemplateColumn Title="Actions"
+                                    Class="p-2 md:p-4 text-center">
+
+                        @if (!context.Settled)
+                        {
+                            <div class="flex justify-center gap-2">
+
+                                <NavigationStateButton Text="Edit"
+                                                       ProcessingText="Navigating..."
+                                                       OnClick="() => EditEventAsync(context.Adapt<EventModel>())" />
+
+                                @if (!context.Users!.Any())
+                                {
+                                    <NavigationStateButton Text="Delete"
+                                                           ProcessingText="Processing..."
+                                                           OnClick="() => DeleteEventAsync(context.Adapt<EventModel>())" />
+                                }
+                                else
+                                {
+                                    <input type="button"
+                                           disabled
+                                           value="Delete"
+                                           class="bg-gray-500 text-white py-2 px-4 rounded cursor-not-allowed" />
+                                }
+
+                            </div>
+                        }
+
+                    </TemplateColumn>
+                }
+
+            </QuickGrid>
+
+        </div>
+
     </div>
 }

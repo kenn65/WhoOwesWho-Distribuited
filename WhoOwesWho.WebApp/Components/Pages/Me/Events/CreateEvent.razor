@@ -1,5 +1,6 @@
 ﻿@page "/me/events/create"
 @inherits AuthorizationComponentBase
+
 @if (CurrencyList == null || EventRequestModel?.CreatedBy == null)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,72 +9,110 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <br />
-        <h1 class="text-4xl">Event</h1>
-        <br />
-        <br />
-        <p class="text-xl">Create new event</p>
-        <br />
-        <br />
-        <EditForm method="post" Model="@EventRequestModel" OnValidSubmit="HandleSubmit" FormName="newevent" Enhance>
+    <div class="text-center px-4 mb-3">
+
+        <div class="my-6 md:my-10">
+            <h1 class="text-2xl md:text-4xl">
+                Event
+            </h1>
+
+            <p class="text-lg md:text-xl mt-4">
+                Create new event
+            </p>
+        </div>
+
+        <EditForm method="post"
+                  Model="@EventRequestModel"
+                  OnValidSubmit="HandleSubmit"
+                  FormName="newevent"
+                  Enhance>
+
             <DataAnnotationsValidator />
-            <TextElement Value="@EventRequestModel!.Name"
-                         ValueChanged="@(v => EventRequestModel.Name = v)"
-                         ValueExpression="@(() => EventRequestModel.Name)"
-                         Id="name"
-                         Caption="Name:"
-                         Placeholder="Enter the event name" />
-            <br />
-            <br />
-            <TextElement Id="location"
-                         Caption="Location:"
-                         Placeholder="Enter the event location"
-                         Value="@EventRequestModel!.Location"
-                         ValueChanged="@(v => EventRequestModel.Location = v)"
-                         ValueExpression="@(() => EventRequestModel.Location)" />
-            <br />
-            <br />
-            <CurrencySelectElement Id="currency"
-                                   Caption="Currency:"
-                                   Value="@EventRequestModel.Currency"
-                                   ValueChanged="@(v=> EventRequestModel.Currency = v)"
-                                   ValueExpression="@(() => EventRequestModel.Currency)"
-                                   CurrencyList="@CurrencyList" />
-            <br />
-            <br />
-            <div class="w-2/4 mx-auto text-left -mb-8">
-                <label for="startDate" class="form-label">Start date:</label>
-                <br />
-                <InputDate id="startDate" @bind-Value="EventRequestModel!.StartDateDate" @attributes="DateAttributes" placeholder="Select start date" class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+
+            <!-- Name -->
+            <div class="mb-6">
+                <TextElement Value="@EventRequestModel.Name"
+                             ValueChanged="@(v => EventRequestModel.Name = v)"
+                             ValueExpression="@(() => EventRequestModel.Name)"
+                             Id="name"
+                             Caption="Name:"
+                             Placeholder="Enter the event name" />
             </div>
-            <br />
-            <br />
-            <TextElement Value="@EventRequestModel!.CreatedBy"
-                         ValueChanged="@(v => EventRequestModel.CreatedBy = v)"
-                         ValueExpression="@(() => EventRequestModel.CreatedBy)"
-                         Id="createdby"
-                         Caption="Created by:"
-                         readonly />
-            <br />
-            <br />
-            <label for="autoAssign" class="form-label">Assign yourself to this event:</label>
-            <br />
-            <InputCheckbox id="autoAssign" @bind-Value="EventRequestModel.AutoAssign" class="tshadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
-            <br />
-            <br />
-            <span class="p-2">
+
+            <!-- Location -->
+            <div class="mb-6">
+                <TextElement Id="location"
+                             Caption="Location:"
+                             Placeholder="Enter the event location"
+                             Value="@EventRequestModel.Location"
+                             ValueChanged="@(v => EventRequestModel.Location = v)"
+                             ValueExpression="@(() => EventRequestModel.Location)" />
+            </div>
+
+            <!-- Currency -->
+            <div class="mb-6">
+                <CurrencySelectElement Id="currency"
+                                       Caption="Currency:"
+                                       Value="@EventRequestModel.Currency"
+                                       ValueChanged="@(v => EventRequestModel.Currency = v)"
+                                       ValueExpression="@(() => EventRequestModel.Currency)"
+                                       CurrencyList="@CurrencyList" />
+            </div>
+
+            <!-- Start Date -->
+            <div class="w-full md:w-2/4 mx-auto text-left mb-6">
+                <label for="startDate" class="form-label block mb-1">
+                    Start date:
+                </label>
+
+                <InputDate id="startDate"
+                           @bind-Value="EventRequestModel.StartDateDate"
+                           @attributes="DateAttributes"
+                           placeholder="Select start date"
+                           class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" />
+            </div>
+
+            <!-- Created By -->
+            <div class="mb-6">
+                <TextElement Value="@EventRequestModel.CreatedBy"
+                             ValueChanged="@(v => EventRequestModel.CreatedBy = v)"
+                             ValueExpression="@(() => EventRequestModel.CreatedBy)"
+                             Id="createdby"
+                             Caption="Created by:"
+                             readonly />
+            </div>
+
+            <!-- Auto Assign -->
+            <div class="w-full md:w-2/4 mx-auto text-left mb-6">
+                <label for="autoAssign"
+                       class="flex items-center gap-3 cursor-pointer">
+
+                    <InputCheckbox id="autoAssign"
+                                   @bind-Value="EventRequestModel.AutoAssign"
+                                   class="h-5 w-5" />
+
+                    <span>
+                        Assign yourself to this event
+                    </span>
+
+                </label>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-3 mt-6">
+
                 <SubmitButton Text="Submit"
                               ProcessingText="Processing..."
                               IsProcessing="isProcessing" />
-            </span>
-            <span class="p-2">
+
                 <ActionButton Text="Cancel"
                               ProcessingText="Cancelling..."
                               NavigationUrl="/me/events"
                               ForceLoad="true" />
-            </span>
+
+            </div>
+
         </EditForm>
+
     </div>
 }

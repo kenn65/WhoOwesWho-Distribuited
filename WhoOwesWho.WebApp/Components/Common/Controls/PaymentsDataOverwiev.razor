@@ -2,82 +2,235 @@
 @inject NavigationManager NavigationManager
 
 <div>
-    <p class="text-2xl text-blue-800">
-        @PaymentsData.Event?.Name @PaymentsData.Event?.Location started at @PaymentsData.Event?.StartDateIso
-    </p>
-    <br />
-    <br />
-    <hr />
-    <br />
-    <p class="text-xl">Settlement</p>
-    <br />
-    @foreach (var item in PaymentsData.WhoOwesWho!)
-    {
-        <p>
-            <span class="p-2">
-                <span class="pr-2">Who:</span>
-                <input type="text"
-                       value=@item.DebitorName
-                       readOnly
-                       class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-1/6" />
-            </span>
-            <span class="p-2">
-                <span class="pr-2">Owes:</span>
-                <input type="text"
-                       readOnly
-                       value="@($"{item.FormattedAmount} {PaymentsData.Event!.CurrencySymbol}")"
-                       class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-1/6 text-right" />
-            </span>
-            <span class="p-2">
-                <span class="pr-2">Who:</span>
-                <input type="text"
-                       readOnly
-                       value=@item.CreditorName
-                       class="shadow appearance-none border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-1/6" />
-            </span>
 
-        </p>
-    }
-    <br />
-    <br />
-    <hr />
-    <br />
-    <p class="text-xl">Balances</p>
-    <br />
-    <QuickGrid Items="@PaymentsData.Balances!.AsQueryable()" class="m-auto">
-        <PropertyColumn Property="@(e => e.User!.FullName)" Title="User" Class="p-3" />
-        <PropertyColumn Property="@(e => e.User!.MobilePhoneNumber)" Title="Mobile" Class="p-3" />
-        <TemplateColumn Title=@($"Balance ({PaymentsData.Event!.CurrencySymbol})") Class="p-3">
-            <div class="text-right mr-[26px]">
-                @context.FormattedBalance
+    <p class="text-lg md:text-2xl text-blue-800 break-words">
+        @PaymentsData.Event?.Name
+        @PaymentsData.Event?.Location
+        started at
+        @PaymentsData.Event?.StartDateIso
+    </p>
+
+    <hr class="my-8" />
+
+    <!-- Settlement -->
+    <p class="text-xl mb-6">Settlement</p>
+
+    <!-- Mobile -->
+    <div class="md:hidden space-y-3">
+
+        @foreach (var item in PaymentsData.WhoOwesWho!)
+        {
+            <div class="bg-white rounded-lg shadow border p-4">
+
+                <div>
+                    <strong>Who:</strong>
+                    @item.DebitorName
+                </div>
+
+                <div class="mt-2">
+                    <strong>Owes:</strong>
+                    @item.FormattedAmount
+                    @PaymentsData.Event!.CurrencySymbol
+                </div>
+
+                <div class="mt-2">
+                    <strong>To:</strong>
+                    @item.CreditorName
+                </div>
+
             </div>
-        </TemplateColumn>
-    </QuickGrid>
-    <br />
-    <br />
-    <hr />
-    <br />
-    <p class="text-xl">Payments</p>
-    <br />
-    <QuickGrid Items="@PaymentsData!.Payments!.AsQueryable()" class="m-auto">
-        <PropertyColumn Property="@(e => e.CreditEventUser!.FullName)" Title="Creditor" Class="p-3" />
-        <PropertyColumn Property="@(e => e.DebitEventUser!.FullName)" Title="Debtor" Class="p-3" />
-        <TemplateColumn Title=@($"Amount ({PaymentsData.Event!.CurrencySymbol})") Class="p-3">
-            <div class="text-right mr-[26px]">
-                <a href="javascript:void(0)"
-                   @onclick="() => GotoDetailsAsync(context)"
-                   class="text-blue-500 hover:underline">
-                    @context.FormattedAmount
-                </a>
+        }
+
+    </div>
+
+    <!-- Desktop -->
+    <div class="hidden md:block">
+
+        @foreach (var item in PaymentsData.WhoOwesWho!)
+        {
+            <p>
+                <span class="p-2">
+                    <span class="pr-2">Who:</span>
+                    <input type="text"
+                           value="@item.DebitorName"
+                           readonly
+                           class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-1/6" />
+                </span>
+
+                <span class="p-2">
+                    <span class="pr-2">Owes:</span>
+                    <input type="text"
+                           readonly
+                           value="@($"{item.FormattedAmount} {PaymentsData.Event!.CurrencySymbol}")"
+                           class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-1/6 text-right" />
+                </span>
+
+                <span class="p-2">
+                    <span class="pr-2">Who:</span>
+                    <input type="text"
+                           readonly
+                           value="@item.CreditorName"
+                           class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-1/6" />
+                </span>
+
+            </p>
+        }
+
+    </div>
+
+    <hr class="my-8" />
+
+    <!-- Balances -->
+    <p class="text-xl mb-6">Balances</p>
+
+    <!-- Mobile -->
+    <div class="md:hidden space-y-3">
+
+        @foreach (var balance in PaymentsData.Balances!)
+        {
+            <div class="bg-white rounded-lg shadow border p-4">
+
+                <div class="font-semibold">
+                    @balance.User!.FullName
+                </div>
+
+                <div class="text-sm text-gray-600">
+                    @balance.User.MobilePhoneNumber
+                </div>
+
+                <div class="mt-3 font-medium">
+                    Balance:
+                    @balance.FormattedBalance
+                    @PaymentsData.Event!.CurrencySymbol
+                </div>
+
             </div>
-        </TemplateColumn>
-        <PropertyColumn Property="@(e => e.Description)" Title="Description" Class="p-3" />
-        <PropertyColumn Property="@(e => e.Created)" Title="Created" Class="p-3" />
-    </QuickGrid>
-    
+        }
+
+    </div>
+
+    <!-- Desktop -->
+    <div class="hidden md:block">
+
+        <QuickGrid Items="@PaymentsData.Balances!.AsQueryable()"
+                   class="m-auto">
+
+            <PropertyColumn Property="@(e => e.User!.FullName)"
+                            Title="User"
+                            Class="p-3" />
+
+            <PropertyColumn Property="@(e => e.User!.MobilePhoneNumber)"
+                            Title="Mobile"
+                            Class="p-3" />
+
+            <TemplateColumn Title=@($"Balance ({PaymentsData.Event!.CurrencySymbol})")
+                            Class="p-3">
+
+                <div class="text-right mr-[26px]">
+                    @context.FormattedBalance
+                </div>
+
+            </TemplateColumn>
+
+        </QuickGrid>
+
+    </div>
+
+    <hr class="my-8" />
+
+    <!-- Payments -->
+    <p class="text-xl mb-6">Payments</p>
+
+    <!-- Mobile -->
+    <div class="md:hidden space-y-3">
+
+        @foreach (var payment in PaymentsData.Payments!)
+        {
+            <div class="bg-white rounded-lg shadow border p-4">
+
+                <div>
+                    <strong>Creditor:</strong>
+                    @payment.CreditEventUser!.FullName
+                </div>
+
+                <div>
+                    <strong>Debtor:</strong>
+                    @payment.DebitEventUser!.FullName
+                </div>
+
+                <div class="mt-3">
+                    <strong>Amount:</strong>
+
+                    <a href="javascript:void(0)"
+                       @onclick="() => GotoDetailsAsync(payment)"
+                       class="text-blue-500 hover:underline">
+
+                        @payment.FormattedAmount
+                        @PaymentsData.Event!.CurrencySymbol
+
+                    </a>
+                </div>
+
+                <div class="mt-3">
+                    <strong>Description:</strong>
+                    <br />
+                    @payment.Description
+                </div>
+
+                <div class="mt-3 text-sm text-gray-500">
+                    @payment.Created
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+    <!-- Desktop -->
+    <div class="hidden md:block">
+
+        <QuickGrid Items="@PaymentsData.Payments!.AsQueryable()"
+                   class="m-auto">
+
+            <PropertyColumn Property="@(e => e.CreditEventUser!.FullName)"
+                            Title="Creditor"
+                            Class="p-3" />
+
+            <PropertyColumn Property="@(e => e.DebitEventUser!.FullName)"
+                            Title="Debtor"
+                            Class="p-3" />
+
+            <TemplateColumn Title=@($"Amount ({PaymentsData.Event!.CurrencySymbol})")
+                            Class="p-3">
+
+                <div class="text-right mr-[26px]">
+                    <a href="javascript:void(0)"
+                       @onclick="() => GotoDetailsAsync(context)"
+                       class="text-blue-500 hover:underline">
+
+                        @context.FormattedAmount
+
+                    </a>
+                </div>
+
+            </TemplateColumn>
+
+            <PropertyColumn Property="@(e => e.Description)"
+                            Title="Description"
+                            Class="p-3" />
+
+            <PropertyColumn Property="@(e => e.Created)"
+                            Title="Created"
+                            Class="p-3" />
+
+        </QuickGrid>
+
+    </div>
+
 </div>
 
-@code {
+@code
+{
     [Parameter] public PaymentsResponseModel PaymentsData { get; set; } = default!;
     [Parameter] public bool Active { get; set; }
 
@@ -89,6 +242,7 @@
             CreditUserId = context.CreditEventUser!.Id,
             Active = Active
         };
+
         NavigationManager.NavigateTo("/me/payment/details");
     }
 }

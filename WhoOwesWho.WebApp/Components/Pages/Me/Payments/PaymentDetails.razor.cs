@@ -30,8 +30,6 @@ public partial class PaymentDetails
     private UserBalanceResponseModel? userBalanceResponseModel;
     private PaymentDetailsResponseModel? paymentDetailsResponseModel;
     private bool isAdministrator = false;
-
-    private CookiesResponseModel? cookies = null;
     private bool isProcessing = false;
     private Guid paymentId = Guid.Empty;
     private Guid creditUserId = Guid.Empty;

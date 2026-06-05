@@ -1,5 +1,6 @@
 ﻿@page "/me/workspace"
 @inherits AuthorizationComponentBase
+
 @if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,71 +9,96 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <br />
-        <h1 class="text-4xl">My workspace</h1>
-        <br />
-        <h3 class="text-xl">Events</h3>
-        <br />
+    <div class="text-center px-4 mb-3">
+
+        <div class="my-6 md:my-10">
+            <h1 class="text-2xl md:text-4xl">
+                My workspace
+            </h1>
+
+            <h3 class="text-lg md:text-xl mt-6">
+                Events
+            </h3>
+        </div>
+
         @if (hasAssignment)
         {
-            <p>You are currently assigned to the event:</p>
-            <br />
-            <p class="text-2xl text-blue-800">
-                @eventResponseModel!.Name (@eventResponseModel.Location) starting at @eventResponseModel.StartDateIso
+            <p>
+                You are currently assigned to the event:
+            </p>
+
+            <p class="text-lg md:text-2xl text-blue-800 mt-4 break-words">
+                @eventResponseModel!.Name
+                (@eventResponseModel.Location)
+                starting at @eventResponseModel.StartDateIso
             </p>
         }
         else
         {
-            <p class="text-base">Assign to an event to participate</p>
-        }
-        <br />
-        <br />
-        @if (!hasPayments && hasAssignment)
-        {
-            <EventUnassignmentElement IsProcessing="@isProcessing"
-                                    HandleUnassign="@OnUnassignAsync"
-                                    EventResponseModel="@eventResponseModel"/>
-        }
-        @if (hasAssignment && hasPayments)
-        {
-            <p>Your current payments balance</p>
-            <br />
-            <p class="text-xl">
-                @userBalanceResponseModel!.FormattedBalance @userBalanceResponseModel.CurrencySymbol
-            </p>
-            <br />
-            <br />
-            <br />
-            <hr />
-            <br />
-            <p class="text-2xl">
-                Create payment for user or split payment between multiple users
+            <p class="text-base">
+                Assign to an event to participate
             </p>
         }
-        <br />
-        <br />
-        @if (!hasAssignment)
-        {
-            <EventAssignmentElement IsProcessing="@isProcessing"
-                                    EventList="@eventResponseModels"
-                                    HandleAssign="@OnAssignAsync" />
-        }
-        @if (hasAssignment && eventResponseModel != null && currencies != null && userBalanceResponseModel != null)
-        {
-            <EventPaymentElement HasAssignment="@hasAssignment"
-                                 HasPayments="@hasPayments"
-                                 IsProcessing="@isProcessing"
-                                 EventResponseModel="@eventResponseModel"
-                                 CurrencyList="@currencies"
-                                 UserBalanceResponseModel="@userBalanceResponseModel"
-                                 HandlePayment="@OnPaymentAsync"
-                                 Disabled="false"
-                                 FromSettlement="false"/>
-        }
+
+        <div class="mt-8">
+
+            @if (!hasPayments && hasAssignment)
+            {
+                <EventUnassignmentElement IsProcessing="@isProcessing"
+                                          HandleUnassign="@OnUnassignAsync"
+                                          EventResponseModel="@eventResponseModel" />
+            }
+
+            @if (hasAssignment && hasPayments)
+            {
+                <div class="space-y-4">
+
+                    <p>
+                        Your current payments balance
+                    </p>
+
+                    <p class="text-xl md:text-2xl">
+                        @userBalanceResponseModel!.FormattedBalance
+                        @userBalanceResponseModel.CurrencySymbol
+                    </p>
+
+                </div>
+
+                <hr class="my-10" />
+
+                <p class="text-lg md:text-2xl">
+                    Create payment for user or split payment between multiple users
+                </p>
+            }
+
+        </div>
+
+        <div class="mt-10">
+
+            @if (!hasAssignment)
+            {
+                <EventAssignmentElement IsProcessing="@isProcessing"
+                                        EventList="@eventResponseModels"
+                                        HandleAssign="@OnAssignAsync" />
+            }
+
+            @if (hasAssignment &&
+                eventResponseModel != null &&
+                currencies != null &&
+                userBalanceResponseModel != null)
+            {
+                <EventPaymentElement HasAssignment="@hasAssignment"
+                                     HasPayments="@hasPayments"
+                                     IsProcessing="@isProcessing"
+                                     EventResponseModel="@eventResponseModel"
+                                     CurrencyList="@currencies"
+                                     UserBalanceResponseModel="@userBalanceResponseModel"
+                                     HandlePayment="@OnPaymentAsync"
+                                     Disabled="false"
+                                     FromSettlement="false" />
+            }
+
+        </div>
+
     </div>
 }
-
-
-

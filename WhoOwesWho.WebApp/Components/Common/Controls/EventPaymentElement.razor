@@ -1,70 +1,79 @@
 ﻿@if (CreatePaymentRequestModel != null)
 {
-    <EditForm method="post" Model="@CreatePaymentRequestModel" OnValidSubmit="HandlePaymentSubmit" FormName="payment" Enhance>
-        <DataAnnotationsValidator />
-        <PaymentUsersElement Id="paymentusers"
-                             Caption="Check the user(s) that gained from you payment (maybe including yourself):"
-                             Value="@CreatePaymentRequestModel!.UserIds"
-                             ValueChanged="@(v => CreatePaymentRequestModel!.UserIds = v)"
-                             ValueExpression="@(() => CreatePaymentRequestModel!.UserIds)"
-                             Users="@EventResponseModel!.Users"
-                             You="@currentUser"
-                             IsPaymentDetails="@isPaymentDetails"
-                             Disabled="@Disabled" />
-        <br />
-        <br />
-        <CurrencySelectElement Id="currency"
-                               Caption="Currency:"
-                               Value="@CreatePaymentRequestModel!.Currency"
-                               ValueChanged="@(v=> CreatePaymentRequestModel?.Currency = v)"
-                               ValueExpression="@(() => CreatePaymentRequestModel!.Currency)"
-                               CurrencyList="@CurrencyList"
-                               Disabled="@Disabled" />
-        <br />
-        <br />
-        <DecimalInputElement id="amount"
-                             Caption="Total amount:"
-                             Value="@CreatePaymentRequestModel!.TotalAmount"
-                             DecimalPlaces="2"
-                             Placeholder="@placeHolder"
-                             ValueChanged="@(v => CreatePaymentRequestModel?.TotalAmount = v)"
-                             ValueExpression="@(() => CreatePaymentRequestModel!.TotalAmount)"
-                             Disabled="@Disabled"
-                             Class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+    <EditForm method="post"
+              Model="@CreatePaymentRequestModel"
+              OnValidSubmit="HandlePaymentSubmit"
+              FormName="payment"
+              Enhance>
 
-        <br />
-        <br />
-        <TextElement Id="description"
-                     Caption="Description:"
-                     Placeholder="Describe what you payed for"
-                     Value="@CreatePaymentRequestModel?.Description"
-                     ValueChanged="@(v => CreatePaymentRequestModel?.Description = v)"
-                     ValueExpression="@(() => CreatePaymentRequestModel!.Description)"
-                     Disabled="@Disabled" />
-        <br />
-        <br />
-        @if (isAdministrator && !Disabled)
-        {
-            <span class="p-2">
+        <DataAnnotationsValidator />
+
+        <div class="mb-6">
+            <PaymentUsersElement Id="paymentusers"
+                                 Caption="Check the user(s) that gained from your payment (maybe including yourself):"
+                                 Value="@CreatePaymentRequestModel!.UserIds"
+                                 ValueChanged="@(v => CreatePaymentRequestModel!.UserIds = v)"
+                                 ValueExpression="@(() => CreatePaymentRequestModel!.UserIds)"
+                                 Users="@EventResponseModel!.Users"
+                                 You="@currentUser"
+                                 IsPaymentDetails="@isPaymentDetails"
+                                 Disabled="@Disabled" />
+        </div>
+
+        <div class="mb-6">
+            <CurrencySelectElement Id="currency"
+                                   Caption="Currency:"
+                                   Value="@CreatePaymentRequestModel!.Currency"
+                                   ValueChanged="@(v => CreatePaymentRequestModel.Currency = v)"
+                                   ValueExpression="@(() => CreatePaymentRequestModel!.Currency)"
+                                   CurrencyList="@CurrencyList"
+                                   Disabled="@Disabled" />
+        </div>
+
+        <div class="mb-6">
+            <DecimalInputElement Id="amount"
+                                 Caption="Total amount:"
+                                 Value="@CreatePaymentRequestModel!.TotalAmount"
+                                 DecimalPlaces="2"
+                                 Placeholder="@placeHolder"
+                                 ValueChanged="@(v => CreatePaymentRequestModel.TotalAmount = v)"
+                                 ValueExpression="@(() => CreatePaymentRequestModel!.TotalAmount)"
+                                 Disabled="@Disabled"
+                                 Class="shadow appearance-none border border-gray-700 hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-full" />
+        </div>
+
+        <div class="mb-6">
+            <TextElement Id="description"
+                         Caption="Description:"
+                         Placeholder="Describe what you paid for"
+                         Value="@CreatePaymentRequestModel.Description"
+                         ValueChanged="@(v => CreatePaymentRequestModel.Description = v)"
+                         ValueExpression="@(() => CreatePaymentRequestModel!.Description)"
+                         Disabled="@Disabled" />
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-3 mt-10">
+
+            @if (isAdministrator && !Disabled)
+            {
                 <SubmitButton IsProcessing="@IsProcessing"
                               Text="Submit"
                               ProcessingText="Processing..." />
-            </span>
-            <span class="p-2">
-                <NavigationStateButton Text="Delete"
-                                       ProcessingText="Processing..."
-                                       OnClick="() => HandleDeleteAsync()" />
-            </span>
 
-        }
-        <span class="p-2">
+                @if (isPaymentDetails)
+                {
+                    <NavigationStateButton Text="Delete"
+                                           ProcessingText="Processing..."
+                                           OnClick="HandleDeleteAsync" />
+                }
+            }
+
             <ActionButton Text="Cancel"
                           ProcessingText="Cancelling..."
-                          NavigationUrl=@(FromSettlement ? "/me/settlements" : isPaymentDetails ? "/me/payments" : "/me/workspace")
+                          NavigationUrl="@(FromSettlement ? "/me/settlements" : isPaymentDetails ? "/me/payments" : "/me/workspace")"
                           ForceLoad="true" />
-        </span>
+
+        </div>
+
     </EditForm>
 }
-
-
-

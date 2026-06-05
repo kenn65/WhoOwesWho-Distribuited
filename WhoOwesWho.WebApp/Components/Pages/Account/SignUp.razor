@@ -1,52 +1,84 @@
 ﻿@page "/account/signup"
 
-<div class="text-center mb-3">
-    <h1 class="text-4xl">Sign in</h1>
-    <br />
-    <br />
-    <EditForm method="post" Model="@UserModel" OnValidSubmit="HandleSubmit" FormName="signup" Enhance>
+<div class="text-center px-4 mb-3">
+
+    <div class="my-6 md:my-10">
+        <h1 class="text-2xl md:text-4xl">
+            Sign up
+        </h1>
+
+        <p class="text-lg md:text-xl mt-4">
+            Create your Who Owes Who account
+        </p>
+    </div>
+
+    <EditForm method="post"
+              Model="@UserModel"
+              OnValidSubmit="HandleSubmit"
+              FormName="signup"
+              Enhance>
+
         <DataAnnotationsValidator />
-        <TextElement Id="name"
-                     Caption="Name:"
-                     Placeholder="Your first and last name or some other unique nickname"
-                     Value="@UserModel!.FullName"
-                     ValueChanged="@(v => UserModel.FullName = v)"
-                     ValueExpression="@(() => UserModel.FullName)" />
-        <br />
-        <br />
-        <TextElement Id="emailaddress"
-                     Type="email"
-                     Caption="Email Address:"
-                     Placeholder="Your e-mail address"
-                     Value="@UserModel!.EmailAddress"
-                     ValueChanged="@(v => UserModel.EmailAddress = v)"
-                     ValueExpression="@(() => UserModel.EmailAddress)" />
-        <br />
-        <br />
-        <TextElement Id="mobilephonenumber"
-                     Caption="Mobile Phone Number:"
-                     Placeholder="Your mobile phone number"
-                     Value="@UserModel!.MobilePhoneNumber"
-                     ValueChanged="@(v => UserModel.MobilePhoneNumber = v)"
-                     ValueExpression="@(() => UserModel.MobilePhoneNumber)" />
-        <br />
-        <br />
-        <TextElement Id="password"
-                     Type="password"
-                     Caption="Password:"
-                     Placeholder="Your password containing at least eight characters including one upper case character and two digits"
-                     Value="@UserModel!.Password"
-                     ValueChanged="@(v => UserModel.Password = v)"
-                     ValueExpression="@(() => UserModel.Password)" />
-        <br />
-        <br />
-        <label for="administrator" class="form-label">Administrator:</label>
-        <br />
-        <InputCheckbox id="administrator" @bind-Value="UserModel.Admin" class="shadow border border-gray-700  hover:border-green-700 rounded py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline w-16" />
-        <br />
-        <br />
-        <SubmitButton Text="Sign up"
-                      ProcessingText="Processing..."
-                      IsProcessing="IsProcessing" />
+
+        <div class="mb-6">
+            <TextElement Id="name"
+                         Caption="Name:"
+                         Placeholder="Your first and last name or some other unique nickname"
+                         Value="@UserModel!.FullName"
+                         ValueChanged="@(v => UserModel.FullName = v)"
+                         ValueExpression="@(() => UserModel.FullName)" />
+        </div>
+
+        <div class="mb-6">
+            <TextElement Id="emailaddress"
+                         Type="email"
+                         Caption="Email Address:"
+                         Placeholder="Your e-mail address"
+                         Value="@UserModel!.EmailAddress"
+                         ValueChanged="@(v => UserModel.EmailAddress = v)"
+                         ValueExpression="@(() => UserModel.EmailAddress)" />
+        </div>
+
+        <div class="mb-6">
+            <TextElement Id="mobilephonenumber"
+                         Caption="Mobile Phone Number:"
+                         Placeholder="Your mobile phone number"
+                         Value="@UserModel!.MobilePhoneNumber"
+                         ValueChanged="@(v => UserModel.MobilePhoneNumber = v)"
+                         ValueExpression="@(() => UserModel.MobilePhoneNumber)" />
+        </div>
+
+        <div class="mb-6">
+            <TextElement Id="password"
+                         Type="password"
+                         Caption="Password:"
+                         Placeholder="Your password containing at least eight characters including one upper case character and two digits"
+                         Value="@UserModel!.Password"
+                         ValueChanged="@(v => UserModel.Password = v)"
+                         ValueExpression="@(() => UserModel.Password)" />
+        </div>
+
+        <div class="w-full md:w-2/4 mx-auto text-left mb-6">
+            <label for="administrator"
+                   class="flex items-center gap-3 cursor-pointer">
+
+                <InputCheckbox id="administrator"
+                               @bind-Value="UserModel.Admin"
+                               class="h-5 w-5" />
+
+                <span>
+                    Administrator
+                </span>
+
+            </label>
+        </div>
+
+        <div class="flex justify-center mt-10">
+            <SubmitButton Text="Sign up"
+                          ProcessingText="Processing..."
+                          IsProcessing="IsProcessing" />
+        </div>
+
     </EditForm>
+
 </div>

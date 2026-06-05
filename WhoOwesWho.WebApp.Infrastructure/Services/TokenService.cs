@@ -28,16 +28,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Services
 
         public async Task SetCookiesAsync(CookiesResponseModel data)
         {
-            if (!_httpContextAccessor.HttpContext?.Response.HasStarted == false)
-            {
-                // Initial request — set directly
-                await AppendCookies(data);
-            }
-            else
-            {
-                // Interactive session — use JS interop to call controller
-                await AppendCookiesAsync(data);
-            }
+            await AppendCookiesAsync(data);
         }
 
         public async Task<CookiesDeletionResponseModel> DeleteCookiesAsync()
@@ -116,25 +107,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Services
                     return new CookiesResponseModel();
                 }
 
-                var ctx = HttpContext;
-
-                ctx.Response.Cookies.Append(result.TokenName, result.TokenValue, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Path = "/",
-                    Expires = DateTimeOffset.UtcNow.AddMinutes(10)
-                });
-
-                ctx.Response.Cookies.Append(result.RefreshName, result.RefreshValue, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Path = "/",
-                    Expires = DateTimeOffset.UtcNow.AddDays(90)
-                });
+                await AppendRefreshedCookiesAsync(result);
 
                 return new CookiesResponseModel
                 {

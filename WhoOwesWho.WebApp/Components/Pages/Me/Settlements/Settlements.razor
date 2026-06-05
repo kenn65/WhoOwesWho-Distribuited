@@ -1,5 +1,6 @@
 ﻿@page "/me/settlements"
 @inherits AuthorizationComponentBase
+
 @if (isLoading)
 {
     <div class="flex justify-center items-center h-40">
@@ -8,53 +9,82 @@
 }
 else
 {
-    <div class="text-center mb-3">
-        <br />
-        <h1 class="text-4xl">Settlements</h1>
-        <br />
-        <br />
-        <hr />
-        <br />
-        @if (eventList == null || !eventList!.Any())
+    <div class="text-center px-4 mb-3">
+
+        <div class="my-6 md:my-10">
+            <h1 class="text-2xl md:text-4xl">
+                Settlements
+            </h1>
+        </div>
+
+        <hr class="my-8" />
+
+        @if (eventList == null || !eventList.Any())
         {
-            <p class="text-base">No events has been settled!</p>
+            <p class="text-base">
+                No events have been settled!
+            </p>
         }
+
         @if (eventList != null && eventList.Any())
         {
-            <p class="text-base">Select an event to show settlement details</p>
-            <br />
-            <EditForm method="post" Model="SettleEventRequestModel" FormName="settlement" Enhance>
+            <p class="text-base mb-6">
+                Select an event to show settlement details
+            </p>
+
+            <EditForm method="post"
+                      Model="SettleEventRequestModel"
+                      FormName="settlement"
+                      Enhance>
+
                 <DataAnnotationsValidator />
+
                 <EventSelectElement Id="event"
                                     Caption="Event:"
                                     Value="@SettleEventRequestModel?.EventIdString"
                                     ValueExpression="@(() => SettleEventRequestModel!.EventIdString)"
                                     ValueChanged="@OnEventChangedAsync"
                                     EventList="@eventList" />
+
             </EditForm>
-            <br />
-            <br />
         }
-        @if (!string.IsNullOrWhiteSpace(SettleEventRequestModel?.EventIdString) && payments == null)
+
+        @if (!string.IsNullOrWhiteSpace(SettleEventRequestModel?.EventIdString)
+            && payments == null)
         {
             <div class="flex justify-center items-center h-40">
                 <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700"></div>
             </div>
         }
+
         @if (payments != null)
         {
-            <PaymentsDataOverwiev PaymentsData="@payments"
-                                  Active="@false" />
+            <div class="mt-10">
+
+                <PaymentsDataOverwiev PaymentsData="@payments"
+                                      Active="@false" />
+
+            </div>
+
             @if (isAdminisstrator)
             {
-                <br />
-                <br />
-                <EditForm method="post" Model="SettleEventRequestModel" OnSubmit="HandleReopenEventAsync" FormName="unsettlement" Enhance>
-                    <SubmitButton IsProcessing="@isProcessing"
-                                  Text="Reopen event"
-                                  ProcessingText="Processing" />
+                <EditForm method="post"
+                          Model="SettleEventRequestModel"
+                          OnSubmit="HandleReopenEventAsync"
+                          FormName="unsettlement"
+                          Enhance>
+
+                    <div class="flex justify-center mt-10">
+
+                        <SubmitButton IsProcessing="@isProcessing"
+                                      Text="Reopen event"
+                                      ProcessingText="Processing..." />
+
+                    </div>
+
                 </EditForm>
             }
         }
+
     </div>
 }
