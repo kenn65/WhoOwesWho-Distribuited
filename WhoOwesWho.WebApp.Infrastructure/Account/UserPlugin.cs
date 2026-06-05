@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Password;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
@@ -9,7 +10,7 @@ using WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Account
 {
-    public class UserPlugin(IConfiguration configuration, ITokenService tokenService) : ApiPluginClientBase(configuration, tokenService), IUserPlugin
+    public class UserPlugin(IConfiguration configuration, ITokenService tokenService, NavigationManager nav) : ApiPluginClientBase(configuration, tokenService, nav), IUserPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
 

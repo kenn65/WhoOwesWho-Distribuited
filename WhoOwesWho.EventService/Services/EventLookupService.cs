@@ -34,14 +34,8 @@ namespace WhoOwesWho.EventService.Services
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(Guid userId)
         {
             var user = await eventCacheRepository.GetUserByIdAsync(userId.ToString());
-            //IEnumerable<UserMessageResponseModel> users = new List<UserMessageResponseModel>
-            //{
-            //    {
-            //        user! 
-            //    }
-            //};
             var allEvents = await eventQueryRepository.GetEventsAsync();
-            var filteredEvents = allEvents.Where(e => e.CreatedBy == user!.FullName).ToList();
+            var filteredEvents = allEvents.Where(e => e.CreatedBy == user!.FullName).OrderByDescending(e => e.StartDateIso).ToList();
 
             //foreach (var item in filteredEvents)
             //{
@@ -55,7 +49,7 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active)
         {
-            return await eventQueryRepository.GetEventsAsync(active);
+            return [.. (await eventQueryRepository.GetEventsAsync(active)).OrderByDescending(e => e.StartDateIso)];
         }
 
         public async Task<EventAssignmentModel> GetAssignmentAsync(Guid userId, bool active = true)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
@@ -10,8 +11,8 @@ using WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Events
 {
-    public class EventsPlugin(IConfiguration configuration, ITokenService tokenService) 
-        : ApiPluginClientBase(configuration, tokenService), IEventsPlugin
+    public class EventsPlugin(IConfiguration configuration, ITokenService tokenService, NavigationManager nav) 
+        : ApiPluginClientBase(configuration, tokenService, nav), IEventsPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
 

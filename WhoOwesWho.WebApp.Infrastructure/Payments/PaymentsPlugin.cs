@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Configuration;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Base;
@@ -9,7 +10,7 @@ using WhoOwesWho.WebApp.UseCases.Payments.PluginInterfaces;
 namespace WhoOwesWho.WebApp.Infrastructure.Payments
 {
     public class PaymentsPlugin(
-        IConfiguration configuration, ITokenService tokenService) : ApiPluginClientBase(configuration, tokenService),
+        IConfiguration configuration, ITokenService tokenService, NavigationManager nav) : ApiPluginClientBase(configuration, tokenService, nav),
         IPaymentsPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
