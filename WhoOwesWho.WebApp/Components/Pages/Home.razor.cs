@@ -15,13 +15,7 @@ public partial class Home(
         if (userId == Guid.Empty)
         {
             await authorizationUseCase.ExecuteRefreshTokenAsync();
-            userId = await currentUserService.GetUserIdAsync();
         }
-        if (userId == Guid.Empty)
-        {
-            return;
-        }
-
         if (await currentUserService.GetIsAuthorizedAsync())
         {
             nav.NavigateTo("/me");
