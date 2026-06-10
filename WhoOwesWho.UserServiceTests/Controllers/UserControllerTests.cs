@@ -447,6 +447,8 @@ namespace WhoOwesWho.UserServiceTests.Controllers
         {
             // Arrange
             var guid = Guid.NewGuid();
+            response.Id = guid;
+            request.Id = guid;
             request.FullName = "John Doe 2nd";
             request.MobilePhoneNumber = "12345678";
 
@@ -455,8 +457,12 @@ namespace WhoOwesWho.UserServiceTests.Controllers
                 .ReturnsAsync(response);
 
             validationServiceMock
-               .Setup(x => x.IsFullNameUniqueAsync(It.IsAny<string>()))
-               .ReturnsAsync(true);
+               .Setup(x => x.IsFullNameUniqueAsync(It.IsAny<string>())) 
+               .ReturnsAsync(false);
+
+            validationServiceMock
+                .Setup(x => x.DoesFullNameExistAsync(It.IsAny<Guid>(), It.IsAny<string>()))
+                .ReturnsAsync(true);
 
             validationServiceMock
                 .Setup(x => x.IsEmailAddressUniqueAsync(It.IsAny<string>()))
@@ -465,7 +471,7 @@ namespace WhoOwesWho.UserServiceTests.Controllers
             var sut = CreateUserController(validationMock: validationServiceMock, commandMock: commandMock);
 
             // Act
-            var result = await sut.UpdateUserAsync(guid, request);
+            var result = await sut.UpdateUserAsync(request);
 
             // Assert
             commandMock.Verify(x =>

@@ -1,12 +1,15 @@
 using Mapster;
 using Microsoft.AspNetCore.Components;
+using Microsoft.IdentityModel.Tokens;
 using WhoOwesWho.WebApp.Components.Base;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
 using WhoOwesWho.WebApp.StateHandlers;
+using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Currencies;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Payments;
@@ -44,10 +47,10 @@ public partial class PaymentDetails
         {
             return;
         }
+        isAdministrator = IsAdmin;
         paymentId = stateHandler.SelectedItem!.PaymentId;
         creditUserId = stateHandler.SelectedItem.CreditUserId;
         active = stateHandler.SelectedItem.Active;
-        isAdministrator = await CurrentUserService.GetIsAdminAsync();
         eventUserAssignmentResponseModel = await GetEventAssignmentAsync();
         eventResponseModel = await GetEventAsync(eventUserAssignmentResponseModel!.EventId);
         hasAssignment = eventUserAssignmentResponseModel!.EventId != Guid.Empty;
@@ -133,8 +136,7 @@ public partial class PaymentDetails
         await alertService.Success(response.Message!);
         nav.NavigateTo("me/payments", true);
     }
-
-
+    
     private async Task StopProcessingAsync()
     {
         isProcessing = false;

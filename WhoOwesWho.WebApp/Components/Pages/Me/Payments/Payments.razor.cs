@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.Components.Base;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
+using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Events;
 using WhoOwesWho.WebApp.UseCases.Payments;
 
@@ -19,11 +21,12 @@ public partial class Payments(
     private PaymentsResponseModel? payments;
     private string eventId = string.Empty;
     private bool isAdministrator;
+    private Guid userId;
     private bool isLoading = true;
     private bool isProcessing = false;
 
     [SupplyParameterFromForm]
-    private SettleEventRequestModel? settleEventRequestModel { get; set; }
+    private SettleEventRequestModel? SettleEventRequestModel { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -32,11 +35,12 @@ public partial class Payments(
         {
             return;
         }
-        isAdministrator = await CurrentUserService.GetIsAdminAsync();
+        userId = await CurrentUserService.GetUserIdAsync();
+        isAdministrator = IsAdmin;
         activeUserAssignment = await GetActiveUserAssignmentAsync();
         eventId = activeUserAssignment.EventId.ToString();
         payments = await GetPaymentsAsync();
-        settleEventRequestModel ??= new();
+        SettleEventRequestModel ??= new();
         isLoading = false;
 
     }
@@ -73,7 +77,7 @@ public partial class Payments(
             nav.NavigateTo("/me/settlements");
         }
     }
-
+    
     private async Task StopProcessingAsync()
     {
         isProcessing = false;

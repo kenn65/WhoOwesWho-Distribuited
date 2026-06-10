@@ -49,7 +49,7 @@ namespace WhoOwesWho.EventService.Services
 
         public async Task<IEnumerable<EventResponseModel>> GetEventsAsync(bool active)
         {
-            return [.. (await eventQueryRepository.GetEventsAsync(active)).OrderByDescending(e => e.StartDateIso)];
+            return (await eventQueryRepository.GetEventsAsync(active)).OrderByDescending(e => e.StartDateIsoYmd);
         }
 
         public async Task<EventAssignmentModel> GetAssignmentAsync(Guid userId, bool active = true)

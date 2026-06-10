@@ -155,6 +155,7 @@ namespace WhoOwesWho.Shared.Auxiliaries
             public const string CurrencyArgumentEroor = "Currency was not provided";
             public const string OriginalCurrencyArgumentError = "Original currency was not provided";
             public const string OriginalAmountArgumentError = "Original amount was not provided";
+            public const string CreatedbyArgumentError = "Events argument Created by was not provided";
 
         }
 

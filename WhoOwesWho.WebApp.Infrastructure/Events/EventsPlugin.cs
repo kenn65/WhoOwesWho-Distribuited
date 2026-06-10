@@ -11,20 +11,20 @@ using WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces;
 
 namespace WhoOwesWho.WebApp.Infrastructure.Events
 {
-    public class EventsPlugin(IConfiguration configuration, ITokenService tokenService, NavigationManager nav) 
+    public class EventsPlugin(IConfiguration configuration, ITokenService tokenService, NavigationManager nav)
         : ApiPluginClientBase(configuration, tokenService, nav), IEventsPlugin
     {
         private readonly AppSettings appSettings = new(configuration);
 
-        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(Guid userId)
+        public async Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(string createdBy, bool active)
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetUserEventsBassAddressAsync();
-            var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
-            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>>(endpoint, apiKey, false,
+            var endpoint = await baseAddress.ToEndpointAsync($"{createdBy}");
+            return await GetAsync<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>>(endpoint, apiKey, true,
                 new Dictionary<string, dynamic>
                 {
-                    { "userId", userId}
+                    { "active", active}
                 },
                 true);
         }
@@ -41,7 +41,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await baseAddress.ToEndpointAsync(string.Empty);
+            var endpoint = await baseAddress.ToEndpointAsync();
             return await PutAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 
@@ -65,7 +65,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Events
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetEventsBaseAddressAsync();
-            var endpoint = await baseAddress.ToEndpointAsync("update");
+            var endpoint = await baseAddress.ToEndpointAsync();
             return await PatchAsync<EventResponseModel, EventRequestModel>(endpoint, request, apiKey, true, applyToken: true);
         }
 

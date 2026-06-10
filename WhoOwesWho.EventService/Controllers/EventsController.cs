@@ -69,7 +69,8 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
 
-        [HttpGet("{eventId}/{active}")]
+        [HttpGet]
+        [Route("{eventId}/{active}")]
         [Authorize]
         public async Task<IActionResult> GetEventAsync(Guid eventId, bool active)
         {
@@ -95,7 +96,6 @@ namespace WhoOwesWho.EventService.Controllers
              
 
         [HttpPatch]
-        [Route("update")]
         [Authorize]
         public async Task<IActionResult> UpdateEventAsync([FromBody] EventRequestModel request)
         {

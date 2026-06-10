@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using WhoOwesWho.WebApp.Components.Base;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
@@ -17,7 +18,7 @@ public partial class Settlements(
 {
     private IEnumerable<EventResponseModel>? eventList;
     private PaymentsResponseModel? payments;
-    private bool isAdminisstrator = false;
+    private bool isAdministrator = false;
     private bool isProcessing = false;
     private bool isLoading = true;
 
@@ -31,7 +32,7 @@ public partial class Settlements(
         {
             return;
         }
-        isAdminisstrator = await CurrentUserService.GetIsAdminAsync();
+        isAdministrator = IsAdmin;
         eventList = await GetUserEventsAsync();
         SettleEventRequestModel ??= new();
         isLoading = false;
@@ -70,6 +71,7 @@ public partial class Settlements(
             nav.NavigateTo("me/payments", true);
         }
     }
+        
     private async Task StopProcessingAsync()
     {
         isProcessing = false;

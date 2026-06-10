@@ -6,6 +6,8 @@
 
         Task<string> GetEmailAddressAsync();
 
+        Task<string> GetUserNameAsync();
+        
         Task<bool> GetIsAdminAsync();
 
         Task<bool> GetIsAuthorizedAsync();

@@ -27,17 +27,25 @@ namespace WhoOwesWho.WebApp.Services
                 ? id
                 : Guid.Empty;
         }
-
+        
         public async Task<string> GetEmailAddressAsync()
         {
             var user = await GetUserAsync();
             return user.FindFirst(JwtRegisteredClaimNames.Email)?.Value ?? string.Empty;
         }
 
+        public async Task<string> GetUserNameAsync()
+        {
+            var user = await GetUserAsync();
+            return user?.Identity?.Name ?? string.Empty;
+            
+        }
+
         public async Task<bool> GetIsAdminAsync()
         {
             var user = await GetUserAsync();
-            return user.IsInRole("Admin");
+            var output = user.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+            return output;
         }
     }
 }

@@ -36,7 +36,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Payments
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
-            var endpoint = await baseAddress.ToEndpointAsync("create");
+            var endpoint = await baseAddress.ToEndpointAsync();
             return await PutAsync<CreatePaymentResponseModel, CreatePaymentRequestModel>
                 (endpoint, request, apiKey, true, applyToken: true);
         }
@@ -70,7 +70,7 @@ namespace WhoOwesWho.WebApp.Infrastructure.Payments
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
-            var endpoint = await baseAddress.ToEndpointAsync("update");
+            var endpoint = await baseAddress.ToEndpointAsync();
             return await PatchAsync<UpdatePaymentResponseModel, UpdatePaymentRequestModel>
                 (endpoint, request, apiKey, true, applyToken: true);
         }
@@ -79,14 +79,13 @@ namespace WhoOwesWho.WebApp.Infrastructure.Payments
         {
             var apiKey = await GetApiKeyAsync();
             var baseAddress = await GetPaymentsBaseAddressAsync();
-            var endpoint = await baseAddress.ToEndpointAsync($"delete/{paymentId}");
+            var endpoint = await baseAddress.ToEndpointAsync($"{paymentId}");
             return await DeleteAsync<DeletePaymentResponseModel>(endpoint, apiKey, true, applyToken: true);
         }
 
 
         private async Task<string> GetPaymentsBaseAddressAsync() => appSettings.PaymentMicroserviceBaseAddress!;
         private async Task<string> GetPaymentsBalanceBaseAddressAsync() => appSettings.PaymentMicroserviceBalanceBaseAddress!;
-        private async Task<string> GetPaymentsSettlementBaseAddressAsync() => appSettings.PaymentMicroserviceSettlementsBaseAddress!;
         private async Task<string> GetApiKeyAsync() => appSettings.PaymentMicroserviceApiKey!;
 
        

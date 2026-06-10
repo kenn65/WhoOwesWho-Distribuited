@@ -15,6 +15,7 @@ namespace WhoOwesWho.UserService.Repositories
         Task<bool> GetUserEmailExists(string emailAddress);
         Task<bool> GetUserFullNameExists(Guid id, string fullName);
         Task<bool> GetUserFullNameExists(string fullName);
+        Task<bool> GetIsAdminAsync(Guid id);
     }
 
     public class UserQueryRepository(UserDbContext context) : IUserQueryRepository
@@ -30,6 +31,20 @@ namespace WhoOwesWho.UserService.Repositories
                 .ProjectToType<ForgotPasswordTokenModel>().FirstOrDefaultAsync();
             return model!;
         }
+
+        public async Task<bool> GetIsAdminAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+            {
+                return false;
+            }
+
+            return await context.Users
+                .Where(x => x.Id == id)
+                .Select(x => x.Admin)
+                .SingleOrDefaultAsync();
+        }
+
 
         public async Task<UserModel?> GetSingleUserByEmailAddressAsync(string? emailAddress, bool complete = false)
         {
