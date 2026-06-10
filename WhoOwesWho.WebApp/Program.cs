@@ -148,11 +148,11 @@ app.MapPost(
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Path = "/",
 
             // SHORT LIFETIME
-            Expires = DateTimeOffset.UtcNow.AddMinutes(2)
+            Expires = DateTimeOffset.UtcNow.AddMinutes(10)
         };
 
         // =====================================
@@ -163,11 +163,11 @@ app.MapPost(
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Path = "/",
 
             // LONG LIFETIME
-            Expires = DateTimeOffset.UtcNow.AddDays(1)
+            Expires = DateTimeOffset.UtcNow.AddDays(90)
         };
 
         void Set(

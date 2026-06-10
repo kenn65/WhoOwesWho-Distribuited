@@ -64,7 +64,7 @@ public partial class CreateEvent(
 
     private async Task<string> GetUserAsync()
     {
-        var response = await userUseCase.ExecuteAsync(CurrentUserId);
+        var response = await userUseCase.ExecuteAsync(CurrentUserId, false);
         return response!.FullName!;
     }
 

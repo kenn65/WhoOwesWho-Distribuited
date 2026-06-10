@@ -1,7 +1,6 @@
 ﻿using WhoOwesWho.AuthorizationService.Services.Base;
 using WhoOwesWho.AuthorizationService.Services.Gateways;
 using WhoOwesWho.Shared.Extensions;
-using WhoOwesWho.Shared.Models;
 
 namespace WhoOwesWho.AuthorizationService.Services
 {
@@ -10,7 +9,7 @@ namespace WhoOwesWho.AuthorizationService.Services
         public Task<string> ProtectAsync(string value, bool force = false);
         public Task<string> UnprotectAsync(string value, bool force = false);
 
-        Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode);
+        
 
         Task<bool> ValidateApiKey(string userApiKey);
     }
@@ -54,12 +53,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             }
             return value;
         }
-
-        public async Task<AuthorizationResponseModel> ProtectCookiesAsync(UserMessageResponseModel user, string token, bool encode)
-        {
-            return await encryptionGatewayService.ProtectCookiesAsync(user, token, encode);
-        }
-
+                
         public async Task<bool> ValidateApiKey(string authorizationApiKey)
         {
             if (string.IsNullOrWhiteSpace(authorizationApiKey))

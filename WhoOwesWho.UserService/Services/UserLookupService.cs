@@ -9,6 +9,7 @@ namespace WhoOwesWho.UserService.Services
         Task<UserModel?> GetSingleUserByEmailAddressAsync(string? emailAddress, bool complete = false);
         Task<UserModel?> GetSingleUserByIdAsync(Guid id, bool complete = false);
         Task<IEnumerable<UserModel>> GetAllUsersAsync();
+        Task<IsAdminResponseModel> GetIsAdminAsync(Guid id);
     }
 
     public class UserLookupService(IConfiguration configuration, IUserQueryRepository userQueryRepository) : ServiceBase(configuration), IUserLookupService
@@ -30,6 +31,15 @@ namespace WhoOwesWho.UserService.Services
         public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
         {
             return await userQueryRepository.GetAllUsersAsync();
+        }
+
+        public async Task<IsAdminResponseModel> GetIsAdminAsync(Guid id)
+        {
+            return new IsAdminResponseModel
+            {
+                IsAdmin = await userQueryRepository.GetIsAdminAsync(id),
+                Success = true
+            };
         }
     }
 }

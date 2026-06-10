@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
@@ -19,7 +18,6 @@ namespace WhoOwesWho.PaymentService.Controllers
         ) : ControllerBase
     {
         [HttpPut]
-        [Route("create")]
         [Authorize]
         public async Task<IActionResult> CreatePaymentAsync(CreatePaymentRequestModel request)
         {
@@ -150,7 +148,6 @@ namespace WhoOwesWho.PaymentService.Controllers
         }
 
         [HttpPatch]
-        [Route("update")]
         [Authorize]
         public async Task<IActionResult> UpdatePaymentAsync([FromBody] UpdatePaymentRequestModel request)
         {
@@ -179,7 +176,7 @@ namespace WhoOwesWho.PaymentService.Controllers
         }
 
         [HttpDelete]
-        [Route("delete/{paymentId}")]
+        [Route("{paymentId}")]
         [Authorize]
         public async Task<IActionResult> RemovePaymentAsync(Guid paymentId)
         {

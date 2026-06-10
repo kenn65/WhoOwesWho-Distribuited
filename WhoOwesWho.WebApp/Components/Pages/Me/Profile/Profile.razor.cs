@@ -20,7 +20,7 @@ public partial class Profile(
     [SupplyParameterFromForm]
     private UserProfileResponseModel? UserProfileResponseModel { get; set; }
     private bool IsProcessing = false;
-   
+    
     protected override async Task OnInitializedAsync()
     {
         if (!await EnsureAuthorizedAsync())
@@ -32,7 +32,7 @@ public partial class Profile(
 
     private async Task<UserProfileResponseModel> GetUserAsync()
     {
-        var response = await userUseCase.ExecuteAsync(CurrentUserId);
+        var response = await userUseCase.ExecuteAsync(CurrentUserId, false);
         return response.Adapt<UserProfileResponseModel>();
     }
 
@@ -45,12 +45,13 @@ public partial class Profile(
         var requestModel = new UserUpdateRequestModel
         {
             ProtectedId = await protectionUseCase.ExecuteProtectAsync(CurrentUserId.ToString()),
+            Id = CurrentUserId,
             FullName = UserProfileResponseModel?.FullName!,
             MobilePhoneNumber = UserProfileResponseModel?.MobilePhoneNumber!,
             Admin = UserProfileResponseModel!.Admin,
             EventId = eventId
         };
-        var response = await userUseCase.ExecuteAsync(CurrentUserId, requestModel);
+        var response = await userUseCase.ExecuteAsync(requestModel);
         await StopProcessing();
         if (!response.Success)
         {

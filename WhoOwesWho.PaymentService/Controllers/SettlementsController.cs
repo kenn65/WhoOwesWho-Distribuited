@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 using WhoOwesWho.PaymentService.Models;
 using WhoOwesWho.PaymentService.Services;
 using WhoOwesWho.Shared.Auxiliaries;

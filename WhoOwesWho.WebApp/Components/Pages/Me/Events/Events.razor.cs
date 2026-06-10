@@ -3,6 +3,7 @@ using WhoOwesWho.WebApp.Components.Base;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.StateHandlers;
+using WhoOwesWho.WebApp.UseCases.Account;
 using WhoOwesWho.WebApp.UseCases.Events;
 
 namespace WhoOwesWho.WebApp.Components.Pages.Me.Events;
@@ -15,16 +16,16 @@ public partial class Events(
     ) : AuthorizationComponentBase
 {
     private bool isAdministrator;
-    private IEnumerable<EventResponseModel>? eventList; 
+    private IEnumerable<EventResponseModel>? eventList;
     private bool isLoading = true;
-
+    
     protected override async Task OnInitializedAsync()
     {
         if (!await EnsureAuthorizedAsync())
         {
             return;
         }
-        isAdministrator = await CurrentUserService.GetIsAdminAsync();
+        isAdministrator = IsAdmin;
         eventList = isAdministrator
                 ? await GetAdminEventsAsync()
                 : await GetUserEventsAsync();
@@ -54,13 +55,12 @@ public partial class Events(
     }
     private async Task<IEnumerable<EventResponseModel>> GetAdminEventsAsync()
     {
-        return await eventsUseCase.ExecuteGetEventsAsync(CurrentUserId);
+        var name = await CurrentUserService.GetUserNameAsync();
+        return await eventsUseCase.ExecuteGetEventsAsync(name, true);
     }
 
     private async Task<IEnumerable<EventResponseModel>> GetUserEventsAsync()
     {
         return await eventsUseCase.ExecuteGetEventsAsync(true);
     }
-
-
 }

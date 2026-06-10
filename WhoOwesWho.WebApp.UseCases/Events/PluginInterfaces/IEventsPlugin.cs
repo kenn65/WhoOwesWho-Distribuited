@@ -6,7 +6,7 @@ namespace WhoOwesWho.WebApp.UseCases.Events.PluginInterfaces
 {
     public interface IEventsPlugin
     {
-        Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(Guid userId);
+        Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(string createdBy, bool active);
         Task<EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>> GetEventsAsync(bool active);
         Task<EnumerableWrapperResponseModel<IEnumerable<UserMessageResponseModel>>> GetEventUsersAsync(Guid eventId, bool active);
         Task<EventResponseModel> CreateEventAsync(EventRequestModel request);

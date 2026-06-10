@@ -14,8 +14,9 @@ namespace WhoOwesWho.WebApp.UseCases.Account
         Task<ForgotPasswordResponseModel> ExecuteAsync(ForgotPasswordRequestModel request);
         Task<ResetPasswordResponseModel> ExecuteAsync(string emailAddress, string forgotPasswordToken);
         Task<ResetPasswordResponseModel> ExecuteAsync(ResetPasswordRequestModel request);
-        Task<UserModel> ExecuteAsync(Guid userId, UserUpdateRequestModel request);
+        Task<UserModel> ExecuteAsync(UserUpdateRequestModel request);
         Task<ChangePasswordResponseModel> ExecuteAsync(ChangePasswordRequestModel request);
+        Task<bool> ExecuteAsync(Guid id);
     }
 
     public class UserUseCase(IUserPlugin userPlugin, IProtectionUseCase protectionUseCase) : IUserUseCase
@@ -53,9 +54,9 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             return await userPlugin.ResetPasswordAsync(request);
         }
 
-        public async Task<UserModel> ExecuteAsync(Guid userId, UserUpdateRequestModel request)
+        public async Task<UserModel> ExecuteAsync(UserUpdateRequestModel request)
         {
-            return await userPlugin.UpdateUserAsync(userId, request);
+            return await userPlugin.UpdateUserAsync(request);
         }
 
         public async Task<ChangePasswordResponseModel> ExecuteAsync(ChangePasswordRequestModel request)
@@ -64,6 +65,12 @@ namespace WhoOwesWho.WebApp.UseCases.Account
             request.NewPassword1 = await protectionUseCase.ExecuteProtectAsync(request.NewPassword1);
             request.NewPassword2 = await protectionUseCase.ExecuteProtectAsync(request.NewPassword2);
             return await userPlugin.ChangePasswordAsync(request);
+        }
+
+        public async Task<bool> ExecuteAsync(Guid id)
+        {
+            var response = await userPlugin.GetIsAdminAsync(id);
+            return response.IsAdmin;
         }
     }
 }

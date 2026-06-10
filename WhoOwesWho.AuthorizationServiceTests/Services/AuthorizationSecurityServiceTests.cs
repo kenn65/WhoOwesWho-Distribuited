@@ -122,37 +122,26 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
         }
 
         [Theory, AutoMoqData]
-        public async Task ProtectCookiesAsync_DelegatesToGateway(
+        public async Task ProtectAsync_DelegatesToGateway_WhenValueIsValid(
             [Frozen] Mock<IEncryptionGatewayService> encryptionGatewayService,
-            AuthorizationSecurityService sut,
-            UserMessageResponseModel user,
-            AuthorizationResponseModel expected)
-        {
-            // Arrange
-            var token = "token";
-
-            encryptionGatewayService
-                .Setup(x => x.ProtectCookiesAsync(user, token, true))
-                .ReturnsAsync(expected);
-
-            // Act
-            var result = await sut.ProtectCookiesAsync(user, token, true);
-
-            // Assert
-            result.Should().Be(expected);
-
-            encryptionGatewayService.Verify(x => x.ProtectCookiesAsync(user, token, true), Times.Once);
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ValidateApiKey_ReturnsFalse_WhenEmpty(
             AuthorizationSecurityService sut)
         {
+            // Arrange
+            const string value = "test@example.com";
+
+            encryptionGatewayService
+                .Setup(x => x.ProtectAsync(value, true))
+                .ReturnsAsync("encrypted");
+
             // Act
-            var result = await sut.ValidateApiKey(string.Empty);
+            var result = await sut.ProtectAsync(value);
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be("encrypted");
+
+            encryptionGatewayService.Verify(
+                x => x.ProtectAsync(value, true),
+                Times.Once);
         }
 
         [Theory, AutoMoqData]

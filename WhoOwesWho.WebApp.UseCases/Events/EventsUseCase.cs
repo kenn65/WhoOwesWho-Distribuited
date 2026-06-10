@@ -7,7 +7,7 @@ namespace WhoOwesWho.WebApp.UseCases.Events
     public interface IEventsUseCase
     {
         Task<EventResponseModel> ExecuteCreateEventAsync(EventRequestModel request);
-        Task<IEnumerable<EventResponseModel>> ExecuteGetEventsAsync(Guid userId);
+        Task<IEnumerable<EventResponseModel>> ExecuteGetEventsAsync(string createdBy, bool active);
         Task<IEnumerable<EventResponseModel>> ExecuteGetEventsAsync(bool active);
         Task<IEnumerable<UserMessageResponseModel>> ExecuteGetEventUsersAsync(Guid eventId, bool active);
         Task<EventResponseModel> ExecuteDeleteEventAsync(Guid eventId);
@@ -27,9 +27,9 @@ namespace WhoOwesWho.WebApp.UseCases.Events
             return await eventsPlugin.CreateEventAsync(request);
         }
 
-        public async Task<IEnumerable<EventResponseModel>> ExecuteGetEventsAsync(Guid userId)
+        public async Task<IEnumerable<EventResponseModel>> ExecuteGetEventsAsync(string createdBy, bool active)
         {
-            return (await eventsPlugin.GetEventsAsync(userId))?.Data!;
+            return (await eventsPlugin.GetEventsAsync(createdBy, active))?.Data!;
         }
 
         public async Task<IEnumerable<EventResponseModel>> ExecuteGetEventsAsync(bool active)

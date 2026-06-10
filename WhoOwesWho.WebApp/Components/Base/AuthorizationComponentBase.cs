@@ -11,15 +11,20 @@ namespace WhoOwesWho.WebApp.Components.Base
 
         [Inject]
         protected IAuthorizationUseCase AuthorizationUseCase { get; set; } = null!;
-    
+
+        [Inject]
+        protected IUserUseCase UserUseCase { get; set; } = null!;
+
         protected Guid CurrentUserId { get; private set; }
+        protected bool IsAdmin { get; private set; }
 
         protected async Task<bool> EnsureAuthorizedAsync()
         {
             CurrentUserId = await CurrentUserService.GetUserIdAsync();
-
             if (CurrentUserId != Guid.Empty)
             {
+                IsAdmin = await UserUseCase.ExecuteAsync(CurrentUserId);
+                //IsAdmin = await CurrentUserService.GetIsAdminAsync();
                 return true;
             }
 
@@ -31,6 +36,8 @@ namespace WhoOwesWho.WebApp.Components.Base
             }
 
             CurrentUserId = await CurrentUserService.GetUserIdAsync();
+            IsAdmin = await UserUseCase.ExecuteAsync(CurrentUserId);
+            //IsAdmin = await CurrentUserService.GetIsAdminAsync();
             return CurrentUserId != Guid.Empty;
         }
     }

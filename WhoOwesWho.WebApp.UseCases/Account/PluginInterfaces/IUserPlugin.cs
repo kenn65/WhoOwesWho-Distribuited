@@ -12,8 +12,9 @@ namespace WhoOwesWho.WebApp.UseCases.Account.PluginInterfaces
         Task<ForgotPasswordResponseModel> ForgotPasswordAsync(ForgotPasswordRequestModel request);
         Task<ResetPasswordResponseModel> VerifyResetPasswordAsync(string emailAddress, string forgotPasswordToken);
         Task<ResetPasswordResponseModel> ResetPasswordAsync(ResetPasswordRequestModel request);
-        Task<UserModel> UpdateUserAsync(Guid userId, UserUpdateRequestModel request);
+        Task<UserModel> UpdateUserAsync(UserUpdateRequestModel request);
         Task<ChangePasswordResponseModel> ChangePasswordAsync(ChangePasswordRequestModel request);
+        Task<IsAdminResponseModel> GetIsAdminAsync(Guid id);    
 
 
 

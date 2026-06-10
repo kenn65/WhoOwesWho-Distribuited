@@ -26,7 +26,7 @@ namespace WhoOwesWho.AuthorizationService.Services
             {
                 new(ClaimTypes.NameIdentifier, user!.Id.ToString()),
                 new(ClaimTypes.Email, user.EmailAddress!),
-                new(ClaimTypes.Name, user.FullName ?? ""),
+                new(ClaimTypes.Name, user.FullName!),
                 new(ClaimTypes.Role, user.Admin ? "Admin" : "User"),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };

@@ -12,20 +12,15 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
     public class AuthorizationServiceTests
     {
         [Theory, AutoData]
-        public async Task AuthorizeAsync_ReturnsProtectedAuthorizationResponse_WhenSuccessful(
-            AuthorizationRequestModel request,
-            UserMessageResponseModel user,
-            AuthorizationResponseModel response,
-            [Frozen] Mock<IConfiguration> configuration)
+        public async Task AuthorizeAsync_ReturnsAuthorizationResponse_WhenSuccessful(
+             AuthorizationRequestModel request,
+             UserMessageResponseModel user,
+             [Frozen] Mock<IConfiguration> configuration)
         {
             // Arrange
             user.EmailAddress = request.EmailAddress;
             user.FullName = "John Doe";
             user.Admin = true;
-
-            configuration
-                .Setup(x => x["EncryptionMicroService:BaseAddress"])
-                .Returns("https://localhost:7252/api/encryption");
 
             configuration
                 .Setup(x => x["Authorization:JwtSecret"])
@@ -34,19 +29,9 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             var cacheRepositoryMock =
                 new Mock<IAuthorizationCacheRepository>();
 
-            var securityServiceMock =
-                new Mock<IAuthorizationSecurityService>();
-
             cacheRepositoryMock
                 .Setup(x => x.GetUserAsync(request.EmailAddress!))
                 .ReturnsAsync(user);
-
-            securityServiceMock
-                .Setup(x => x.ProtectCookiesAsync(
-                    user,
-                    It.IsAny<string>(),
-                    true))
-                .ReturnsAsync(response);
 
             var sut = CreateAuthorizationService(
                 cacheRepositoryMock: cacheRepositoryMock,
@@ -56,13 +41,20 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             var result = await sut.AuthorizeAsync(request);
 
             // Assert
-            result.Should().Be(response);
+            result.Should().NotBeNull();
 
-            securityServiceMock.Verify(
-                x => x.ProtectCookiesAsync(
-                    user,
-                    It.Is<string>(token => !string.IsNullOrWhiteSpace(token)),
-                    true),
+            result!.Success.Should().BeTrue();
+
+            result.TokenValue.Should().NotBeNullOrWhiteSpace();
+
+            result.RefreshValue.Should().NotBeNullOrWhiteSpace();
+
+            cacheRepositoryMock.Verify(
+                x => x.GetUserAsync(request.EmailAddress!),
+                Times.Once);
+
+            cacheRepositoryMock.Verify(
+                x => x.SaveRefreshTokenAsync(It.IsAny<RefreshTokenModel>()),
                 Times.Once);
         }
 
@@ -76,9 +68,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
             user.FullName = "John Doe";
             user.EmailAddress = request.EmailAddress;
             user.Admin = true;
-
-            string? capturedToken = null;
-
+            
             configuration
                 .Setup(x => x["Authorization:JwtSecret"])
                 .Returns("i4Ifq0YmvlsydD2IDFgkLC8IOjiTGQoGTNjJH2KaR30LUjOCs0nxTq4iTdzTmCM3uDYnisM4c5AfACDbABtzVA==");
@@ -95,10 +85,10 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 configurationMock: configuration);
 
             // Act
-            await sut.AuthorizeAsync(request);
+            var result = await sut.AuthorizeAsync(request);
 
             // Assert
-            capturedToken.Should().NotBeNullOrWhiteSpace();
+            result?.TokenValue.Should().NotBeNullOrWhiteSpace();
         }
 
         [Theory, AutoData]
@@ -126,42 +116,7 @@ namespace WhoOwesWho.AuthorizationServiceTests.Services
                 .WithMessage("Failure");
         }
 
-        [Theory, AutoData]
-        public async Task AuthorizeAsync_Throws_WhenCookieProtectionFails(
-            AuthorizationRequestModel request,
-            UserMessageResponseModel user,
-            [Frozen] Mock<IConfiguration> configuration)
-        {
-            // Arrange
-            configuration
-                .Setup(x => x["EncryptionMicroService:BaseAddress"])
-                .Returns("https://localhost:7252/api/encryption");
-
-            configuration
-                .Setup(x => x["Authorization:JwtSecret"])
-                .Returns("i4Ifq0YmvlsydD2IDFgkLC8IOjiTGQoGTNjJH2KaR30LUjOCs0nxTq4iTdzTmCM3uDYnisM4c5AfACDbABtzVA==");
-
-            var cacheRepositoryMock =
-                new Mock<IAuthorizationCacheRepository>();
-            
-            cacheRepositoryMock
-                .Setup(x => x.GetUserAsync(request.EmailAddress!))
-                    .ReturnsAsync(user);
-            
-            var sut = CreateAuthorizationService(
-                cacheRepositoryMock: cacheRepositoryMock,
-                configurationMock: configuration);
-
-            // Act
-            Func<Task> act = async () =>
-                await sut.AuthorizeAsync(request);
-
-            // Assert
-            await act.Should()
-                    .ThrowAsync<Exception>()
-                    .WithMessage("Protection failed");
-        }
-
+       
         private static AuthorizationService.Services.AuthorizationService CreateAuthorizationService(
             Mock<IConfiguration>? configurationMock = null,
             Mock<IAuthorizationCacheRepository>? cacheRepositoryMock = null)

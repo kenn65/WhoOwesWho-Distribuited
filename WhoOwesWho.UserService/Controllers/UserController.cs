@@ -30,7 +30,6 @@ namespace WhoOwesWho.UserService.Controllers
         ) : ControllerBase
     {
         [HttpPut]
-        [Route("signup")]
         public async Task<IActionResult?> CreateUserAsync([FromBody] SignUpRequestModel request)
         {
             try
@@ -136,32 +135,48 @@ namespace WhoOwesWho.UserService.Controllers
             }
         }
 
-        [HttpPatch]
-        [Route("{userId}")]
+        [HttpGet]
         [Authorize]
-        public async Task<IActionResult> UpdateUserAsync(Guid userId, [FromBody] UserUpdateRequestModel request)
+        [Route("isadmin/{id}")]
+        public async Task<IActionResult> GetIsAdminAsync(Guid id)
         {
             try
             {
-                if (userId == Guid.Empty)
+                if (id == Guid.Empty )
                 {
                     return BadRequest(new UserModel
                     {
                         Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
                     });
                 }
-                                
+                return Ok(await userLookupService.GetIsAdminAsync(id));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new UserModel
+                {
+                    Message = e.Message
+                });
+            }
+        }
+
+
+        [HttpPatch]
+        [Authorize]
+        public async Task<IActionResult> UpdateUserAsync([FromBody] UserUpdateRequestModel request)
+        {
+            try
+            {
                 var validationResult =
                     await updateUserValidator.ValidateAsync(request);
 
-                if (!validationResult.IsValid && !(await userValidationService.DoesFullNameExistAsync(userId!, request.FullName!)))
+                if (!validationResult.IsValid && !(await userValidationService.DoesFullNameExistAsync(request.Id, request.FullName!)))
                 {
                     return BadRequest(new UserModel
                     {
                         Message = validationResult.Errors.First().ErrorMessage
                     });
                 }                
-                request.Id = userId;
                 return Ok(await userCommandService.UpdateUserAsync(request));
             }
             catch (Exception e)

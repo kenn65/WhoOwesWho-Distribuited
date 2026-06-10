@@ -43,7 +43,6 @@ public partial class EventPaymentElement(
     protected override async Task OnInitializedAsync()
     {
         userId = await currentUserService.GetUserIdAsync();
-        isAdministrator = await currentUserService.GetIsAdminAsync();
         var host = await hostNameService.GetAsync();
         isPaymentDetails = nav.Uri == $"https://{host}/me/payment/details";
         CreatePaymentRequestModel ??= new CreatePaymentRequestModel();
@@ -58,6 +57,7 @@ public partial class EventPaymentElement(
         }
         placeHolder = $"0{CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator}00";
         currentUser = await GetCurrentUser();
+        isAdministrator = currentUser.Admin;
 
         if (isPaymentDetails)
         {

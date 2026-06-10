@@ -39,21 +39,22 @@ namespace WhoOwesWho.EventService.Controllers
         }
 
         [HttpGet]
-        [Route("{userId}")]
+        [Route("{createdBy}")]
         [Authorize]
-        public async Task<IActionResult> GetUserEvents(Guid userId, [FromQuery] bool active = false)
+        public async Task<IActionResult> GetUserEvents(string createdBy, [FromQuery] bool active)
         {
             try
             {
-                if (userId == Guid.Empty)
+                if (string.IsNullOrWhiteSpace(createdBy))
                 {
                     return BadRequest(new EventResponseModel
                     {
-                        Message = Constants.RequestArgumentErrorMessages.UserIdArgumentError
+                        Message = Constants.RequestArgumentErrorMessages.CreatedbyArgumentError
                     });
                 }
+
                 var allEvents = (await eventLookupService.GetEventsAsync(active)).ToList();
-                var response = allEvents.Where(e => e.Settled == !active && e.Users!.Any(u => u.Id == userId));
+                var response = allEvents.Where(e => e.Settled == !active && e.CreatedBy == createdBy);
                 return Ok(new EnumerableWrapperResponseModel<IEnumerable<EventResponseModel>>
                 {
                     Data = response,
