@@ -72,7 +72,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequestValidator>
 builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequestValidator>();
-
+builder.Services.AddValidatorsFromAssemblyContaining<SignUpRequestValidatior>();
 builder.Services.AddControllers();
 
 
