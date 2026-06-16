@@ -24,7 +24,6 @@ namespace WhoOwesWho.WebApp.Components.Base
             if (CurrentUserId != Guid.Empty)
             {
                 IsAdmin = await UserUseCase.ExecuteAsync(CurrentUserId);
-                //IsAdmin = await CurrentUserService.GetIsAdminAsync();
                 return true;
             }
 
@@ -37,7 +36,6 @@ namespace WhoOwesWho.WebApp.Components.Base
 
             CurrentUserId = await CurrentUserService.GetUserIdAsync();
             IsAdmin = await UserUseCase.ExecuteAsync(CurrentUserId);
-            //IsAdmin = await CurrentUserService.GetIsAdminAsync();
             return CurrentUserId != Guid.Empty;
         }
     }
