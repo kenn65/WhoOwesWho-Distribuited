@@ -52,7 +52,14 @@ public partial class Payments(
 
     private async Task<PaymentsResponseModel> GetPaymentsAsync()
     {
-        return await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), true);
+        var response = await paymentsUseCase.ExecuteAsync(Guid.Parse(eventId), true);
+        if (!isAdministrator)
+        {
+            var payments = response.Payments?.Where(p => p.CreditEventUser?.Id == CurrentUserId || p.DebitEventUser?.Id == CurrentUserId);
+            response.Payments = payments;
+            return response;
+        }
+        return response;
     }
 
     private async Task SettleEventAsync()

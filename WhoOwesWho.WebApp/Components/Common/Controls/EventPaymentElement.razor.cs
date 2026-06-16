@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using System.Globalization;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
-using WhoOwesWho.WebApp.CoreBusiness.Entities.Cookies;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Events;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 using WhoOwesWho.WebApp.CoreBusiness.Interfaces;
 using WhoOwesWho.WebApp.Infrastructure.Currencies;
-using WhoOwesWho.WebApp.Services;
 using WhoOwesWho.WebApp.UseCases.Account;
 
 namespace WhoOwesWho.WebApp.Components.Common.Controls;
@@ -49,7 +47,7 @@ public partial class EventPaymentElement(
         EventResponseModel?.Users = EventResponseModel.Users?.OrderBy(u => u?.FullName);
         if (isPaymentDetails)
         {
-            CreatePaymentRequestModel.UserIds = EventResponseModel?.Users!.Select(u => u!.Id.ToString());
+            CreatePaymentRequestModel.UserIds = PaymentDetailsResponseModel!.PaymentDetails!.DebitEventUserIds;
         }
         else
         {
@@ -109,7 +107,6 @@ public partial class EventPaymentElement(
         }
 
         await HandlePayment.InvokeAsync(CreatePaymentRequestModel);
-
     }
 
     private async Task HandleDeleteAsync()

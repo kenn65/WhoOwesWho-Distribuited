@@ -17,9 +17,13 @@ namespace WhoOwesWho.AuthorizationService.Services
             return await authorizationCacheRepository.GetUserExistAsync(emailAddress);
         }
 
-        public async Task<bool> IsPasswordValid(string emailAddress, string password) 
+        public async Task<bool> IsPasswordValid(string emailAddress, string password)
         {
             var response = await authorizationCacheRepository.GetUserAsync(emailAddress);
+            if (response == null || string.IsNullOrEmpty(response.Password))
+            {
+                return false;
+            }
             var unprotectedPass = await authorizationSecurityService.UnprotectAsync(response?.Password!);
             return unprotectedPass == password;
         }

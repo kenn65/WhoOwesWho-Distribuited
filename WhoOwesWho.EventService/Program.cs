@@ -32,10 +32,7 @@ builder.AddServiceDefaults();
 
 builder.Services.AddSingleton(provider =>
 {
-    var connectionString =
-        builder.Configuration.GetConnectionString(
-            "sbemulatorns");
-
+    var connectionString = builder.Configuration.GetConnectionString("servicebus");
     return new ServiceBusClient(connectionString);
 });
 
