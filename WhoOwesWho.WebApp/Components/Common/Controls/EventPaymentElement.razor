@@ -54,13 +54,13 @@
 
         <div class="flex flex-col sm:flex-row justify-center items-center gap-3 mt-10">
 
-            @if (isAdministrator && !Disabled)
+            @if (isAdministrator && isPaymentDetails || !isPaymentDetails && !Disabled)
             {
                 <SubmitButton IsProcessing="@IsProcessing"
                               Text="Submit"
                               ProcessingText="Processing..." />
 
-                @if (isPaymentDetails)
+                @if (isAdministrator && isPaymentDetails)
                 {
                     <NavigationStateButton Text="Delete"
                                            ProcessingText="Processing..."

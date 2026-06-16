@@ -19,7 +19,7 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddSingleton(provider =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("sbemulatorns");
+    var connectionString = builder.Configuration.GetConnectionString("servicebus");
     return new ServiceBusClient(connectionString);
 });
 

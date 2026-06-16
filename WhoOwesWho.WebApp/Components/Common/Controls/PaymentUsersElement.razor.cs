@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using System.Linq.Expressions;
 using WhoOwesWho.WebApp.CoreBusiness.Entities.Account.Users;
+using WhoOwesWho.WebApp.CoreBusiness.Entities.Payments;
 
 namespace WhoOwesWho.WebApp.Components.Common.Controls;
 
 public partial class PaymentUsersElement
 {
     [Parameter] public IEnumerable<UserModel> Users { get; set; } = Enumerable.Empty<UserModel>();
+    [Parameter] public PaymentDetailsModel? PaymentDetails { get; set; }
     [Parameter] public UserModel? You { get; set; }
     [Parameter] public string Id { get; set; } = string.Empty;
     [Parameter] public string Caption { get; set; } = string.Empty;

@@ -24,7 +24,7 @@ namespace WhoOwesWho.AuthorizationService.Controllers
         {
             try
             {
-                request.Password = await authorizationSecurityService.UnprotectAsync(request.Password!);
+                request.Password = await authorizationSecurityService.UnprotectAsync(request.Password!, true);
                 var validationResult =
                     await authenticationValidator.ValidateAsync(request!);
 

@@ -139,7 +139,7 @@
     <hr class="my-8" />
 
     <!-- Payments -->
-    <p class="text-xl mb-6">Payments</p>
+    <p class="text-xl mb-6">@(IsAdministrator ? "Payments" : "Your expenses and your debts")</p>
 
     <!-- Mobile -->
     <div class="md:hidden space-y-3">
@@ -233,6 +233,7 @@
 {
     [Parameter] public PaymentsResponseModel PaymentsData { get; set; } = default!;
     [Parameter] public bool Active { get; set; }
+    [Parameter] public bool IsAdministrator { get; set; }
 
     private async Task GotoDetailsAsync(UserPaymentResponseModel context)
     {

@@ -20,51 +20,12 @@ var cache = builder.AddRedis("redis-cache")
     .WithContainerName("wow-redis-cache")
     .WithDataVolume()
     .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithRedisInsight();
 
 
 //--- AZURE SERVICE BUS EMULATOR ----------------------------------------------------
-var serviceBus = builder
-    .AddAzureServiceBus("sbemulatorns")
-    .RunAsEmulator(c => c
-        .WithContainerName("wow-service-bus-emulator")
-        .WithLifetime(ContainerLifetime.Persistent));
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-messaging-dispatch-request")
-    .AddServiceBusSubscription("messaging");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-messaging-dispatch-succeeded")
-    .AddServiceBusSubscription("messaging-observability-succeeded");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-messaging-dispatch-failed")
-    .AddServiceBusSubscription("messaging-observability-failed");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-authentication-user-dispatch-request")
-    .AddServiceBusSubscription("authentication");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-authentication-user-dispatch-succeeded")
-    .AddServiceBusSubscription("authentication-observability-succeeded");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-authentication-user-dispatch-failed")
-    .AddServiceBusSubscription("authentication-observability-failed");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-payment-event-dispatch-request")
-    .AddServiceBusSubscription("payment");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-payment-event-dispatch-succeeded")
-    .AddServiceBusSubscription("payment-observability-succeeded");
-
-serviceBus
-    .AddServiceBusTopic("whooweswho-payment-event-dispatch-failed")
-    .AddServiceBusSubscription("payment-observability-failed");
+var serviceBus = builder.AddConnectionString("servicebus");
 
 // --- WHO OWES WHO MICROSERVICES ----------------------------------------------------
 
